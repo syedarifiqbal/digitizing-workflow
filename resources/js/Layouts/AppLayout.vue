@@ -1,10 +1,18 @@
 <script setup>
 import { ref } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, usePage, useForm } from '@inertiajs/vue3';
 
 const showMobileMenu = ref(false);
+const showUserMenu = ref(false);
 
 const page = usePage();
+const user = page.props.auth?.user;
+
+const logoutForm = useForm({});
+
+const logout = () => {
+    logoutForm.post(route('logout'));
+};
 </script>
 
 <template>
@@ -38,9 +46,33 @@ const page = usePage();
                     <!-- User Menu -->
                     <div class="hidden sm:ml-6 sm:flex sm:items-center">
                         <div class="relative">
-                            <span class="text-sm text-gray-700">
-                                {{ page.props.auth?.user?.name ?? 'Guest' }}
-                            </span>
+                            <button
+                                @click="showUserMenu = !showUserMenu"
+                                class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none"
+                            >
+                                <span>{{ user?.name }}</span>
+                                <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            <div
+                                v-show="showUserMenu"
+                                @click="showUserMenu = false"
+                                class="fixed inset-0 z-10"
+                            ></div>
+
+                            <div
+                                v-show="showUserMenu"
+                                class="absolute right-0 z-20 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5"
+                            >
+                                <button
+                                    @click="logout"
+                                    class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                    Logout
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -83,6 +115,20 @@ const page = usePage();
                     >
                         Dashboard
                     </Link>
+                </div>
+                <div class="pt-4 pb-3 border-t border-gray-200">
+                    <div class="px-4">
+                        <div class="text-base font-medium text-gray-800">{{ user?.name }}</div>
+                        <div class="text-sm font-medium text-gray-500">{{ user?.email }}</div>
+                    </div>
+                    <div class="mt-3 space-y-1">
+                        <button
+                            @click="logout"
+                            class="block w-full text-left px-4 py-2 text-base font-medium text-gray-600 hover:bg-gray-50"
+                        >
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </div>
         </nav>
