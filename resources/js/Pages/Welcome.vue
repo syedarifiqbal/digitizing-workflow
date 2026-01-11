@@ -1,5 +1,25 @@
 <script setup>
+import { ref } from 'vue';
+import { useForm, usePage } from '@inertiajs/vue3';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
+
+const form = useForm({
+    email: '',
+});
+
+const submitted = ref(false);
+
+const subscribe = () => {
+    form.post(route('newsletter.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            submitted.value = true;
+            form.reset();
+        },
+    });
+};
+
+const flash = usePage().props.flash;
 </script>
 
 <template>
@@ -142,6 +162,60 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
                         <h3 class="mt-4 text-lg font-medium text-gray-900">API Integration</h3>
                         <p class="mt-2 text-gray-500">Connect your website to create orders automatically.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Newsletter Section -->
+        <div class="py-16 bg-indigo-600">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-extrabold text-white">
+                        Stay Updated
+                    </h2>
+                    <p class="mt-4 text-lg text-indigo-100">
+                        Get notified about new features and updates.
+                    </p>
+                </div>
+
+                <div class="mt-8 max-w-md mx-auto">
+                    <form @submit.prevent="subscribe" class="sm:flex">
+                        <label for="email" class="sr-only">Email address</label>
+                        <input
+                            v-model="form.email"
+                            type="email"
+                            id="email"
+                            required
+                            class="w-full px-5 py-3 placeholder-gray-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-indigo-600 focus:ring-white focus:border-white rounded-md"
+                            placeholder="Enter your email"
+                        />
+                        <button
+                            type="submit"
+                            :disabled="form.processing"
+                            class="mt-3 sm:mt-0 sm:ml-3 w-full sm:w-auto flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-indigo-600 focus:ring-white disabled:opacity-50"
+                        >
+                            Subscribe
+                        </button>
+                    </form>
+                    <p v-if="form.errors.email" class="mt-2 text-sm text-red-200">{{ form.errors.email }}</p>
+                    <p v-if="submitted" class="mt-2 text-sm text-green-200">Thank you for subscribing!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-3xl font-extrabold text-gray-900">
+                    Ready to streamline your workflow?
+                </h2>
+                <p class="mt-4 text-lg text-gray-500">
+                    Start managing your digitizing orders today.
+                </p>
+                <div class="mt-8">
+                    <a href="/register" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10">
+                        Get Started Free
+                    </a>
                 </div>
             </div>
         </div>
