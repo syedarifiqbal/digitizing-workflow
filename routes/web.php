@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
@@ -55,5 +56,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/settings', [TenantSettingsController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [TenantSettingsController::class, 'update'])->name('settings.update');
+        Route::delete('clients/bulk', [ClientController::class, 'bulkDestroy'])->name('clients.bulk-destroy');
+        Route::resource('clients', ClientController::class);
+        Route::patch('clients/{client}/status', [ClientController::class, 'toggleStatus'])->name('clients.status');
     });
 });
