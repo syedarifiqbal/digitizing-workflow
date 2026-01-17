@@ -13,6 +13,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\TenantSettingsController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Public marketing pages
@@ -59,5 +60,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('clients/bulk', [ClientController::class, 'bulkDestroy'])->name('clients.bulk-destroy');
         Route::resource('clients', ClientController::class);
         Route::patch('clients/{client}/status', [ClientController::class, 'toggleStatus'])->name('clients.status');
+        Route::delete('users/bulk', [UserController::class, 'bulkDestroy'])->name('users.bulk-destroy');
+        Route::resource('users', UserController::class)->except(['show']);
     });
 });
