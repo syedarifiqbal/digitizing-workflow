@@ -81,12 +81,9 @@ const confirmDelete = () => {
     };
 
     if (modal.bulk || modal.ids.length > 1) {
-        router.delete(route('clients.bulk-destroy'), {
-            data: { ids: modal.ids },
-            ...options,
-        });
+        router.delete(route('clients.bulk-destroy'), { ids: modal.ids }, options);
     } else {
-        router.delete(route('clients.destroy', modal.ids[0]), options);
+        router.delete(route('clients.destroy', modal.ids[0]), {}, options);
     }
 };
 

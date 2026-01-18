@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ContactController;
@@ -60,6 +61,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('clients/bulk', [ClientController::class, 'bulkDestroy'])->name('clients.bulk-destroy');
         Route::resource('clients', ClientController::class);
         Route::patch('clients/{client}/status', [ClientController::class, 'toggleStatus'])->name('clients.status');
+        Route::delete('orders/bulk', [OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
+        Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
         Route::delete('users/bulk', [UserController::class, 'bulkDestroy'])->name('users.bulk-destroy');
         Route::resource('users', UserController::class)->except(['show']);
     });

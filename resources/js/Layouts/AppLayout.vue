@@ -4,9 +4,16 @@ import { Link, usePage, useForm } from '@inertiajs/vue3';
 
 const showMobileMenu = ref(false);
 const showUserMenu = ref(false);
+const showOrderMenu = ref(false);
 
 const page = usePage();
 const user = page.props.auth?.user;
+const orderTypes = [
+    { label: 'Digitizing', value: 'digitizing' },
+    { label: 'Vector', value: 'vector' },
+    { label: 'Patch', value: 'patch' },
+    { label: 'Quotation', value: 'quotation' },
+];
 
 const logoutForm = useForm({});
 
@@ -40,9 +47,65 @@ const logout = () => {
                             >
                                 Dashboard
                             </Link>
-                    <Link
-                        v-if="user?.is_admin || user?.is_manager"
-                        :href="route('clients.index')"
+                            <div
+                                v-if="user?.is_admin || user?.is_manager || user?.is_designer"
+                                class="relative"
+                                @mouseenter="showOrderMenu = true"
+                                @mouseleave="showOrderMenu = false"
+                            >
+                                <button
+                                    class="inline-flex items-center h-full px-1 pt-1 border-b-2 text-sm font-medium focus:outline-none"
+                                    :class="route().current('orders.*')
+                                        ? 'border-indigo-500 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                                >
+                                    Orders
+                                    <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div
+                                    v-show="showOrderMenu"
+                                    class="absolute z-30"
+                                >
+                                    <div
+                                        class="mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5"
+                                    >
+                                        <div class="py-1">
+                                            <Link
+                                                :href="route('orders.index')"
+                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                @click="showOrderMenu = false"
+                                            >
+                                                All orders
+                                            </Link>
+                                            <div class="px-4 py-2 text-xs font-semibold uppercase text-gray-400">Filter</div>
+                                            <Link
+                                                v-for="type in orderTypes"
+                                                :key="'filter-'+type.value"
+                                                :href="route('orders.index', { type: type.value })"
+                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                @click="showOrderMenu = false"
+                                            >
+                                                {{ type.label }} orders
+                                            </Link>
+                                            <div class="px-4 py-2 text-xs font-semibold uppercase text-gray-400">Create</div>
+                                            <Link
+                                                v-for="type in orderTypes"
+                                                :key="'create-'+type.value"
+                                                :href="route('orders.create', { type: type.value })"
+                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                @click="showOrderMenu = false"
+                                            >
+                                                New {{ type.label }} order
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <Link
+                                v-if="user?.is_admin || user?.is_manager"
+                                :href="route('clients.index')"
                         class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                         :class="route().current('clients.*')
                             ? 'border-indigo-500 text-gray-900'
@@ -145,6 +208,35 @@ const logout = () => {
                     >
                         Dashboard
                     </Link>
+                    <div v-if="user?.is_admin || user?.is_manager || user?.is_designer" class="border-t border-gray-200">
+                        <p class="px-4 pt-4 text-xs font-semibold uppercase text-gray-400">Orders</p>
+                        <Link
+                            :href="route('orders.index')"
+                            class="block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                            :class="route().current('orders.index')
+                                ? 'border-indigo-500 text-indigo-700 bg-indigo-50'
+                                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'"
+                        >
+                            All orders
+                        </Link>
+                        <Link
+                            v-for="type in orderTypes"
+                            :key="'mobile-filter-'+type.value"
+                            :href="route('orders.index', { type: type.value })"
+                            class="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
+                        >
+                            {{ type.label }} orders
+                        </Link>
+                        <div class="px-4 pt-4 text-xs font-semibold uppercase text-gray-400">Create</div>
+                        <Link
+                            v-for="type in orderTypes"
+                            :key="'mobile-create-'+type.value"
+                            :href="route('orders.create', { type: type.value })"
+                            class="block pl-3 pr-4 py-2 border-l-4 text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
+                        >
+                            New {{ type.label }} order
+                        </Link>
+                    </div>
                     <Link
                         v-if="user?.is_admin || user?.is_manager"
                         :href="route('clients.index')"

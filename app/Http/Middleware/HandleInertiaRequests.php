@@ -45,6 +45,7 @@ class HandleInertiaRequests extends Middleware
                     'tenant_id' => $request->user()->tenant_id,
                     'is_admin' => $request->user()->hasRole('Admin'),
                     'is_manager' => $request->user()->hasRole('Manager'),
+                    'is_designer' => $request->user()->hasRole('Designer'),
                 ] : null,
             ],
             'flash' => [

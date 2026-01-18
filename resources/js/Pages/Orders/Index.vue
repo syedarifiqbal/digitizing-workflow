@@ -1,48 +1,44 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
-import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { EyeIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 const props = defineProps({
     filters: Object,
-    users: Object,
-    roles: Array,
+    orders: Object,
+    statusOptions: Array,
+    priorityOptions: Array,
+    typeOptions: Array,
+    clients: Array,
+    designers: Array,
 });
 
 const filters = reactive({
     search: props.filters?.search ?? '',
-    role: props.filters?.role ?? 'all',
     status: props.filters?.status ?? 'all',
+    priority: props.filters?.priority ?? 'all',
+    type: props.filters?.type ?? 'all',
+    client_id: props.filters?.client_id ?? 'all',
+    designer_id: props.filters?.designer_id ?? 'all',
 });
 
-const roleOptions = computed(() => [
-    { label: 'All roles', value: 'all' },
-    ...(props.roles || []).map((role) => ({ label: role, value: role })),
-]);
-
-const statusOptions = [
-    { label: 'All statuses', value: 'all' },
-    { label: 'Active', value: 'active' },
-    { label: 'Inactive', value: 'inactive' },
-];
-
-const users = computed(() => props.users?.data ?? []);
-const paginationLinks = computed(() => props.users?.links ?? []);
+const orders = computed(() => props.orders?.data ?? []);
+const links = computed(() => props.orders?.links ?? []);
 
 const selectedIds = ref([]);
-const selectAllChecked = computed(() => users.value.length > 0 && selectedIds.value.length === users.value.length);
+const selectAllChecked = computed(() => orders.value.length > 0 && selectedIds.value.length === orders.value.length);
 
 watch(
-    () => props.users,
+    () => props.orders,
     () => {
         selectedIds.value = [];
     }
 );
 
 const submitFilters = () => {
-    router.get(route('users.index'), filters, {
+    router.get(route('orders.index'), filters, {
         preserveState: true,
         replace: true,
     });
@@ -57,8 +53,8 @@ const modal = reactive({
 const openDeleteModal = (ids) => {
     modal.ids = Array.isArray(ids) ? [...ids] : [ids];
     modal.message = modal.ids.length > 1
-        ? `Delete ${modal.ids.length} selected user(s)?`
-        : 'Delete this user?';
+        ? `Delete ${modal.ids.length} selected order(s)?`
+        : 'Delete this order?';
     modal.show = true;
 };
 
@@ -86,15 +82,15 @@ const confirmDelete = () => {
     };
 
     if (modal.ids.length > 1) {
-        router.delete(route('users.bulk-destroy'), { ids: modal.ids }, options);
+        router.delete(route('orders.bulk-destroy'), { ids: modal.ids }, options);
     } else {
-        router.delete(route('users.destroy', modal.ids[0]), {}, options);
+        router.delete(route('orders.destroy', modal.ids[0]), {}, options);
     }
 };
 
 const toggleSelectAll = (event) => {
     if (event.target.checked) {
-        selectedIds.value = users.value.map((user) => user.id);
+        selectedIds.value = orders.value.map((order) => order.id);
     } else {
         selectedIds.value = [];
     }
@@ -110,14 +106,14 @@ const clearSelection = () => {
         <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-xl font-semibold text-gray-800">Users</h2>
-                    <p class="text-sm text-gray-600">Invite teammates, assign roles, and manage access.</p>
+                    <h2 class="text-xl font-semibold text-gray-800">Orders</h2>
+                    <p class="text-sm text-gray-600">Track intake orders, priorities, and workflow status.</p>
                 </div>
                 <Link
-                    :href="route('users.create')"
+                    :href="route('orders.create')"
                     class="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
-                    Invite User
+                    New Order
                 </Link>
             </div>
         </template>
@@ -126,29 +122,16 @@ const clearSelection = () => {
             <div class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="p-6">
-                        <form @submit.prevent="submitFilters" class="grid gap-4 md:grid-cols-4">
+                        <form @submit.prevent="submitFilters" class="grid gap-4 md:grid-cols-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700" for="search">Search</label>
                                 <input
                                     v-model="filters.search"
                                     id="search"
                                     type="text"
-                                    placeholder="Search name or email"
+                                    placeholder="Search order # or title"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700" for="role">Role</label>
-                                <select
-                                    v-model="filters.role"
-                                    id="role"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option v-for="option in roleOptions" :key="option.value" :value="option.value">
-                                        {{ option.label }}
-                                    </option>
-                                </select>
                             </div>
 
                             <div>
@@ -158,16 +141,73 @@ const clearSelection = () => {
                                     id="status"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 >
+                                    <option value="all">All statuses</option>
                                     <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                                         {{ option.label }}
                                     </option>
                                 </select>
                             </div>
 
-                            <div class="flex items-end">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="priority">Priority</label>
+                                <select
+                                    v-model="filters.priority"
+                                    id="priority"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="all">All priorities</option>
+                                    <option v-for="option in priorityOptions" :key="option.value" :value="option.value">
+                                        {{ option.label }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="type">Type</label>
+                                <select
+                                    v-model="filters.type"
+                                    id="type"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="all">All types</option>
+                                    <option v-for="option in typeOptions" :key="option.value" :value="option.value">
+                                        {{ option.label }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="client">Client</label>
+                                <select
+                                    v-model="filters.client_id"
+                                    id="client"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="all">All clients</option>
+                                    <option v-for="client in clients" :key="client.id" :value="client.id">
+                                        {{ client.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="designer">Designer</label>
+                                <select
+                                    v-model="filters.designer_id"
+                                    id="designer"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="all">All designers</option>
+                                    <option v-for="designer in designers" :key="designer.id" :value="designer.id">
+                                        {{ designer.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="md:col-span-6 flex justify-end">
                                 <button
                                     type="submit"
-                                    class="inline-flex w-full justify-center rounded-md border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+                                    class="inline-flex items-center rounded-md border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
                                 >
                                     Apply filters
                                 </button>
@@ -183,7 +223,7 @@ const clearSelection = () => {
                             class="mb-4 rounded-md border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700"
                         >
                             <div class="flex flex-wrap items-center gap-3">
-                                <span>{{ selectedIds.length }} user(s) selected</span>
+                                <span>{{ selectedIds.length }} order(s) selected</span>
                                 <button type="button" class="text-indigo-700 underline" @click="clearSelection">
                                     Clear
                                 </button>
@@ -210,66 +250,85 @@ const clearSelection = () => {
                                             />
                                         </th>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            User
+                                            Order
                                         </th>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Role
+                                            Type
+                                        </th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                            Client
+                                        </th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                            Designer
                                         </th>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                             Status
                                         </th>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Linked Client
+                                            Priority
                                         </th>
                                         <th class="px-4 py-3"></th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-200" v-if="users.length">
-                                    <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50">
+                                <tbody class="divide-y divide-gray-200" v-if="orders.length">
+                                    <tr v-for="order in orders" :key="order.id" class="hover:bg-gray-50">
                                         <td class="px-4 py-3">
                                             <input
                                                 type="checkbox"
                                                 class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                :value="user.id"
+                                                :value="order.id"
                                                 v-model="selectedIds"
                                             />
                                         </td>
                                         <td class="px-4 py-3">
-                                            <div class="font-medium text-gray-900">{{ user.name }}</div>
-                                            <div class="text-sm text-gray-500">{{ user.email }}</div>
-                                            <p class="text-xs text-gray-400">Invited {{ user.created_at }}</p>
+                                            <div class="font-medium text-gray-900">{{ order.order_number }}</div>
+                                            <p class="text-sm text-gray-600">{{ order.title }}</p>
+                                            <p class="text-xs text-gray-400">Created {{ order.created_at }}</p>
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-gray-900">
-                                            {{ user.role ?? '—' }}
+                                        <td class="px-4 py-3 text-sm capitalize text-gray-900">
+                                            {{ (order.type || '').split('_').join(' ') }}
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-gray-900">{{ order.client ?? '—' }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-900">{{ order.designer ?? '—' }}</td>
+                                        <td class="px-4 py-3">
+                                            <span
+                                                :class="[
+                                                    'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
+                                                    order.status === 'delivered' || order.status === 'approved'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : order.status === 'revision_requested'
+                                                            ? 'bg-yellow-100 text-yellow-800'
+                                                            : 'bg-gray-100 text-gray-800',
+                                                ]"
+                                            >
+                                                {{ (order.status || '').split('_').join(' ') }}
+                                            </span>
                                         </td>
                                         <td class="px-4 py-3">
                                             <span
                                                 :class="[
-                                                    'inline-flex rounded-full px-2 text-xs font-semibold leading-5',
-                                                    user.status === 'active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-yellow-100 text-yellow-800',
+                                                    'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
+                                                    order.priority === 'rush'
+                                                        ? 'bg-red-100 text-red-800'
+                                                        : 'bg-blue-100 text-blue-800',
                                                 ]"
                                             >
-                                                {{ user.status }}
+                                                {{ order.priority }}
                                             </span>
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-900">
-                                            {{ user.client?.name ?? '—' }}
                                         </td>
                                         <td class="px-4 py-3 text-right text-sm font-medium space-x-1">
                                             <Link
-                                                :href="route('users.edit', user.id)"
-                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-indigo-600"
-                                                title="Edit"
+                                                :href="route('orders.show', order.id)"
+                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-gray-900"
+                                                title="View"
                                             >
-                                                <span class="sr-only">Edit</span>
-                                                <PencilSquareIcon class="h-5 w-5" />
+                                                <span class="sr-only">View</span>
+                                                <EyeIcon class="h-5 w-5" />
                                             </Link>
                                             <button
                                                 type="button"
                                                 class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-red-600"
-                                                @click="openDeleteModal(user.id)"
+                                                @click="openDeleteModal(order.id)"
                                                 title="Delete"
                                             >
                                                 <span class="sr-only">Delete</span>
@@ -280,16 +339,16 @@ const clearSelection = () => {
                                 </tbody>
                                 <tbody v-else>
                                     <tr>
-                                        <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">
-                                            No users found.
+                                        <td colspan="8" class="px-4 py-6 text-center text-sm text-gray-500">
+                                            No orders found.
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <div v-if="paginationLinks.length" class="mt-4 flex flex-wrap gap-2">
-                            <template v-for="link in paginationLinks" :key="link.url ?? link.label">
+                        <div v-if="links.length" class="mt-4 flex flex-wrap gap-2">
+                            <template v-for="link in links" :key="link.url ?? link.label">
                                 <Link
                                     v-if="link.url"
                                     :href="link.url"
