@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\FileStorageService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,8 +27,9 @@ class OrderController extends Controller
     {
         $this->authorize('viewAny', Order::class);
 
-        $filters = $request->only(['search', 'status', 'priority', 'client_id', 'designer_id', 'type']);
+        $filters = $request->only(['search', 'status', 'priority', 'client_id', 'designer_id', 'type', 'quote']);
         $tenantId = $request->user()->tenant_id;
+        $quoteView = filter_var($filters['quote'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $query = Order::query()
             ->with(['client:id,name', 'designer:id,name'])
@@ -50,13 +52,29 @@ class OrderController extends Controller
             })
             ->when(($filters['type'] ?? null) && $filters['type'] !== 'all', fn ($query, $type) => $query->where('type', $type))
             ->when(($filters['client_id'] ?? null) && $filters['client_id'] !== 'all', fn ($query, $clientId) => $query->where('client_id', $clientId))
-            ->when(($filters['designer_id'] ?? null) && $filters['designer_id'] !== 'all', fn ($query, $designerId) => $query->where('designer_id', $designerId));
+            ->when(($filters['designer_id'] ?? null) && $filters['designer_id'] !== 'all', fn ($query, $designerId) => $query->where('designer_id', $designerId))
+            ->when($quoteView, fn ($query) => $query->where('is_quote', true), function ($query) {
+                $query->where(function ($inner) {
+                    $inner->where('is_quote', false)->orWhereNull('is_quote');
+                });
+            });
 
         if ($request->user()->isDesigner()) {
             $query->where('designer_id', $request->user()->id);
         }
 
         $orders = $query->latest()->paginate(10)->withQueryString();
+        $baseCountQuery = Order::forTenant($tenantId)
+            ->select('type', DB::raw('count(*) as total'))
+            ->groupBy('type');
+        $orderCounts = (clone $baseCountQuery)
+            ->where(function ($q) {
+                $q->where('is_quote', false)->orWhereNull('is_quote');
+            })
+            ->pluck('total', 'type');
+        $quoteCounts = (clone $baseCountQuery)->where('is_quote', true)->pluck('total', 'type');
+
+        $showOrderCards = $request->user()->tenant->getSetting('show_order_cards', false);
 
         return Inertia::render('Orders/Index', [
             'filters' => [
@@ -64,6 +82,7 @@ class OrderController extends Controller
                 'status' => $filters['status'] ?? 'all',
                 'priority' => $filters['priority'] ?? 'all',
                 'type' => $filters['type'] ?? 'all',
+                'quote' => $quoteView ? '1' : '0',
                 'client_id' => $filters['client_id'] ?? 'all',
                 'designer_id' => $filters['designer_id'] ?? 'all',
             ],
@@ -75,10 +94,12 @@ class OrderController extends Controller
                 'label' => ucwords(str_replace('_', ' ', $case->value)),
                 'value' => $case->value,
             ]),
-            'typeOptions' => collect(OrderType::cases())->map(fn ($case) => [
-                'label' => ucwords(str_replace('_', ' ', $case->value)),
-                'value' => $case->value,
-            ]),
+            'typeOptions' => collect(OrderType::cases())
+                ->reject(fn ($case) => $case === OrderType::QUOTATION)
+                ->map(fn ($case) => [
+                    'label' => ucwords(str_replace('_', ' ', $case->value)),
+                    'value' => $case->value,
+                ]),
             'clients' => $this->clientOptions($request)->map(fn ($client) => [
                 'id' => $client->id,
                 'name' => $client->name,
@@ -87,6 +108,20 @@ class OrderController extends Controller
                 'id' => $designer->id,
                 'name' => $designer->name,
             ]),
+            'counts' => [
+                'orders' => [
+                    'digitizing' => $orderCounts[OrderType::DIGITIZING->value] ?? 0,
+                    'vector' => $orderCounts[OrderType::VECTOR->value] ?? 0,
+                    'patch' => $orderCounts[OrderType::PATCH->value] ?? 0,
+                ],
+                'quotes' => [
+                    'digitizing' => $quoteCounts[OrderType::DIGITIZING->value] ?? 0,
+                    'vector' => $quoteCounts[OrderType::VECTOR->value] ?? 0,
+                    'patch' => $quoteCounts[OrderType::PATCH->value] ?? 0,
+                ],
+            ],
+            'typeStats' => $this->typeStats($tenantId, $filters['type'] ?? 'all', $quoteView),
+            'showOrderCards' => $showOrderCards,
             'orders' => [
                 'data' => $orders->through(fn (Order $order) => [
                     'id' => $order->id,
@@ -110,6 +145,7 @@ class OrderController extends Controller
         $this->authorize('create', Order::class);
 
         $defaultType = $request->string('type', OrderType::DIGITIZING->value)->toString();
+        $isQuote = $request->boolean('quote');
 
         return Inertia::render('Orders/Create', [
             'clients' => $this->clientOptions($request)->map(fn ($client) => [
@@ -121,12 +157,15 @@ class OrderController extends Controller
                 'label' => ucwords(str_replace('_', ' ', $case->value)),
                 'value' => $case->value,
             ]),
-            'typeOptions' => collect(OrderType::cases())->map(fn ($case) => [
-                'label' => ucwords(str_replace('_', ' ', $case->value)),
-                'value' => $case->value,
-            ]),
+            'typeOptions' => collect(OrderType::cases())
+                ->reject(fn ($case) => $case === OrderType::QUOTATION)
+                ->map(fn ($case) => [
+                    'label' => ucwords(str_replace('_', ' ', $case->value)),
+                    'value' => $case->value,
+                ]),
             'currency' => $request->user()->tenant->getSetting('currency', 'USD'),
             'defaultType' => $defaultType,
+            'isQuote' => $isQuote,
         ]);
     }
 
@@ -136,8 +175,9 @@ class OrderController extends Controller
 
         $tenant = $request->user()->tenant;
         $data = $this->validateOrder($request);
+        $isQuote = $request->boolean('quote');
 
-        $order = DB::transaction(function () use ($request, $tenant, $data) {
+        $order = DB::transaction(function () use ($request, $tenant, $data, $isQuote) {
             $sequence = ((int) Order::forTenant($tenant->id)->max('sequence')) + 1;
             $orderNumber = $this->generateOrderNumber($tenant->getSetting('order_number_prefix', ''), $sequence);
 
@@ -151,6 +191,7 @@ class OrderController extends Controller
                 'order_number' => $orderNumber,
                 'sequence' => $sequence,
                 'type' => $data['type'],
+                'is_quote' => $isQuote,
                 'title' => $data['title'],
                 'instructions' => $data['instructions'] ?? null,
                 'status' => OrderStatus::RECEIVED,
@@ -254,6 +295,11 @@ class OrderController extends Controller
             $attachmentRules[] = 'mimes:'.$allowedExtensions->implode(',');
         }
 
+        $allowedTypes = collect(OrderType::cases())
+            ->reject(fn ($case) => $case === OrderType::QUOTATION)
+            ->map->value
+            ->all();
+
         return $request->validate([
             'client_id' => [
                 'required',
@@ -262,14 +308,43 @@ class OrderController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'instructions' => ['nullable', 'string'],
             'priority' => ['required', Rule::in(array_map(fn ($case) => $case->value, OrderPriority::cases()))],
-            'type' => ['required', Rule::in(array_map(fn ($case) => $case->value, OrderType::cases()))],
+            'type' => ['required', Rule::in($allowedTypes)],
             'due_at' => ['nullable', 'date'],
             'price_amount' => ['nullable', 'numeric'],
             'currency' => ['nullable', 'string', 'size:3'],
             'source' => ['nullable', 'string', 'max:255'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => $attachmentRules,
+            'quote' => ['nullable', 'boolean'],
         ]);
+    }
+
+    private function typeStats(int $tenantId, string $type, bool $isQuote): ?array
+    {
+        if ($type === 'all') {
+            return null;
+        }
+
+        $base = Order::forTenant($tenantId)
+            ->where('type', $type)
+            ->when($isQuote, fn ($query) => $query->where('is_quote', true), function ($query) {
+                $query->where(function ($inner) {
+                    $inner->where('is_quote', false)->orWhereNull('is_quote');
+                });
+            });
+
+        $openStatuses = [
+            OrderStatus::DELIVERED,
+            OrderStatus::CLOSED,
+            OrderStatus::CANCELLED,
+        ];
+
+        return [
+            'total' => (clone $base)->count(),
+            'open' => (clone $base)->whereNotIn('status', $openStatuses)->count(),
+            'today' => (clone $base)->whereDate('created_at', Carbon::today())->count(),
+            'in_progress' => (clone $base)->where('status', OrderStatus::IN_PROGRESS)->count(),
+        ];
     }
 
     private function clientOptions(Request $request)

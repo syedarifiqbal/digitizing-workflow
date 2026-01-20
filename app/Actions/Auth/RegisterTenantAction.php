@@ -52,6 +52,7 @@ class RegisterTenantAction
             'max_upload_mb' => 25,
             'currency' => 'USD',
             'order_number_prefix' => '',
+            'show_order_cards' => false,
         ];
     }
 }

@@ -74,7 +74,7 @@ const confirmDelete = () => {
         return;
     }
 
-    const options = {
+    const baseOptions = {
         preserveScroll: true,
         onSuccess: () => {
             selectedIds.value = [];
@@ -86,9 +86,12 @@ const confirmDelete = () => {
     };
 
     if (modal.ids.length > 1) {
-        router.delete(route('users.bulk-destroy'), { ids: modal.ids }, options);
+        router.delete(route('users.bulk-destroy'), {
+            ...baseOptions,
+            data: { ids: [...modal.ids] },
+        });
     } else {
-        router.delete(route('users.destroy', modal.ids[0]), {}, options);
+        router.delete(route('users.destroy', modal.ids[0]), baseOptions);
     }
 };
 

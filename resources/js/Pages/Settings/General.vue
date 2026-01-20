@@ -23,6 +23,7 @@ const form = useForm({
     max_upload_mb: props.settings.max_upload_mb ?? 25,
     currency: props.settings.currency ?? 'USD',
     order_number_prefix: props.settings.order_number_prefix ?? '',
+    show_order_cards: props.settings.show_order_cards ?? false,
 });
 
 const submit = () => {
@@ -87,6 +88,21 @@ const successMessage = computed(() => page.props.flash?.success);
                                     </div>
                                     <p v-if="form.errors.email_verification_required" class="text-sm text-red-600">
                                         {{ form.errors.email_verification_required }}
+                                    </p>
+
+                                    <div class="flex items-center">
+                                        <input
+                                            v-model="form.show_order_cards"
+                                            id="show_order_cards"
+                                            type="checkbox"
+                                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <label class="ml-2 block text-sm text-gray-700" for="show_order_cards">
+                                            Show quick action cards on Orders dashboard
+                                        </label>
+                                    </div>
+                                    <p v-if="form.errors.show_order_cards" class="text-sm text-red-600">
+                                        {{ form.errors.show_order_cards }}
                                     </p>
                                 </div>
                             </div>

@@ -38,6 +38,7 @@ class TenantSettingsController extends Controller
             'max_upload_mb' => ['required', 'integer', 'min:1', 'max:100'],
             'currency' => ['required', 'string', 'size:3'],
             'order_number_prefix' => ['nullable', 'string', 'max:10'],
+            'show_order_cards' => ['required', 'boolean'],
         ]);
 
         $tenant = $request->user()->tenant;
@@ -52,6 +53,7 @@ class TenantSettingsController extends Controller
                 'max_upload_mb' => $validated['max_upload_mb'],
                 'currency' => $validated['currency'],
                 'order_number_prefix' => $validated['order_number_prefix'] ?? '',
+                'show_order_cards' => $validated['show_order_cards'],
             ],
         ]);
 
@@ -68,6 +70,7 @@ class TenantSettingsController extends Controller
             'max_upload_mb' => 25,
             'currency' => 'USD',
             'order_number_prefix' => '',
+            'show_order_cards' => false,
         ];
     }
 }

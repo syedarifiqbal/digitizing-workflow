@@ -12,6 +12,10 @@ const props = defineProps({
         type: String,
         default: 'digitizing',
     },
+    isQuote: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const form = useForm({
@@ -25,6 +29,7 @@ const form = useForm({
     currency: props.currency ?? 'USD',
     source: '',
     attachments: [],
+    quote: props.isQuote ? 1 : 0,
 });
 
 const handleFiles = (event) => {
@@ -42,14 +47,26 @@ const submit = () => {
         forceFormData: true,
     });
 };
+
+const selectedTypeLabel = computed(() => {
+    const option = props.typeOptions?.find((opt) => opt.value === form.type);
+    if (option?.label) {
+        return option.label;
+    }
+    return (form.type ?? '').split('_').join(' ');
+});
 </script>
 
 <template>
     <AppLayout>
         <template #header>
             <div>
-                <h2 class="text-xl font-semibold text-gray-800">New Order</h2>
-                <p class="mt-1 text-sm text-gray-600">Capture client intake details and upload artwork.</p>
+                <h2 class="text-xl font-semibold text-gray-800">
+                    New {{ selectedTypeLabel }} {{ props.isQuote ? 'Quote' : 'Order' }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    {{ props.isQuote ? 'Create a quote for the selected service type.' : 'Capture client intake details and upload artwork.' }}
+                </p>
             </div>
         </template>
 
@@ -123,11 +140,12 @@ const submit = () => {
                             </div>
 
                             <div>
-                                <label class="hidden text-sm font-medium text-gray-700">Order type</label>
-                                <p class="mt-1 text-sm font-semibold capitalize text-gray-900">
-                                    {{ (form.type || '').split('_').join(' ') }}
+                                <label class="block text-sm font-medium text-gray-700">Order type</label>
+                                <p class="mt-1 text-sm font-semibold text-gray-900">
+                                    {{ selectedTypeLabel }}
                                 </p>
                                 <input type="hidden" name="type" :value="form.type" />
+                                <input type="hidden" name="quote" :value="form.quote" />
                             </div>
 
                             <div class="grid gap-6 md:grid-cols-2">

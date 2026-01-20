@@ -13,6 +13,12 @@ const props = defineProps({
     typeOptions: Array,
     clients: Array,
     designers: Array,
+    counts: Object,
+    typeStats: Object,
+    showOrderCards: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const filters = reactive({
@@ -20,12 +26,54 @@ const filters = reactive({
     status: props.filters?.status ?? 'all',
     priority: props.filters?.priority ?? 'all',
     type: props.filters?.type ?? 'all',
+    quote: props.filters?.quote ?? '0',
     client_id: props.filters?.client_id ?? 'all',
     designer_id: props.filters?.designer_id ?? 'all',
 });
 
-const orders = computed(() => props.orders?.data ?? []);
-const links = computed(() => props.orders?.links ?? []);
+const orders = computed(() => {
+    if (Array.isArray(props.orders)) {
+        return props.orders;
+    }
+
+    if (Array.isArray(props.orders?.data?.data)) {
+        return props.orders.data.data;
+    }
+
+    return props.orders?.data ?? [];
+});
+
+const links = computed(() => {
+    if (props.orders?.links) {
+        return props.orders.links;
+    }
+
+    if (props.orders?.data?.links) {
+        return props.orders.data.links;
+    }
+
+    return [];
+});
+const counts = computed(() => props.counts ?? { orders: {}, quotes: {} });
+const isQuoteView = computed(() => filters.quote === '1');
+const countValue = (key) => (isQuoteView.value ? counts.value.quotes?.[key] : counts.value.orders?.[key]) ?? 0;
+const quoteCount = (key) => counts.value.quotes?.[key] ?? 0;
+const totalQuotes = computed(() => Object.values(counts.value.quotes ?? {}).reduce((sum, val) => sum + (val ?? 0), 0));
+const coreTypes = ['digitizing', 'vector', 'patch'];
+const statsTypes = [
+    { key: 'digitizing', label: 'Digitizing Orders' },
+    { key: 'vector', label: 'Vector Orders' },
+    { key: 'patch', label: 'Patch Orders' },
+];
+const quoteStats = [
+    { key: 'digitizing', label: 'Digitizing Quotes' },
+    { key: 'vector', label: 'Vector Quotes' },
+    { key: 'patch', label: 'Patch Quotes' },
+];
+const labelFor = (type) => type.charAt(0).toUpperCase() + type.slice(1);
+const isAllView = computed(() => (filters.type ?? 'all') === 'all');
+const typeStats = computed(() => props.typeStats ?? null);
+const showTypeStats = computed(() => !isAllView.value && typeStats.value);
 
 const selectedIds = ref([]);
 const selectAllChecked = computed(() => orders.value.length > 0 && selectedIds.value.length === orders.value.length);
@@ -70,7 +118,7 @@ const confirmDelete = () => {
         return;
     }
 
-    const options = {
+    const baseOptions = {
         preserveScroll: true,
         onSuccess: () => {
             selectedIds.value = [];
@@ -82,9 +130,12 @@ const confirmDelete = () => {
     };
 
     if (modal.ids.length > 1) {
-        router.delete(route('orders.bulk-destroy'), { ids: modal.ids }, options);
+        router.delete(route('orders.bulk-destroy'), {
+            ...baseOptions,
+            data: { ids: [...modal.ids] },
+        });
     } else {
-        router.delete(route('orders.destroy', modal.ids[0]), {}, options);
+        router.delete(route('orders.destroy', modal.ids[0]), baseOptions);
     }
 };
 
@@ -106,20 +157,138 @@ const clearSelection = () => {
         <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-xl font-semibold text-gray-800">Orders</h2>
-                    <p class="text-sm text-gray-600">Track intake orders, priorities, and workflow status.</p>
+                    <h2 class="text-xl font-semibold text-gray-800">
+                        <template v-if="isQuoteView">
+                            {{ isAllView ? 'All Quotes' : `${labelFor(filters.type)} Quotes` }}
+                        </template>
+                        <template v-else>
+                            {{ isAllView ? 'All Orders' : `${labelFor(filters.type)} Orders` }}
+                        </template>
+                    </h2>
+                    <p class="text-sm text-gray-600">
+                        <template v-if="isQuoteView">
+                            Manage {{ isAllView ? 'all pending quotes' : `${labelFor(filters.type)} quotes` }} for clients.
+                        </template>
+                        <template v-else>
+                            Track {{ isAllView ? 'all intake orders' : `${labelFor(filters.type)} jobs` }}, priorities, and workflow status.
+                        </template>
+                    </p>
                 </div>
                 <Link
-                    :href="route('orders.create')"
+                    v-if="!isAllView"
+                    :href="route('orders.create', { type: filters.type, quote: isQuoteView ? 1 : 0 })"
                     class="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
-                    New Order
+                    New {{ labelFor(filters.type) }} {{ isQuoteView ? 'Quote' : 'Order' }}
                 </Link>
             </div>
         </template>
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
+                <div v-if="showTypeStats" class="grid gap-6 md:grid-cols-4">
+                    <div class="rounded-lg bg-white p-5 shadow-sm border">
+                        <p class="text-sm text-gray-500">Total</p>
+                        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ typeStats.total }}</p>
+                    </div>
+                    <div class="rounded-lg bg-white p-5 shadow-sm border">
+                        <p class="text-sm text-gray-500">Open</p>
+                        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ typeStats.open }}</p>
+                    </div>
+                    <div class="rounded-lg bg-white p-5 shadow-sm border">
+                        <p class="text-sm text-gray-500">Today</p>
+                        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ typeStats.today }}</p>
+                    </div>
+                    <div class="rounded-lg bg-white p-5 shadow-sm border">
+                        <p class="text-sm text-gray-500">In Progress</p>
+                        <p class="mt-2 text-3xl.font-semibold text-gray-900">{{ typeStats.in_progress }}</p>
+                    </div>
+                </div>
+                <div class="grid gap-6 md:grid-cols-3">
+                    <div v-if="isAllView && !isQuoteView" v-for="stat in statsTypes" :key="'stat-'+stat.key" class="rounded-lg bg-white p-5 shadow-sm border">
+                        <p class="text-sm text-gray-500">{{ stat.label }}</p>
+                        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ countValue(stat.key) }}</p>
+                    </div>
+                    <div v-if="showOrderCards && isAllView && !isQuoteView" class="rounded-lg border shadow-sm bg-white">
+                        <div class="rounded-t-lg bg-blue-600 px-4 py-3 text-white font-semibold">Quotes</div>
+                        <ul class="divide-y divide-gray-100">
+                            <li v-for="type in coreTypes" :key="'quote-summary-'+type">
+                                <div class="flex flex-col">
+                                    <Link
+                                        :href="route('orders.create', { type, quote: 1 })"
+                                        class="flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                                    >
+                                        New {{ labelFor(type) }} Quote
+                                    </Link>
+                                    <Link
+                                        :href="route('orders.index', { type, quote: 1 })"
+                                        class="flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 -mt-1"
+                                    >
+                                        All {{ labelFor(type) }} Quotes
+                                        <span class="text-xs font-semibold text-gray-500">{{ quoteCount(type) }}</span>
+                                    </Link>
+                                </div>
+                            </li>
+                            <li>
+                                <Link
+                                    :href="route('orders.index', { quote: 1 })"
+                                    class="flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                                >
+                                    All Quotes
+                                    <span class="text-xs font-semibold text-gray-500">{{ totalQuotes }}</span>
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+                    <div v-if="showOrderCards && isAllView && !isQuoteView" class="rounded-lg border shadow-sm bg-white">
+                        <div class="rounded-t-lg bg-indigo-600 px-4 py-3 text-white font-semibold">Orders</div>
+                        <ul class="divide-y divide-gray-100">
+                            <li v-for="type in coreTypes" :key="'quick-order-'+type">
+                                <div class="flex flex-col">
+                                    <Link
+                                        :href="route('orders.create', { type })"
+                                        class="flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                                    >
+                                        New {{ labelFor(type) }} Order
+                                    </Link>
+                                    <Link
+                                        :href="route('orders.index', { type })"
+                                        class="flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 -mt-1"
+                                    >
+                                        All {{ labelFor(type) }} Orders
+                                        <span class="text-xs font-semibold text-gray-500">{{ countValue(type) }}</span>
+                                    </Link>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div v-if="showOrderCards && isAllView && !isQuoteView" class="rounded-lg border shadow-sm bg-white">
+                        <div class="rounded-t-lg bg-red-600 px-4 py-3 text-white font-semibold">Administration</div>
+                        <ul class="divide-y divide-gray-100">
+                            <li>
+                                <Link :href="route('clients.index')" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+                                    Customers
+                                </Link>
+                            </li>
+                            <li>
+                                <Link :href="route('users.index')" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+                                    Employees
+                                </Link>
+                            </li>
+                            <li>
+                                <Link :href="route('settings.edit')" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+                                    Tenant Settings
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div v-if="showOrderCards && isAllView && isQuoteView" class="grid gap-6 md:grid-cols-3">
+                    <div v-for="stat in quoteStats" :key="'quote-stat-'+stat.key" class="rounded-lg bg-white p-5 shadow-sm border">
+                        <p class="text-sm text-gray-500">{{ stat.label }}</p>
+                        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ countValue(stat.key) }}</p>
+                    </div>
+                </div>
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="p-6">
                         <form @submit.prevent="submitFilters" class="grid gap-4 md:grid-cols-6">
@@ -204,7 +373,27 @@ const clearSelection = () => {
                                 </select>
                             </div>
 
-                            <div class="md:col-span-6 flex justify-end">
+                            <div class="md:col-span-6 flex justify-end gap-3">
+                                <template v-if="isAllView">
+                                    <Link
+                                        :href="route('orders.create', { type: 'digitizing', quote: isQuoteView ? 1 : 0 })"
+                                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    >
+                                        New Digitizing {{ isQuoteView ? 'Quote' : 'Order' }}
+                                    </Link>
+                                    <Link
+                                        :href="route('orders.create', { type: 'vector', quote: isQuoteView ? 1 : 0 })"
+                                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    >
+                                        New Vector {{ isQuoteView ? 'Quote' : 'Order' }}
+                                    </Link>
+                                    <Link
+                                        :href="route('orders.create', { type: 'patch', quote: isQuoteView ? 1 : 0 })"
+                                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    >
+                                        New Patch {{ isQuoteView ? 'Quote' : 'Order' }}
+                                    </Link>
+                                </template>
                                 <button
                                     type="submit"
                                     class="inline-flex items-center rounded-md border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"

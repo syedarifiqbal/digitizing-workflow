@@ -25,6 +25,7 @@ class Order extends Model
         'sequence',
         'type',
         'title',
+        'is_quote',
         'instructions',
         'status',
         'priority',
@@ -47,6 +48,7 @@ class Order extends Model
             'status' => OrderStatus::class,
             'priority' => OrderPriority::class,
             'type' => OrderType::class,
+            'is_quote' => 'boolean',
         ];
     }
 
