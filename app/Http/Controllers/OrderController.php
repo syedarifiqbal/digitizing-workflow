@@ -8,6 +8,7 @@ use App\Enums\OrderType;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\User;
+use App\Actions\Orders\AssignOrderAction;
 use App\Services\FileStorageService;
 use Illuminate\Support\Facades\URL;
 use Carbon\Carbon;
@@ -231,11 +232,14 @@ class OrderController extends Controller
         return redirect()->route('orders.show', $order)->with('success', 'Order created.');
     }
 
-    public function show(Order $order): Response
+    public function show(Request $request, Order $order): Response
     {
         $this->authorize('view', $order);
 
         $order->load(['client', 'designer', 'files']);
+
+        $user = $request->user();
+        $canAssign = $user->isAdmin() || $user->isManager();
 
         return Inertia::render('Orders/Show', [
             'order' => [
@@ -244,7 +248,6 @@ class OrderController extends Controller
                 'title' => $order->title,
                 'type' => $order->type->value,
                 'status' => $order->status->value,
-                'type' => $order->type->value,
                 'priority' => $order->priority->value,
                 'instructions' => $order->instructions,
                 'client' => [
@@ -273,6 +276,11 @@ class OrderController extends Controller
                     ['file' => $file->id]
                 ),
             ]),
+            'canAssign' => $canAssign,
+            'designers' => $canAssign ? $this->designerOptions($request)->map(fn ($designer) => [
+                'id' => $designer->id,
+                'name' => $designer->name,
+            ]) : [],
         ]);
     }
 
@@ -371,6 +379,43 @@ class OrderController extends Controller
         }
 
         return back()->with('success', 'Selected orders deleted.');
+    }
+
+    public function assign(Request $request, Order $order, AssignOrderAction $action): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $validated = $request->validate([
+            'designer_id' => [
+                'required',
+                Rule::exists('users', 'id')->where('tenant_id', $request->user()->tenant_id),
+            ],
+        ]);
+
+        $designer = User::findOrFail($validated['designer_id']);
+
+        if (! $designer->isDesigner()) {
+            return back()->withErrors(['designer_id' => 'Selected user is not a designer.']);
+        }
+
+        $action->execute($order, $designer, $request->user());
+
+        return back()->with('success', 'Designer assigned.');
+    }
+
+    public function unassign(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        // End current assignment
+        $order->assignments()
+            ->whereNull('ended_at')
+            ->update(['ended_at' => now()]);
+
+        // Clear designer from order
+        $order->update(['designer_id' => null]);
+
+        return back()->with('success', 'Designer unassigned.');
     }
 
     private function validateOrder(Request $request): array

@@ -77,6 +77,16 @@ class Order extends Model
         return $this->hasMany(OrderFile::class);
     }
 
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(OrderAssignment::class);
+    }
+
+    public function currentAssignment()
+    {
+        return $this->hasOne(OrderAssignment::class)->whereNull('ended_at')->latestOfMany('assigned_at');
+    }
+
     public function scopeForTenant($query, int $tenantId)
     {
         return $query->where('tenant_id', $tenantId);

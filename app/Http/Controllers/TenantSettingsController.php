@@ -39,6 +39,7 @@ class TenantSettingsController extends Controller
             'currency' => ['required', 'string', 'size:3'],
             'order_number_prefix' => ['nullable', 'string', 'max:10'],
             'show_order_cards' => ['required', 'boolean'],
+            'notify_on_assignment' => ['required', 'boolean'],
         ]);
 
         $tenant = $request->user()->tenant;
@@ -54,6 +55,7 @@ class TenantSettingsController extends Controller
                 'currency' => $validated['currency'],
                 'order_number_prefix' => $validated['order_number_prefix'] ?? '',
                 'show_order_cards' => $validated['show_order_cards'],
+                'notify_on_assignment' => $validated['notify_on_assignment'],
             ],
         ]);
 
@@ -71,6 +73,7 @@ class TenantSettingsController extends Controller
             'currency' => 'USD',
             'order_number_prefix' => '',
             'show_order_cards' => false,
+            'notify_on_assignment' => true,
         ];
     }
 }

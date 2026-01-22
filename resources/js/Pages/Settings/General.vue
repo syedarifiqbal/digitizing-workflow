@@ -25,6 +25,7 @@ const form = useForm({
     currency: props.settings.currency ?? "USD",
     order_number_prefix: props.settings.order_number_prefix ?? "",
     show_order_cards: props.settings.show_order_cards ?? false,
+    notify_on_assignment: props.settings.notify_on_assignment ?? true,
 });
 
 const submit = () => {
@@ -176,6 +177,34 @@ const successMessage = computed(() => page.props.flash?.success);
                                             }}
                                         </p>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    Notifications
+                                </h3>
+                                <div class="mt-4 space-y-4">
+                                    <div class="flex items-center">
+                                        <input
+                                            v-model="form.notify_on_assignment"
+                                            id="notify_on_assignment"
+                                            type="checkbox"
+                                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <label
+                                            class="ml-2 block text-sm text-gray-700"
+                                            for="notify_on_assignment"
+                                        >
+                                            Send email notification when an order is assigned to a designer
+                                        </label>
+                                    </div>
+                                    <p
+                                        v-if="form.errors.notify_on_assignment"
+                                        class="text-sm text-red-600"
+                                    >
+                                        {{ form.errors.notify_on_assignment }}
+                                    </p>
                                 </div>
                             </div>
 

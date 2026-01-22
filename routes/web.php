@@ -64,6 +64,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('clients/{client}/status', [ClientController::class, 'toggleStatus'])->name('clients.status');
         Route::delete('orders/bulk', [OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
         Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+        Route::post('orders/{order}/assign', [OrderController::class, 'assign'])->name('orders.assign');
+        Route::delete('orders/{order}/assign', [OrderController::class, 'unassign'])->name('orders.unassign');
         Route::get('orders/files/{file}/download', [OrderFileController::class, 'download'])
             ->name('orders.files.download')
             ->middleware('signed');
