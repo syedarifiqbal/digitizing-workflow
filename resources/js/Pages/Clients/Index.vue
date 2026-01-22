@@ -4,6 +4,8 @@ import { Link, router } from '@inertiajs/vue3';
 import { EyeIcon, PencilSquareIcon, ArrowsRightLeftIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import DataTable from '@/Components/DataTable.vue';
+import PaginationControls from '@/Components/PaginationControls.vue';
 
 const props = defineProps({
     filters: Object,
@@ -22,9 +24,10 @@ const statusOptions = [
 ];
 
 const clients = computed(() => props.clients?.data ?? props.clients ?? []);
+const paginationLinks = computed(() => props.clients?.links ?? props.clients?.data?.links ?? []);
+const paginationMeta = computed(() => props.clients?.meta ?? props.clients?.data?.meta ?? null);
 
 const selectedIds = ref([]);
-const selectAllChecked = computed(() => clients.value.length > 0 && selectedIds.value.length === clients.value.length);
 
 watch(
     () => props.clients,
@@ -94,17 +97,17 @@ const clearSelections = () => {
     selectedIds.value = [];
 };
 
-const toggleSelectAll = (event) => {
-    if (event.target.checked) {
-        selectedIds.value = clients.value.map((client) => client.id);
-    } else {
-        selectedIds.value = [];
-    }
-};
-
 const toggleStatus = (client) => {
     router.patch(route('clients.status', client.id), {}, { preserveScroll: true });
 };
+
+const clientColumns = [
+    { key: 'name', label: 'Client' },
+    { key: 'contact', label: 'Contact' },
+    { key: 'company', label: 'Company' },
+    { key: 'status', label: 'Status' },
+    { key: 'actions', label: '', headerClass: 'text-right' },
+];
 </script>
 
 <template>
@@ -186,137 +189,82 @@ const toggleStatus = (client) => {
                             </div>
                         </div>
 
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead>
-                                    <tr>
-                                        <th class="px-4 py-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                :checked="selectAllChecked"
-                                                @change="toggleSelectAll"
-                                            />
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Name
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Contact
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Company
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Status
-                                        </th>
-                                        <th class="px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200" v-if="clients.length">
-                                    <tr v-for="client in clients" :key="client.id" class="hover:bg-gray-50">
-                                        <td class="px-4 py-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                :value="client.id"
-                                                v-model="selectedIds"
-                                            />
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <Link
-                                                :href="route('clients.show', client.id)"
-                                                class="font-medium text-gray-900 hover:text-indigo-600"
-                                            >
-                                                {{ client.name }}
-                                            </Link>
-                                            <p class="text-sm text-gray-500">Created {{ client.created_at }}</p>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <div class="text-sm text-gray-900">{{ client.email ?? '—' }}</div>
-                                            <div class="text-sm text-gray-500">{{ client.phone ?? '' }}</div>
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-900">
-                                            {{ client.company ?? '—' }}
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <span
-                                                :class="[
-                                                    'inline-flex rounded-full px-2 text-xs font-semibold leading-5',
-                                                    client.status === 'active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-yellow-100 text-yellow-800',
-                                                ]"
-                                            >
-                                                {{ client.status }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3 text-right text-sm font-medium space-x-1">
-                                            <Link
-                                                :href="route('clients.show', client.id)"
-                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-gray-900"
-                                                title="View"
-                                            >
-                                                <span class="sr-only">View</span>
-                                                <EyeIcon class="h-5 w-5" />
-                                            </Link>
-                                            <Link
-                                                :href="route('clients.edit', client.id)"
-                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-indigo-600"
-                                                title="Edit"
-                                            >
-                                                <span class="sr-only">Edit</span>
-                                                <PencilSquareIcon class="h-5 w-5" />
-                                            </Link>
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-yellow-600"
-                                                @click="toggleStatus(client)"
-                                                :title="client.status === 'active' ? 'Mark inactive' : 'Mark active'"
-                                            >
-                                                <span class="sr-only">Toggle status</span>
-                                                <ArrowsRightLeftIcon class="h-5 w-5" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-red-600"
-                                                @click="openDeleteModal(client.id)"
-                                                title="Delete"
-                                            >
-                                                <span class="sr-only">Delete</span>
-                                                <TrashIcon class="h-5 w-5" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tbody v-else>
-                                    <tr>
-                                        <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">
-                                            No clients found.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div v-if="props.clients?.links" class="mt-4 flex flex-wrap gap-2">
-                            <template v-for="link in props.clients.links" :key="link.url ?? link.label">
+                        <DataTable
+                            :columns="clientColumns"
+                            :rows="clients.data"
+                            selectable
+                            v-model:selected-ids="selectedIds"
+                            empty-text="No clients found."
+                        >
+                            <template #cell-name="{ row }">
                                 <Link
-                                    v-if="link.url"
-                                    :href="link.url"
-                                    v-html="link.label"
-                                    class="rounded border px-3 py-1 text-sm"
-                                    :class="link.active
-                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
-                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
-                                />
-                                <span
-                                    v-else
-                                    v-html="link.label"
-                                    class="rounded border border-gray-200 px-3 py-1 text-sm text-gray-400"
-                                />
+                                    :href="route('clients.show', row.id)"
+                                    class="font-medium text-gray-900 hover:text-indigo-600"
+                                >
+                                    {{ row.name }}
+                                </Link>
+                                <p class="text-sm text-gray-500">Created {{ row.created_at }}</p>
                             </template>
-                        </div>
+                            <template #cell-contact="{ row }">
+                                <div class="text-sm text-gray-900">{{ row.email ?? '—' }}</div>
+                                <div class="text-sm text-gray-500">{{ row.phone ?? '' }}</div>
+                            </template>
+                            <template #cell-company="{ row }">
+                                <span class="text-sm text-gray-900">{{ row.company ?? '—' }}</span>
+                            </template>
+                            <template #cell-status="{ row }">
+                                <span
+                                    :class="[
+                                        'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
+                                        row.status === 'active'
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-yellow-100 text-yellow-800',
+                                    ]"
+                                >
+                                    {{ row.status }}
+                                </span>
+                            </template>
+                            <template #cell-actions="{ row }">
+                                <div class="text-right text-sm font-medium space-x-1">
+                                    <Link
+                                        :href="route('clients.show', row.id)"
+                                        class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-gray-900"
+                                        title="View"
+                                    >
+                                        <span class="sr-only">View</span>
+                                        <EyeIcon class="h-5 w-5" />
+                                    </Link>
+                                    <Link
+                                        :href="route('clients.edit', row.id)"
+                                        class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-indigo-600"
+                                        title="Edit"
+                                    >
+                                        <span class="sr-only">Edit</span>
+                                        <PencilSquareIcon class="h-5 w-5" />
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-yellow-600"
+                                        @click="toggleStatus(row)"
+                                        :title="row.status === 'active' ? 'Mark inactive' : 'Mark active'"
+                                    >
+                                        <span class="sr-only">Toggle status</span>
+                                        <ArrowsRightLeftIcon class="h-5 w-5" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-red-600"
+                                        @click="openDeleteModal(row.id)"
+                                        title="Delete"
+                                    >
+                                        <span class="sr-only">Delete</span>
+                                        <TrashIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </template>
+                        </DataTable>
+
+                        <PaginationControls :meta="paginationMeta" :links="paginationLinks" label="clients" />
                     </div>
                 </div>
             </div>

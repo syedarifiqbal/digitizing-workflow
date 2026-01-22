@@ -52,18 +52,27 @@ class UserController extends Controller
                 'status' => $filters['status'] ?? 'all',
             ],
             'roles' => $this->roles,
-            'users' => $users->through(fn (User $user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'status' => $user->status,
-                'role' => $user->roles->pluck('name')->first(),
-                'client' => $user->client ? [
-                    'id' => $user->client->id,
-                    'name' => $user->client->name,
-                ] : null,
-                'created_at' => $user->created_at?->toDateTimeString(),
-            ]),
+            'users' => [
+                'data' => $users->through(fn (User $user) => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'status' => $user->status,
+                    'role' => $user->roles->pluck('name')->first(),
+                    'client' => $user->client ? [
+                        'id' => $user->client->id,
+                        'name' => $user->client->name,
+                    ] : null,
+                    'created_at' => $user->created_at?->toDateTimeString(),
+                ]),
+                'links' => $users->linkCollection(),
+                'meta' => [
+                    'total' => $users->total(),
+                    'from' => $users->firstItem(),
+                    'to' => $users->lastItem(),
+                    'per_page' => $users->perPage(),
+                ],
+            ],
         ]);
     }
 

@@ -4,6 +4,8 @@ import { Link, router } from '@inertiajs/vue3';
 import { EyeIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import DataTable from '@/Components/DataTable.vue';
+import PaginationControls from '@/Components/PaginationControls.vue';
 
 const props = defineProps({
     filters: Object,
@@ -31,29 +33,9 @@ const filters = reactive({
     designer_id: props.filters?.designer_id ?? 'all',
 });
 
-const orders = computed(() => {
-    if (Array.isArray(props.orders)) {
-        return props.orders;
-    }
-
-    if (Array.isArray(props.orders?.data?.data)) {
-        return props.orders.data.data;
-    }
-
-    return props.orders?.data ?? [];
-});
-
-const links = computed(() => {
-    if (props.orders?.links) {
-        return props.orders.links;
-    }
-
-    if (props.orders?.data?.links) {
-        return props.orders.data.links;
-    }
-
-    return [];
-});
+const orders = computed(() => props.orders?.data ?? props.orders ?? []);
+const paginationLinks = computed(() => props.orders?.links ?? props.orders?.data?.links ?? []);
+const paginationMeta = computed(() => props.orders?.meta ?? props.orders?.data?.meta ?? null);
 const counts = computed(() => props.counts ?? { orders: {}, quotes: {} });
 const isQuoteView = computed(() => filters.quote === '1');
 const countValue = (key) => (isQuoteView.value ? counts.value.quotes?.[key] : counts.value.orders?.[key]) ?? 0;
@@ -76,7 +58,6 @@ const typeStats = computed(() => props.typeStats ?? null);
 const showTypeStats = computed(() => !isAllView.value && typeStats.value);
 
 const selectedIds = ref([]);
-const selectAllChecked = computed(() => orders.value.length > 0 && selectedIds.value.length === orders.value.length);
 
 watch(
     () => props.orders,
@@ -139,17 +120,19 @@ const confirmDelete = () => {
     }
 };
 
-const toggleSelectAll = (event) => {
-    if (event.target.checked) {
-        selectedIds.value = orders.value.map((order) => order.id);
-    } else {
-        selectedIds.value = [];
-    }
-};
-
 const clearSelection = () => {
     selectedIds.value = [];
 };
+
+const orderColumns = [
+    { key: 'order', label: 'Order' },
+    { key: 'type', label: 'Type' },
+    { key: 'client', label: 'Client' },
+    { key: 'designer', label: 'Designer' },
+    { key: 'status', label: 'Status' },
+    { key: 'priority', label: 'Priority' },
+    { key: 'actions', label: '', headerClass: 'text-right' },
+];
 </script>
 
 <template>
@@ -426,134 +409,83 @@ const clearSelection = () => {
                             </div>
                         </div>
 
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead>
-                                    <tr>
-                                        <th class="px-4 py-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                :checked="selectAllChecked"
-                                                @change="toggleSelectAll"
-                                            />
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Order
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Type
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Client
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Designer
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Status
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Priority
-                                        </th>
-                                        <th class="px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200" v-if="orders.length">
-                                    <tr v-for="order in orders" :key="order.id" class="hover:bg-gray-50">
-                                        <td class="px-4 py-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                :value="order.id"
-                                                v-model="selectedIds"
-                                            />
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <div class="font-medium text-gray-900">{{ order.order_number }}</div>
-                                            <p class="text-sm text-gray-600">{{ order.title }}</p>
-                                            <p class="text-xs text-gray-400">Created {{ order.created_at }}</p>
-                                        </td>
-                                        <td class="px-4 py-3 text-sm capitalize text-gray-900">
-                                            {{ (order.type || '').split('_').join(' ') }}
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-900">{{ order.client ?? '—' }}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-900">{{ order.designer ?? '—' }}</td>
-                                        <td class="px-4 py-3">
-                                            <span
-                                                :class="[
-                                                    'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
-                                                    order.status === 'delivered' || order.status === 'approved'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : order.status === 'revision_requested'
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : 'bg-gray-100 text-gray-800',
-                                                ]"
-                                            >
-                                                {{ (order.status || '').split('_').join(' ') }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <span
-                                                :class="[
-                                                    'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
-                                                    order.priority === 'rush'
-                                                        ? 'bg-red-100 text-red-800'
-                                                        : 'bg-blue-100 text-blue-800',
-                                                ]"
-                                            >
-                                                {{ order.priority }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3 text-right text-sm font-medium space-x-1">
-                                            <Link
-                                                :href="route('orders.show', order.id)"
-                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-gray-900"
-                                                title="View"
-                                            >
-                                                <span class="sr-only">View</span>
-                                                <EyeIcon class="h-5 w-5" />
-                                            </Link>
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-red-600"
-                                                @click="openDeleteModal(order.id)"
-                                                title="Delete"
-                                            >
-                                                <span class="sr-only">Delete</span>
-                                                <TrashIcon class="h-5 w-5" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tbody v-else>
-                                    <tr>
-                                        <td colspan="8" class="px-4 py-6 text-center text-sm text-gray-500">
-                                            No orders found.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div v-if="links.length" class="mt-4 flex flex-wrap gap-2">
-                            <template v-for="link in links" :key="link.url ?? link.label">
-                                <Link
-                                    v-if="link.url"
-                                    :href="link.url"
-                                    v-html="link.label"
-                                    class="rounded border px-3 py-1 text-sm"
-                                    :class="link.active
-                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
-                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
-                                />
-                                <span
-                                    v-else
-                                    v-html="link.label"
-                                    class="rounded border border-gray-200 px-3 py-1 text-sm text-gray-400"
-                                />
+                        <DataTable
+                            :columns="orderColumns"
+                            :rows="orders.data"
+                            selectable
+                            v-model:selected-ids="selectedIds"
+                            :empty-text="isQuoteView ? 'No quotes found.' : 'No orders found.'"
+                        >
+                            <template #cell-order="{ row }">
+                                <div class="font-medium text-gray-900">{{ row.order_number }}</div>
+                                <p class="text-sm text-gray-600">{{ row.title }}</p>
+                                <p class="text-xs text-gray-400">Created {{ row.created_at }}</p>
                             </template>
-                        </div>
+                            <template #cell-type="{ row }">
+                                <span class="text-sm capitalize text-gray-900">
+                                    {{ (row.type || '').split('_').join(' ') }}
+                                </span>
+                            </template>
+                            <template #cell-client="{ row }">
+                                <span class="text-sm text-gray-900">{{ row.client ?? '—' }}</span>
+                            </template>
+                            <template #cell-designer="{ row }">
+                                <span class="text-sm text-gray-900">{{ row.designer ?? '—' }}</span>
+                            </template>
+                            <template #cell-status="{ row }">
+                                <span
+                                    :class="[
+                                        'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
+                                        row.status === 'delivered' || row.status === 'approved'
+                                            ? 'bg-green-100 text-green-800'
+                                            : row.status === 'revision_requested'
+                                                ? 'bg-yellow-100 text-yellow-800'
+                                                : 'bg-gray-100 text-gray-800',
+                                    ]"
+                                >
+                                    {{ (row.status || '').split('_').join(' ') }}
+                                </span>
+                            </template>
+                            <template #cell-priority="{ row }">
+                                <span
+                                    :class="[
+                                        'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
+                                        row.priority === 'rush'
+                                            ? 'bg-red-100 text-red-800'
+                                            : 'bg-blue-100 text-blue-800',
+                                    ]"
+                                >
+                                    {{ row.priority }}
+                                </span>
+                            </template>
+                            <template #cell-actions="{ row }">
+                                <div class="text-right text-sm font-medium space-x-1">
+                                    <Link
+                                        :href="route('orders.show', row.id)"
+                                        class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-gray-900"
+                                        title="View"
+                                    >
+                                        <span class="sr-only">View</span>
+                                        <EyeIcon class="h-5 w-5" />
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-red-600"
+                                        @click="openDeleteModal(row.id)"
+                                        title="Delete"
+                                    >
+                                        <span class="sr-only">Delete</span>
+                                        <TrashIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </template>
+                        </DataTable>
+
+                        <PaginationControls
+                            :meta="paginationMeta"
+                            :links="paginationLinks"
+                            :label="isQuoteView ? 'quotes' : 'orders'"
+                        />
                     </div>
                 </div>
             </div>

@@ -39,15 +39,24 @@ class ClientController extends Controller
                 'search' => $filters['search'] ?? '',
                 'status' => $filters['status'] ?? 'all',
             ],
-            'clients' => $clients->through(fn (Client $client) => [
-                'id' => $client->id,
-                'name' => $client->name,
-                'email' => $client->email,
-                'phone' => $client->phone,
-                'company' => $client->company,
-                'status' => $client->status,
-                'created_at' => $client->created_at?->toDateTimeString(),
-            ]),
+            'clients' => [
+                'data' => $clients->through(fn (Client $client) => [
+                    'id' => $client->id,
+                    'name' => $client->name,
+                    'email' => $client->email,
+                    'phone' => $client->phone,
+                    'company' => $client->company,
+                    'status' => $client->status,
+                    'created_at' => $client->created_at?->toDateTimeString(),
+                ]),
+                'links' => $clients->linkCollection(),
+                'meta' => [
+                    'total' => $clients->total(),
+                    'from' => $clients->firstItem(),
+                    'to' => $clients->lastItem(),
+                    'per_page' => $clients->perPage(),
+                ],
+            ],
         ]);
     }
 

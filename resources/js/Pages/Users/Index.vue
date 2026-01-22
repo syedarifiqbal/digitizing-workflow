@@ -4,6 +4,8 @@ import { Link, router } from '@inertiajs/vue3';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import DataTable from '@/Components/DataTable.vue';
+import PaginationControls from '@/Components/PaginationControls.vue';
 
 const props = defineProps({
     filters: Object,
@@ -28,11 +30,11 @@ const statusOptions = [
     { label: 'Inactive', value: 'inactive' },
 ];
 
-const users = computed(() => props.users?.data ?? []);
-const paginationLinks = computed(() => props.users?.links ?? []);
+const users = computed(() => props.users?.data ?? props.users ?? []);
+const paginationLinks = computed(() => props.users?.links ?? props.users?.data?.links ?? []);
+const paginationMeta = computed(() => props.users?.meta ?? props.users?.data?.meta ?? null);
 
 const selectedIds = ref([]);
-const selectAllChecked = computed(() => users.value.length > 0 && selectedIds.value.length === users.value.length);
 
 watch(
     () => props.users,
@@ -95,17 +97,17 @@ const confirmDelete = () => {
     }
 };
 
-const toggleSelectAll = (event) => {
-    if (event.target.checked) {
-        selectedIds.value = users.value.map((user) => user.id);
-    } else {
-        selectedIds.value = [];
-    }
-};
-
 const clearSelection = () => {
     selectedIds.value = [];
 };
+
+const userColumns = [
+    { key: 'user', label: 'User' },
+    { key: 'role', label: 'Role' },
+    { key: 'status', label: 'Status' },
+    { key: 'client', label: 'Client' },
+    { key: 'actions', label: '', headerClass: 'text-right' },
+];
 </script>
 
 <template>
@@ -200,115 +202,60 @@ const clearSelection = () => {
                             </div>
                         </div>
 
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead>
-                                    <tr>
-                                        <th class="px-4 py-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                :checked="selectAllChecked"
-                                                @change="toggleSelectAll"
-                                            />
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            User
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Role
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Status
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                            Linked Client
-                                        </th>
-                                        <th class="px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200" v-if="users.length">
-                                    <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50">
-                                        <td class="px-4 py-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                                :value="user.id"
-                                                v-model="selectedIds"
-                                            />
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <div class="font-medium text-gray-900">{{ user.name }}</div>
-                                            <div class="text-sm text-gray-500">{{ user.email }}</div>
-                                            <p class="text-xs text-gray-400">Invited {{ user.created_at }}</p>
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-900">
-                                            {{ user.role ?? '—' }}
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <span
-                                                :class="[
-                                                    'inline-flex rounded-full px-2 text-xs font-semibold leading-5',
-                                                    user.status === 'active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-yellow-100 text-yellow-800',
-                                                ]"
-                                            >
-                                                {{ user.status }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-900">
-                                            {{ user.client?.name ?? '—' }}
-                                        </td>
-                                        <td class="px-4 py-3 text-right text-sm font-medium space-x-1">
-                                            <Link
-                                                :href="route('users.edit', user.id)"
-                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-indigo-600"
-                                                title="Edit"
-                                            >
-                                                <span class="sr-only">Edit</span>
-                                                <PencilSquareIcon class="h-5 w-5" />
-                                            </Link>
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-red-600"
-                                                @click="openDeleteModal(user.id)"
-                                                title="Delete"
-                                            >
-                                                <span class="sr-only">Delete</span>
-                                                <TrashIcon class="h-5 w-5" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tbody v-else>
-                                    <tr>
-                                        <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">
-                                            No users found.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div v-if="paginationLinks.length" class="mt-4 flex flex-wrap gap-2">
-                            <template v-for="link in paginationLinks" :key="link.url ?? link.label">
-                                <Link
-                                    v-if="link.url"
-                                    :href="link.url"
-                                    v-html="link.label"
-                                    class="rounded border px-3 py-1 text-sm"
-                                    :class="link.active
-                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
-                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
-                                />
-                                <span
-                                    v-else
-                                    v-html="link.label"
-                                    class="rounded border border-gray-200 px-3 py-1 text-sm text-gray-400"
-                                />
+                        <DataTable
+                            :columns="userColumns"
+                            :rows="users.data"
+                            selectable
+                            v-model:selected-ids="selectedIds"
+                            empty-text="No users found."
+                        >
+                            <template #cell-user="{ row }">
+                                <div class="font-medium text-gray-900">{{ row.name }}</div>
+                                <div class="text-sm text-gray-500">{{ row.email }}</div>
+                                <p class="text-xs text-gray-400">Invited {{ row.created_at }}</p>
                             </template>
-                        </div>
+                            <template #cell-role="{ row }">
+                                <span class="text-sm text-gray-900">{{ row.role ?? '—' }}</span>
+                            </template>
+                            <template #cell-status="{ row }">
+                                <span
+                                    :class="[
+                                        'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
+                                        row.status === 'active'
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-yellow-100 text-yellow-800',
+                                    ]"
+                                >
+                                    {{ row.status }}
+                                </span>
+                            </template>
+                            <template #cell-client="{ row }">
+                                <span class="text-sm text-gray-900">{{ row.client?.name ?? '—' }}</span>
+                            </template>
+                            <template #cell-actions="{ row }">
+                                <div class="text-right text-sm font-medium space-x-1">
+                                    <Link
+                                        :href="route('users.edit', row.id)"
+                                        class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-indigo-600"
+                                        title="Edit"
+                                    >
+                                        <span class="sr-only">Edit</span>
+                                        <PencilSquareIcon class="h-5 w-5" />
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center rounded-full p-2 text-gray-500 hover:text-red-600"
+                                        @click="openDeleteModal(row.id)"
+                                        title="Delete"
+                                    >
+                                        <span class="sr-only">Delete</span>
+                                        <TrashIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </template>
+                        </DataTable>
+
+                        <PaginationControls :meta="paginationMeta" :links="paginationLinks" label="users" />
                     </div>
                 </div>
             </div>

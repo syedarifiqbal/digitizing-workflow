@@ -136,6 +136,12 @@ class OrderController extends Controller
                     'created_at' => $order->created_at?->toDateTimeString(),
                 ]),
                 'links' => $orders->linkCollection(),
+                'meta' => [
+                    'total' => $orders->total(),
+                    'from' => $orders->firstItem(),
+                    'to' => $orders->lastItem(),
+                    'per_page' => $orders->perPage(),
+                ],
             ],
         ]);
     }
