@@ -28,7 +28,7 @@ const statusOptions = [
     { label: "Inactive", value: "inactive" },
 ];
 
-const clients = computed(() => props.clients?.data ?? props.clients ?? []);
+const clients = computed(() => props.clients?.data?.data ?? props.clients?.data ?? []);
 const paginationLinks = computed(
     () => props.clients?.links ?? props.clients?.data?.links ?? []
 );

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
-import { EyeIcon, TrashIcon } from "@heroicons/vue/24/outline";
+import { EyeIcon, PencilSquareIcon, TrashIcon } from "@heroicons/vue/24/outline";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
@@ -33,7 +33,9 @@ const filters = reactive({
     designer_id: props.filters?.designer_id ?? "all",
 });
 
-const orders = computed(() => props.orders?.data ?? props.orders ?? []);
+const orders = computed(() => {
+    return props.orders?.data?.data ?? props.orders?.data ?? [];
+});
 const paginationLinks = computed(
     () => props.orders?.links ?? props.orders?.data?.links ?? []
 );
@@ -209,25 +211,33 @@ const orderColumns = [
 
         <div class="mx-auto max-w-7xl space-y-8">
             <div v-if="showTypeStats" class="grid gap-6 md:grid-cols-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow">
+                <div
+                    class="rounded-2xl border border-slate-200 bg-white p-5 shadow"
+                >
                     <p class="text-sm text-slate-500">Total</p>
                     <p class="mt-2 text-3xl font-semibold text-slate-900">
                         {{ typeStats.total }}
                     </p>
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow">
+                <div
+                    class="rounded-2xl border border-slate-200 bg-white p-5 shadow"
+                >
                     <p class="text-sm text-slate-500">Open</p>
                     <p class="mt-2 text-3xl font-semibold text-slate-900">
                         {{ typeStats.open }}
                     </p>
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow">
+                <div
+                    class="rounded-2xl border border-slate-200 bg-white p-5 shadow"
+                >
                     <p class="text-sm text-slate-500">Today</p>
                     <p class="mt-2 text-3xl font-semibold text-slate-900">
                         {{ typeStats.today }}
                     </p>
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow">
+                <div
+                    class="rounded-2xl border border-slate-200 bg-white p-5 shadow"
+                >
                     <p class="text-sm text-slate-500">In Progress</p>
                     <p class="mt-2 text-3xl font-semibold text-slate-900">
                         {{ typeStats.in_progress }}
@@ -268,7 +278,7 @@ const orderColumns = [
                                 id="search"
                                 type="text"
                                 placeholder="Search order # or title"
-class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-indigo-400 focus:ring-indigo-400"
+                                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-indigo-400 focus:ring-indigo-400"
                             />
                         </div>
 
@@ -436,112 +446,148 @@ class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 t
                 </div>
             </div>
 
-        <div v-if="isAllView" class="grid gap-6 md:grid-cols-3">
-            <div
-                v-if="!isQuoteView"
-                v-for="stat in statsTypes"
-                :key="'overview-'+stat.key"
-                class="rounded-2xl border border-slate-200 bg-white p-5 shadow"
-            >
-                <p class="text-sm text-slate-500">{{ stat.label }}</p>
-                <p class="mt-2 text-3xl font-semibold text-slate-900">
-                    {{ countValue(stat.key) }}
-                </p>
-            </div>
+            <div v-if="isAllView" class="grid gap-6 md:grid-cols-3">
+                <div
+                    v-if="!isQuoteView"
+                    v-for="stat in statsTypes"
+                    :key="'overview-' + stat.key"
+                    class="rounded-2xl border border-slate-200 bg-white p-5 shadow"
+                >
+                    <p class="text-sm text-slate-500">{{ stat.label }}</p>
+                    <p class="mt-2 text-3xl font-semibold text-slate-900">
+                        {{ countValue(stat.key) }}
+                    </p>
+                </div>
 
-            <div
-                v-if="showOrderCards && !isQuoteView"
-                class="rounded-2xl border border-slate-200 bg-white shadow md:col-span-2"
-            >
-                <div class="grid gap-6 md:grid-cols-2">
-                    <div class="rounded-2xl border border-slate-100 bg-gradient-to-r from-sky-100 to-cyan-100 p-4 text-slate-900">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Quick Quotes
-                        </p>
-                        <ul class="mt-3 space-y-2 text-sm">
-                            <li
-                                v-for="type in coreTypes"
-                                :key="'grid-quote-'+type"
-                                class="flex items-center justify-between"
+                <div
+                    v-if="showOrderCards && !isQuoteView"
+                    class="rounded-2xl border border-slate-200 bg-white shadow md:col-span-2"
+                >
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div
+                            class="rounded-2xl border border-slate-100 bg-gradient-to-r from-sky-100 to-cyan-100 p-4 text-slate-900"
+                        >
+                            <p
+                                class="text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
-                                <Link
-                                    :href="route('orders.create', { type, quote: 1 })"
-                                    class="font-medium text-slate-700 underline decoration-dotted decoration-slate-400 hover:text-indigo-600"
+                                Quick Quotes
+                            </p>
+                            <ul class="mt-3 space-y-2 text-sm">
+                                <li
+                                    v-for="type in coreTypes"
+                                    :key="'grid-quote-' + type"
+                                    class="flex items-center justify-between"
                                 >
-                                    New {{ labelFor(type) }} Quote
-                                </Link>
-                                <span class="text-slate-500">{{ quoteCount(type) }}</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="rounded-2xl border border-slate-100 bg-gradient-to-r from-indigo-100 to-purple-100 p-4 text-slate-900">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Quick Orders
-                        </p>
-                        <ul class="mt-3 space-y-2 text-sm">
-                            <li
-                                v-for="type in coreTypes"
-                                :key="'grid-order-'+type"
-                                class="flex items-center justify-between"
+                                    <Link
+                                        :href="
+                                            route('orders.create', {
+                                                type,
+                                                quote: 1,
+                                            })
+                                        "
+                                        class="font-medium text-slate-700 underline decoration-dotted decoration-slate-400 hover:text-indigo-600"
+                                    >
+                                        New {{ labelFor(type) }} Quote
+                                    </Link>
+                                    <span class="text-slate-500">{{
+                                        quoteCount(type)
+                                    }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div
+                            class="rounded-2xl border border-slate-100 bg-gradient-to-r from-indigo-100 to-purple-100 p-4 text-slate-900"
+                        >
+                            <p
+                                class="text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
-                                <Link
-                                    :href="route('orders.create', { type })"
-                                    class="font-medium text-slate-700 underline decoration-dotted decoration-slate-400 hover:text-indigo-600"
+                                Quick Orders
+                            </p>
+                            <ul class="mt-3 space-y-2 text-sm">
+                                <li
+                                    v-for="type in coreTypes"
+                                    :key="'grid-order-' + type"
+                                    class="flex items-center justify-between"
                                 >
-                                    New {{ labelFor(type) }} Order
-                                </Link>
-                                <span class="text-slate-500">{{ countValue(type) }}</span>
-                            </li>
-                        </ul>
+                                    <Link
+                                        :href="route('orders.create', { type })"
+                                        class="font-medium text-slate-700 underline decoration-dotted decoration-slate-400 hover:text-indigo-600"
+                                    >
+                                        New {{ labelFor(type) }} Order
+                                    </Link>
+                                    <span class="text-slate-500">{{
+                                        countValue(type)
+                                    }}</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div
-                v-if="showOrderCards && !isQuoteView"
-                class="rounded-2xl border border-slate-200 bg-white shadow"
-            >
-                <div class="rounded-t-2xl bg-gradient-to-r from-rose-100 to-orange-100 px-4 py-3 text-sm font-semibold text-slate-800">
-                    Administration
-                </div>
-                <ul class="divide-y divide-slate-100 text-sm text-slate-600">
-                    <li>
-                        <Link :href="route('clients.index')" class="block px-4 py-3 transition hover:bg-slate-50">
-                            Clients
-                        </Link>
-                    </li>
-                    <li>
-                        <Link :href="route('users.index')" class="block px-4 py-3 transition hover:bg-slate-50">
-                            Team Members
-                        </Link>
-                    </li>
-                    <li>
-                        <Link :href="route('settings.edit')" class="block px-4 py-3 transition hover:bg-slate-50">
-                            Tenant Settings
-                        </Link>
-                    </li>
-                </ul>
-            </div>
-
-            <div
-                v-if="showOrderCards && isQuoteView"
-                class="rounded-2xl border border-slate-200 bg-white shadow"
-            >
-                <div class="rounded-t-2xl bg-gradient-to-r from-sky-100 to-cyan-100 px-4 py-3 text-sm font-semibold text-slate-800">
-                    Quote Overview
-                </div>
-                <ul class="divide-y divide-slate-100 text-sm text-slate-600">
-                    <li
-                        v-for="stat in quoteStats"
-                        :key="'quote-overview-'+stat.key"
-                        class="flex items-center justify-between px-4 py-3"
+                <div
+                    v-if="showOrderCards && !isQuoteView"
+                    class="rounded-2xl border border-slate-200 bg-white shadow"
+                >
+                    <div
+                        class="rounded-t-2xl bg-gradient-to-r from-rose-100 to-orange-100 px-4 py-3 text-sm font-semibold text-slate-800"
                     >
-                        <span>{{ stat.label }}</span>
-                        <span class="font-semibold text-slate-900">{{ quoteCount(stat.key) }}</span>
-                    </li>
-                </ul>
+                        Administration
+                    </div>
+                    <ul
+                        class="divide-y divide-slate-100 text-sm text-slate-600"
+                    >
+                        <li>
+                            <Link
+                                :href="route('clients.index')"
+                                class="block px-4 py-3 transition hover:bg-slate-50"
+                            >
+                                Clients
+                            </Link>
+                        </li>
+                        <li>
+                            <Link
+                                :href="route('users.index')"
+                                class="block px-4 py-3 transition hover:bg-slate-50"
+                            >
+                                Team Members
+                            </Link>
+                        </li>
+                        <li>
+                            <Link
+                                :href="route('settings.edit')"
+                                class="block px-4 py-3 transition hover:bg-slate-50"
+                            >
+                                Tenant Settings
+                            </Link>
+                        </li>
+                    </ul>
+                </div>
+
+                <div
+                    v-if="showOrderCards && isQuoteView"
+                    class="rounded-2xl border border-slate-200 bg-white shadow"
+                >
+                    <div
+                        class="rounded-t-2xl bg-gradient-to-r from-sky-100 to-cyan-100 px-4 py-3 text-sm font-semibold text-slate-800"
+                    >
+                        Quote Overview
+                    </div>
+                    <ul
+                        class="divide-y divide-slate-100 text-sm text-slate-600"
+                    >
+                        <li
+                            v-for="stat in quoteStats"
+                            :key="'quote-overview-' + stat.key"
+                            class="flex items-center justify-between px-4 py-3"
+                        >
+                            <span>{{ stat.label }}</span>
+                            <span class="font-semibold text-slate-900">{{
+                                quoteCount(stat.key)
+                            }}</span>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
 
             <div
                 class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70"
@@ -588,7 +634,9 @@ class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 t
                             <div class="font-medium text-slate-900">
                                 {{ row.order_number }}
                             </div>
-                            <p class="text-sm text-slate-500">{{ row.title }}</p>
+                            <p class="text-sm text-slate-500">
+                                {{ row.title }}
+                            </p>
                             <p class="text-xs text-slate-400">
                                 Created {{ row.created_at }}
                             </p>
@@ -646,6 +694,14 @@ class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 t
                                 >
                                     <span class="sr-only">View</span>
                                     <EyeIcon class="h-5 w-5" />
+                                </Link>
+                                <Link
+                                    :href="route('orders.edit', row.id)"
+                                    class="inline-flex items-center rounded-full p-2 text-slate-500 hover:text-indigo-600"
+                                    title="Edit"
+                                >
+                                    <span class="sr-only">Edit</span>
+                                    <PencilSquareIcon class="h-5 w-5" />
                                 </Link>
                                 <button
                                     type="button"

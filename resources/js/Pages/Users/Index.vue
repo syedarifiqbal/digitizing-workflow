@@ -30,7 +30,7 @@ const statusOptions = [
     { label: "Inactive", value: "inactive" },
 ];
 
-const users = computed(() => props.users?.data ?? props.users ?? []);
+const users = computed(() => props.users?.data?.data ?? props.users?.data ?? []);
 const paginationLinks = computed(
     () => props.users?.links ?? props.users?.data?.links ?? []
 );

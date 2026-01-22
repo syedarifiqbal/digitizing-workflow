@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\FileStorageService;
+use Illuminate\Support\Facades\URL;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,9 +51,21 @@ class OrderController extends Controller
                     $query->where('priority', $priority);
                 }
             })
-            ->when(($filters['type'] ?? null) && $filters['type'] !== 'all', fn ($query, $type) => $query->where('type', $type))
-            ->when(($filters['client_id'] ?? null) && $filters['client_id'] !== 'all', fn ($query, $clientId) => $query->where('client_id', $clientId))
-            ->when(($filters['designer_id'] ?? null) && $filters['designer_id'] !== 'all', fn ($query, $designerId) => $query->where('designer_id', $designerId))
+            ->when($filters['type'] ?? null, function ($query, $type) {
+                if ($type !== 'all') {
+                    $query->where('type', $type);
+                }
+            })
+            ->when($filters['client_id'] ?? null, function ($query, $clientId) {
+                if ($clientId !== 'all') {
+                    $query->where('client_id', $clientId);
+                }
+            })
+            ->when($filters['designer_id'] ?? null, function ($query, $designerId) {
+                if ($designerId !== 'all') {
+                    $query->where('designer_id', $designerId);
+                }
+            })
             ->when($quoteView, fn ($query) => $query->where('is_quote', true), function ($query) {
                 $query->where(function ($inner) {
                     $inner->where('is_quote', false)->orWhereNull('is_quote');
@@ -254,8 +267,83 @@ class OrderController extends Controller
                 'type' => $file->type,
                 'size' => $file->size,
                 'uploaded_at' => $file->created_at?->toDateTimeString(),
+                'download_url' => URL::temporarySignedRoute(
+                    'orders.files.download',
+                    now()->addMinutes(30),
+                    ['file' => $file->id]
+                ),
             ]),
         ]);
+    }
+
+    public function edit(Request $request, Order $order): Response
+    {
+        $this->authorize('update', $order);
+
+        $order->load('files');
+
+        return Inertia::render('Orders/Edit', [
+            'order' => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'client_id' => $order->client_id,
+                'title' => $order->title,
+                'type' => $order->type->value,
+                'priority' => $order->priority->value,
+                'instructions' => $order->instructions,
+                'price_amount' => $order->price_amount,
+                'currency' => $order->currency,
+                'due_at' => $order->due_at?->format('Y-m-d'),
+                'source' => $order->source,
+                'is_quote' => $order->is_quote,
+            ],
+            'files' => $order->files->map(fn ($file) => [
+                'id' => $file->id,
+                'original_name' => $file->original_name,
+                'type' => $file->type,
+                'size' => $file->size,
+            ]),
+            'clients' => $this->clientOptions($request)->map(fn ($client) => [
+                'id' => $client->id,
+                'name' => $client->name,
+                'email' => $client->email,
+            ]),
+            'priorityOptions' => collect(OrderPriority::cases())->map(fn ($case) => [
+                'label' => ucwords(str_replace('_', ' ', $case->value)),
+                'value' => $case->value,
+            ]),
+            'typeOptions' => collect(OrderType::cases())
+                ->reject(fn ($case) => $case === OrderType::QUOTATION)
+                ->map(fn ($case) => [
+                    'label' => ucwords(str_replace('_', ' ', $case->value)),
+                    'value' => $case->value,
+                ]),
+            'maxUploadMb' => (int) $request->user()->tenant->getSetting('max_upload_mb', 25),
+        ]);
+    }
+
+    public function update(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $data = $this->validateOrderUpdate($request);
+
+        $order->update([
+            'client_id' => $data['client_id'],
+            'title' => $data['title'],
+            'instructions' => $data['instructions'] ?? null,
+            'priority' => $data['priority'],
+            'due_at' => $data['due_at'] ?? null,
+            'price_amount' => $data['price_amount'] ?? null,
+            'currency' => strtoupper($data['currency'] ?? $request->user()->tenant->getSetting('currency', 'USD')),
+            'source' => $data['source'] ?? null,
+        ]);
+
+        foreach ($request->file('attachments', []) as $file) {
+            $this->fileStorageService->storeOrderFile($order, $file, 'input');
+        }
+
+        return redirect()->route('orders.show', $order)->with('success', 'Order updated.');
     }
 
     public function destroy(Order $order): RedirectResponse
@@ -322,6 +410,39 @@ class OrderController extends Controller
             'attachments' => ['nullable', 'array'],
             'attachments.*' => $attachmentRules,
             'quote' => ['nullable', 'boolean'],
+        ]);
+    }
+
+    private function validateOrderUpdate(Request $request): array
+    {
+        $tenantId = $request->user()->tenant_id;
+        $tenant = $request->user()->tenant;
+        $maxUploadMb = (int) ($tenant->getSetting('max_upload_mb', 25));
+        $maxKilobytes = $maxUploadMb * 1024;
+        $allowedExtensions = collect(explode(',', (string) $tenant->getSetting('allowed_input_extensions', '')))
+            ->map(fn ($ext) => strtolower(trim($ext)))
+            ->filter()
+            ->values();
+
+        $attachmentRules = ['file', 'max:'.$maxKilobytes];
+        if ($allowedExtensions->isNotEmpty()) {
+            $attachmentRules[] = 'mimes:'.$allowedExtensions->implode(',');
+        }
+
+        return $request->validate([
+            'client_id' => [
+                'required',
+                Rule::exists('clients', 'id')->where('tenant_id', $tenantId),
+            ],
+            'title' => ['required', 'string', 'max:255'],
+            'instructions' => ['nullable', 'string'],
+            'priority' => ['required', Rule::in(array_map(fn ($case) => $case->value, OrderPriority::cases()))],
+            'due_at' => ['nullable', 'date'],
+            'price_amount' => ['nullable', 'numeric'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'source' => ['nullable', 'string', 'max:255'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => $attachmentRules,
         ]);
     }
 

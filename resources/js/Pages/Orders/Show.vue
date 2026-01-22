@@ -88,7 +88,15 @@ const formatSize = (size) => {
                                     <p class="text-sm font-medium text-gray-900">{{ file.original_name }}</p>
                                     <p class="text-xs text-gray-500">{{ formatSize(file.size) }} • Uploaded {{ file.uploaded_at }}</p>
                                 </div>
-                                <span class="text-xs uppercase text-gray-500">{{ file.type }}</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs uppercase text-gray-500">{{ file.type }}</span>
+                                    <a
+                                        :href="file.download_url"
+                                        class="inline-flex items-center rounded bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                                    >
+                                        Download
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <p v-else class="mt-3 text-sm text-gray-500">No files uploaded yet.</p>
