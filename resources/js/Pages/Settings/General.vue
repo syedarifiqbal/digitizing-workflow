@@ -1,7 +1,7 @@
 <script setup>
-import { computed } from 'vue';
-import { useForm, usePage } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import { computed } from "vue";
+import { useForm, usePage } from "@inertiajs/vue3";
+import AppLayout from "@/Layouts/AppLayout.vue";
 
 const props = defineProps({
     tenant: {
@@ -15,19 +15,20 @@ const props = defineProps({
 });
 
 const form = useForm({
-    name: props.tenant.name ?? '',
-    email_verification_required: props.settings.email_verification_required ?? true,
-    commission_earned_on: props.settings.commission_earned_on ?? 'delivered',
-    allowed_input_extensions: props.settings.allowed_input_extensions ?? '',
-    allowed_output_extensions: props.settings.allowed_output_extensions ?? '',
+    name: props.tenant.name ?? "",
+    email_verification_required:
+        props.settings.email_verification_required ?? true,
+    commission_earned_on: props.settings.commission_earned_on ?? "delivered",
+    allowed_input_extensions: props.settings.allowed_input_extensions ?? "",
+    allowed_output_extensions: props.settings.allowed_output_extensions ?? "",
     max_upload_mb: props.settings.max_upload_mb ?? 25,
-    currency: props.settings.currency ?? 'USD',
-    order_number_prefix: props.settings.order_number_prefix ?? '',
+    currency: props.settings.currency ?? "USD",
+    order_number_prefix: props.settings.order_number_prefix ?? "",
     show_order_cards: props.settings.show_order_cards ?? false,
 });
 
 const submit = () => {
-    form.put(route('settings.update'));
+    form.put(route("settings.update"));
 };
 
 const page = usePage();
@@ -38,9 +39,12 @@ const successMessage = computed(() => page.props.flash?.success);
     <AppLayout>
         <template #header>
             <div>
-                <h2 class="text-xl font-semibold text-gray-800">Tenant Settings</h2>
-                <p class="mt-1 text-sm text-gray-600">
-                    Configure company-wide preferences for workflows, uploads, and billing.
+                <h2 class="text-xl font-semibold text-slate-900">
+                    Tenant Settings
+                </h2>
+                <p class="mt-1 text-sm text-slate-500">
+                    Configure company-wide preferences for workflows, uploads,
+                    and billing.
                 </p>
             </div>
         </template>
@@ -58,10 +62,15 @@ const successMessage = computed(() => page.props.flash?.success);
 
                         <form @submit.prevent="submit" class="space-y-8">
                             <div>
-                                <h3 class="text-lg font-medium text-gray-900">General</h3>
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    General
+                                </h3>
                                 <div class="mt-4 space-y-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700" for="name">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                            for="name"
+                                        >
                                             Company Name
                                         </label>
                                         <input
@@ -70,24 +79,42 @@ const successMessage = computed(() => page.props.flash?.success);
                                             type="text"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         />
-                                        <p v-if="form.errors.name" class="mt-1 text-sm text-red-600">
+                                        <p
+                                            v-if="form.errors.name"
+                                            class="mt-1 text-sm text-red-600"
+                                        >
                                             {{ form.errors.name }}
                                         </p>
                                     </div>
 
                                     <div class="flex items-center">
                                         <input
-                                            v-model="form.email_verification_required"
+                                            v-model="
+                                                form.email_verification_required
+                                            "
                                             id="email_verification_required"
                                             type="checkbox"
                                             class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                         />
-                                        <label class="ml-2 block text-sm text-gray-700" for="email_verification_required">
-                                            Require email verification for non-admin users
+                                        <label
+                                            class="ml-2 block text-sm text-gray-700"
+                                            for="email_verification_required"
+                                        >
+                                            Require email verification for
+                                            non-admin users
                                         </label>
                                     </div>
-                                    <p v-if="form.errors.email_verification_required" class="text-sm text-red-600">
-                                        {{ form.errors.email_verification_required }}
+                                    <p
+                                        v-if="
+                                            form.errors
+                                                .email_verification_required
+                                        "
+                                        class="text-sm text-red-600"
+                                    >
+                                        {{
+                                            form.errors
+                                                .email_verification_required
+                                        }}
                                     </p>
 
                                     <div class="flex items-center">
@@ -97,21 +124,33 @@ const successMessage = computed(() => page.props.flash?.success);
                                             type="checkbox"
                                             class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                         />
-                                        <label class="ml-2 block text-sm text-gray-700" for="show_order_cards">
-                                            Show quick action cards on Orders dashboard
+                                        <label
+                                            class="ml-2 block text-sm text-gray-700"
+                                            for="show_order_cards"
+                                        >
+                                            Show quick action cards on Orders
+                                            dashboard
                                         </label>
                                     </div>
-                                    <p v-if="form.errors.show_order_cards" class="text-sm text-red-600">
+                                    <p
+                                        v-if="form.errors.show_order_cards"
+                                        class="text-sm text-red-600"
+                                    >
                                         {{ form.errors.show_order_cards }}
                                     </p>
                                 </div>
                             </div>
 
                             <div>
-                                <h3 class="text-lg font-medium text-gray-900">Workflow</h3>
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    Workflow
+                                </h3>
                                 <div class="mt-4 space-y-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700" for="commission_earned_on">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                            for="commission_earned_on"
+                                        >
                                             Commission earned on
                                         </label>
                                         <select
@@ -119,53 +158,97 @@ const successMessage = computed(() => page.props.flash?.success);
                                             id="commission_earned_on"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         >
-                                            <option value="approved">Approved</option>
-                                            <option value="delivered">Delivered</option>
+                                            <option value="approved">
+                                                Approved
+                                            </option>
+                                            <option value="delivered">
+                                                Delivered
+                                            </option>
                                         </select>
-                                        <p v-if="form.errors.commission_earned_on" class="mt-1 text-sm text-red-600">
-                                            {{ form.errors.commission_earned_on }}
+                                        <p
+                                            v-if="
+                                                form.errors.commission_earned_on
+                                            "
+                                            class="mt-1 text-sm text-red-600"
+                                        >
+                                            {{
+                                                form.errors.commission_earned_on
+                                            }}
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
                             <div>
-                                <h3 class="text-lg font-medium text-gray-900">File Uploads</h3>
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    File Uploads
+                                </h3>
                                 <div class="mt-4 space-y-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700" for="allowed_input_extensions">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                            for="allowed_input_extensions"
+                                        >
                                             Allowed input extensions
                                         </label>
                                         <input
-                                            v-model="form.allowed_input_extensions"
+                                            v-model="
+                                                form.allowed_input_extensions
+                                            "
                                             id="allowed_input_extensions"
                                             type="text"
                                             placeholder="jpg,jpeg,png,pdf"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         />
-                                        <p v-if="form.errors.allowed_input_extensions" class="mt-1 text-sm text-red-600">
-                                            {{ form.errors.allowed_input_extensions }}
+                                        <p
+                                            v-if="
+                                                form.errors
+                                                    .allowed_input_extensions
+                                            "
+                                            class="mt-1 text-sm text-red-600"
+                                        >
+                                            {{
+                                                form.errors
+                                                    .allowed_input_extensions
+                                            }}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700" for="allowed_output_extensions">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                            for="allowed_output_extensions"
+                                        >
                                             Allowed output extensions
                                         </label>
                                         <input
-                                            v-model="form.allowed_output_extensions"
+                                            v-model="
+                                                form.allowed_output_extensions
+                                            "
                                             id="allowed_output_extensions"
                                             type="text"
                                             placeholder="dst,emb,pes,exp,pdf,ai,psd,png,jpg"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         />
-                                        <p v-if="form.errors.allowed_output_extensions" class="mt-1 text-sm text-red-600">
-                                            {{ form.errors.allowed_output_extensions }}
+                                        <p
+                                            v-if="
+                                                form.errors
+                                                    .allowed_output_extensions
+                                            "
+                                            class="mt-1 text-sm text-red-600"
+                                        >
+                                            {{
+                                                form.errors
+                                                    .allowed_output_extensions
+                                            }}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700" for="max_upload_mb">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                            for="max_upload_mb"
+                                        >
                                             Max upload size (MB)
                                         </label>
                                         <input
@@ -176,7 +259,10 @@ const successMessage = computed(() => page.props.flash?.success);
                                             max="100"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         />
-                                        <p v-if="form.errors.max_upload_mb" class="mt-1 text-sm text-red-600">
+                                        <p
+                                            v-if="form.errors.max_upload_mb"
+                                            class="mt-1 text-sm text-red-600"
+                                        >
                                             {{ form.errors.max_upload_mb }}
                                         </p>
                                     </div>
@@ -184,10 +270,15 @@ const successMessage = computed(() => page.props.flash?.success);
                             </div>
 
                             <div>
-                                <h3 class="text-lg font-medium text-gray-900">Financial</h3>
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    Financial
+                                </h3>
                                 <div class="mt-4 space-y-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700" for="currency">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                            for="currency"
+                                        >
                                             Currency
                                         </label>
                                         <input
@@ -197,13 +288,19 @@ const successMessage = computed(() => page.props.flash?.success);
                                             maxlength="3"
                                             class="mt-1 block w-32 rounded-md border-gray-300 shadow-sm uppercase focus:border-indigo-500 focus:ring-indigo-500"
                                         />
-                                        <p v-if="form.errors.currency" class="mt-1 text-sm text-red-600">
+                                        <p
+                                            v-if="form.errors.currency"
+                                            class="mt-1 text-sm text-red-600"
+                                        >
                                             {{ form.errors.currency }}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700" for="order_number_prefix">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                            for="order_number_prefix"
+                                        >
                                             Order number prefix
                                         </label>
                                         <input
@@ -213,8 +310,15 @@ const successMessage = computed(() => page.props.flash?.success);
                                             maxlength="10"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         />
-                                        <p v-if="form.errors.order_number_prefix" class="mt-1 text-sm text-red-600">
-                                            {{ form.errors.order_number_prefix }}
+                                        <p
+                                            v-if="
+                                                form.errors.order_number_prefix
+                                            "
+                                            class="mt-1 text-sm text-red-600"
+                                        >
+                                            {{
+                                                form.errors.order_number_prefix
+                                            }}
                                         </p>
                                     </div>
                                 </div>
