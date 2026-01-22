@@ -8,10 +8,12 @@ const props = defineProps({
     files: Array,
     canAssign: Boolean,
     designers: Array,
+    allowedTransitions: Array,
 });
 
 const selectedDesigner = ref(props.order?.designer?.id ?? '');
 const assigning = ref(false);
+const transitioning = ref(false);
 
 const formatSize = (size) => {
     if (!size) return '0 KB';
@@ -44,6 +46,30 @@ const unassignDesigner = () => {
         },
     });
 };
+
+const changeStatus = (status) => {
+    transitioning.value = true;
+    router.patch(route('orders.status', props.order.id), {
+        status: status,
+    }, {
+        preserveScroll: true,
+        onFinish: () => {
+            transitioning.value = false;
+        },
+    });
+};
+
+const getButtonClass = (style) => {
+    const classes = {
+        primary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+        success: 'bg-green-600 hover:bg-green-700 text-white',
+        info: 'bg-blue-600 hover:bg-blue-700 text-white',
+        warning: 'bg-yellow-500 hover:bg-yellow-600 text-white',
+        danger: 'bg-red-600 hover:bg-red-700 text-white',
+        secondary: 'bg-gray-600 hover:bg-gray-700 text-white',
+    };
+    return classes[style] || classes.secondary;
+};
 </script>
 
 <template>
@@ -73,6 +99,28 @@ const unassignDesigner = () => {
 
         <div class="py-12">
             <div class="max-w-5xl mx-auto space-y-6 sm:px-6 lg:px-8">
+                <!-- Status Actions -->
+                <div v-if="allowedTransitions?.length" class="bg-white shadow sm:rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-sm font-medium text-gray-500 mb-3">Change Status</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                v-for="transition in allowedTransitions"
+                                :key="transition.value"
+                                type="button"
+                                :disabled="transitioning"
+                                :class="[
+                                    'inline-flex items-center rounded-md px-4 py-2 text-sm font-medium shadow-sm disabled:opacity-50',
+                                    getButtonClass(transition.style)
+                                ]"
+                                @click="changeStatus(transition.value)"
+                            >
+                                {{ transition.label }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="p-6 grid gap-6 md:grid-cols-2">
                         <div>

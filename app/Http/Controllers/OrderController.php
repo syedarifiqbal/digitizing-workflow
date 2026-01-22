@@ -9,7 +9,9 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Models\User;
 use App\Actions\Orders\AssignOrderAction;
+use App\Actions\Orders\TransitionOrderStatusAction;
 use App\Services\FileStorageService;
+use App\Services\WorkflowService;
 use Illuminate\Support\Facades\URL;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -21,9 +23,10 @@ use Inertia\Response;
 
 class OrderController extends Controller
 {
-    public function __construct(private readonly FileStorageService $fileStorageService)
-    {
-    }
+    public function __construct(
+        private readonly FileStorageService $fileStorageService,
+        private readonly WorkflowService $workflowService
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -281,6 +284,12 @@ class OrderController extends Controller
                 'id' => $designer->id,
                 'name' => $designer->name,
             ]) : [],
+            'allowedTransitions' => collect($this->workflowService->getAllowedTransitions($order->status))
+                ->map(fn ($status) => [
+                    'value' => $status->value,
+                    'label' => $this->workflowService->getStatusLabel($status),
+                    'style' => $this->workflowService->getTransitionStyle($status),
+                ]),
         ]);
     }
 
@@ -416,6 +425,24 @@ class OrderController extends Controller
         $order->update(['designer_id' => null]);
 
         return back()->with('success', 'Designer unassigned.');
+    }
+
+    public function updateStatus(Request $request, Order $order, TransitionOrderStatusAction $action): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(array_map(fn ($case) => $case->value, OrderStatus::cases()))],
+        ]);
+
+        try {
+            $newStatus = OrderStatus::from($validated['status']);
+            $action->execute($order, $newStatus, $request->user());
+
+            return back()->with('success', 'Order status updated.');
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['status' => $e->getMessage()]);
+        }
     }
 
     private function validateOrder(Request $request): array

@@ -87,6 +87,11 @@ class Order extends Model
         return $this->hasOne(OrderAssignment::class)->whereNull('ended_at')->latestOfMany('assigned_at');
     }
 
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class)->orderByDesc('changed_at');
+    }
+
     public function scopeForTenant($query, int $tenantId)
     {
         return $query->where('tenant_id', $tenantId);
