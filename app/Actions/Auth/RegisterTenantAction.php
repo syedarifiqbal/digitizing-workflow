@@ -35,10 +35,16 @@ class RegisterTenantAction
 
     private function createRoles(Tenant $tenant): void
     {
-        $roles = ['Admin', 'Manager', 'Designer', 'Client'];
+        $roleNames = ['Admin', 'Manager', 'Designer', 'Client', 'Sales'];
 
-        foreach ($roles as $roleName) {
-            Role::findOrCreate($roleName, 'web');
+        foreach ($roleNames as $name) {
+            Role::firstOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'name' => $name,
+                    'guard_name' => 'web',
+                ]
+            );
         }
     }
 
@@ -51,6 +57,7 @@ class RegisterTenantAction
             'allowed_output_extensions' => 'dst,emb,pes,exp,pdf,ai,psd,png,jpg',
             'max_upload_mb' => 25,
             'currency' => 'USD',
+            'date_format' => 'DD/MM/YYYY',
             'order_number_prefix' => '',
             'show_order_cards' => false,
         ];
