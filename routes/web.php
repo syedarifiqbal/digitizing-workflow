@@ -12,6 +12,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DesignerController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\TenantSettingsController;
@@ -75,5 +76,8 @@ Route::middleware('auth')->group(function () {
             ->name('orders.files.destroy');
         Route::delete('users/bulk', [UserController::class, 'bulkDestroy'])->name('users.bulk-destroy');
         Route::resource('users', UserController::class)->except(['show']);
+
+        // Designer Portal
+        Route::get('/my-work', [DesignerController::class, 'dashboard'])->name('designer.dashboard');
     });
 });

@@ -190,7 +190,7 @@ class UserController extends Controller
                 Rule::unique('users')->ignore($user?->id),
             ],
             'phone' => ['nullable', 'string', 'max:50'],
-            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'status' => ['required', Rule::in(['1', '2'])],
             'role' => ['required', Rule::in($this->roles)],
             'client_id' => [
                 'nullable',

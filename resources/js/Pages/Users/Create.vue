@@ -155,8 +155,8 @@ const baseInputClasses =
                                 id="status"
                                 :class="baseInputClasses"
                             >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="1">Active</option>
+                                <option value="2">Inactive</option>
                             </select>
                             <p
                                 v-if="form.errors.status"
