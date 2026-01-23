@@ -3,6 +3,9 @@ import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { ref } from 'vue';
+import { useDateFormat } from '@/Composables/useDateFormat';
+
+const { formatDate } = useDateFormat();
 
 const props = defineProps({
     client: Object,
@@ -90,7 +93,7 @@ const confirmDelete = () => {
                             </div>
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Created</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ client.created_at }}</dd>
+                                <dd class="mt-1 text-sm text-gray-900">{{ formatDate(client.created_at) }}</dd>
                             </div>
                         </dl>
                     </div>

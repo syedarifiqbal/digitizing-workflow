@@ -53,6 +53,9 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'status' => fn () => $request->session()->get('status'),
             ],
+            'tenant_settings' => fn () => $request->user()?->tenant ? [
+                'date_format' => $request->user()->tenant->getSetting('date_format', 'MM/DD/YYYY'),
+            ] : null,
         ];
     }
 }

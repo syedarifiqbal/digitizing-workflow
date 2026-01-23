@@ -1,4 +1,8 @@
 <script setup>
+import { useDateFormat } from '@/Composables/useDateFormat';
+
+const { formatDate } = useDateFormat();
+
 defineProps({
     events: {
         type: Array,
@@ -24,18 +28,6 @@ const getIconColor = (type) => {
         case 'unassigned': return 'bg-red-400';
         default: return 'bg-gray-400';
     }
-};
-
-const formatDate = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-    });
 };
 </script>
 
@@ -92,7 +84,7 @@ const formatDate = (timestamp) => {
                             "{{ event.notes }}"
                         </p>
                         <p class="mt-0.5 text-xs text-gray-400">
-                            {{ formatDate(event.timestamp) }}
+                            {{ formatDate(event.timestamp, true) }}
                         </p>
                     </div>
                 </div>

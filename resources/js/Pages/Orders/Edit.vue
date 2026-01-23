@@ -4,6 +4,7 @@ import { Link, useForm, router } from "@inertiajs/vue3";
 import { TrashIcon } from "@heroicons/vue/24/outline";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
+import DatePicker from "@/Components/DatePicker.vue";
 
 const props = defineProps({
     order: Object,
@@ -213,11 +214,10 @@ const baseInputClasses =
                                     for="due_at"
                                     >Due date</label
                                 >
-                                <input
+                                <DatePicker
                                     v-model="form.due_at"
                                     id="due_at"
-                                    type="date"
-                                    :class="baseInputClasses"
+                                    placeholder="Select due date"
                                 />
                                 <p
                                     v-if="form.errors.due_at"

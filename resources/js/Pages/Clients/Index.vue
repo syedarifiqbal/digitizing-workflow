@@ -11,6 +11,9 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
+import { useDateFormat } from "@/Composables/useDateFormat";
+
+const { formatDate } = useDateFormat();
 
 const props = defineProps({
     filters: Object,
@@ -248,7 +251,7 @@ const clientColumns = [
                                 {{ row.name }}
                             </Link>
                             <p class="text-sm text-slate-500">
-                                Created {{ row.created_at }}
+                                Created {{ formatDate(row.created_at) }}
                             </p>
                         </template>
                         <template #cell-contact="{ row }">

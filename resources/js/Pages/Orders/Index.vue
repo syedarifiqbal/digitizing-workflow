@@ -6,6 +6,9 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
+import { useDateFormat } from "@/Composables/useDateFormat";
+
+const { formatDate } = useDateFormat();
 
 const props = defineProps({
     filters: Object,
@@ -638,7 +641,7 @@ const orderColumns = [
                                 {{ row.title }}
                             </p>
                             <p class="text-xs text-slate-400">
-                                Created {{ row.created_at }}
+                                Created {{ formatDate(row.created_at, true) }}
                             </p>
                         </template>
                         <template #cell-type="{ row }">

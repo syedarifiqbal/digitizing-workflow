@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { Link, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import DatePicker from "@/Components/DatePicker.vue";
 
 const props = defineProps({
     clients: Array,
@@ -197,11 +198,10 @@ const baseInputClasses =
                                     for="due_at"
                                     >Due date</label
                                 >
-                                <input
+                                <DatePicker
                                     v-model="form.due_at"
                                     id="due_at"
-                                    type="datetime-local"
-                                    :class="baseInputClasses"
+                                    placeholder="Select due date"
                                 />
                                 <p
                                     v-if="form.errors.due_at"

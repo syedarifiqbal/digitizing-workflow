@@ -6,6 +6,9 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
+import { useDateFormat } from "@/Composables/useDateFormat";
+
+const { formatDate } = useDateFormat();
 
 const props = defineProps({
     filters: Object,
@@ -258,7 +261,7 @@ const userColumns = [
                                 {{ row.email }}
                             </div>
                             <p class="text-xs text-slate-500">
-                                Invited {{ row.created_at }}
+                                Invited {{ formatDate(row.created_at) }}
                             </p>
                         </template>
                         <template #cell-role="{ row }">

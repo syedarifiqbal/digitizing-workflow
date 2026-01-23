@@ -38,6 +38,7 @@ class TenantSettingsController extends Controller
             'max_upload_mb' => ['required', 'integer', 'min:1', 'max:100'],
             'currency' => ['required', 'string', 'size:3'],
             'order_number_prefix' => ['nullable', 'string', 'max:10'],
+            'date_format' => ['required', 'string', 'in:MM/DD/YYYY,DD/MM/YYYY,YYYY-MM-DD,DD-MM-YYYY,DD.MM.YYYY'],
             'show_order_cards' => ['required', 'boolean'],
             'notify_on_assignment' => ['required', 'boolean'],
         ]);
@@ -48,6 +49,7 @@ class TenantSettingsController extends Controller
             'name' => $validated['name'],
             'settings' => [
                 'email_verification_required' => $validated['email_verification_required'],
+                'date_format' => $validated['date_format'],
                 'commission_earned_on' => $validated['commission_earned_on'],
                 'allowed_input_extensions' => $validated['allowed_input_extensions'],
                 'allowed_output_extensions' => $validated['allowed_output_extensions'],
@@ -66,6 +68,7 @@ class TenantSettingsController extends Controller
     {
         return [
             'email_verification_required' => true,
+            'date_format' => 'MM/DD/YYYY',
             'commission_earned_on' => 'delivered',
             'allowed_input_extensions' => 'jpg,jpeg,png,pdf',
             'allowed_output_extensions' => 'dst,emb,pes,exp,pdf,ai,psd,png,jpg',
