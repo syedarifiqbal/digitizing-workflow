@@ -13,12 +13,20 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->nullable()->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('email');
+            $table->string('phone')->nullable();
+            $table->boolean('status')->default(1);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
+            
+            $table->index('tenant_id', 'users_tenant_id_index');
+            $table->unique(['tenant_id', 'email'], 'users_tenant_id_email_unique');
+            $table->index(['tenant_id', 'status'], 'users_tenant_id_status_index');
+            $table->index(['tenant_id', 'created_at'], 'users_tenant_id_created_at_index');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

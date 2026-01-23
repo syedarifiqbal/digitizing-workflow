@@ -636,6 +636,7 @@ const orderColumns = [
                         <template #cell-order="{ row }">
                             <div class="font-medium text-slate-900">
                                 {{ row.order_number }}
+                                <span v-if="row.po_number" class="ml-1 text-xs font-normal text-slate-400">({{ row.po_number }})</span>
                             </div>
                             <p class="text-sm text-slate-500">
                                 {{ row.title }}

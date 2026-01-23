@@ -144,6 +144,7 @@ class OrderController extends Controller
                 'data' => $orders->through(fn (Order $order) => [
                     'id' => $order->id,
                     'order_number' => $order->order_number,
+                    'po_number' => $order->po_number,
                     'title' => $order->title,
                     'type' => $order->type->value,
                     'status' => $order->status->value,
@@ -190,6 +191,7 @@ class OrderController extends Controller
             'currency' => $request->user()->tenant->getSetting('currency', 'USD'),
             'defaultType' => $defaultType,
             'isQuote' => $isQuote,
+            'fieldOptions' => $this->fieldOptions(),
         ]);
     }
 
@@ -213,11 +215,27 @@ class OrderController extends Controller
                 'client_id' => $data['client_id'],
                 'created_by_user_id' => $request->user()->id,
                 'order_number' => $orderNumber,
+                'po_number' => $data['po_number'] ?? null,
                 'sequence' => $sequence,
                 'type' => $data['type'],
                 'is_quote' => $isQuote,
                 'title' => $data['title'],
                 'instructions' => $data['instructions'] ?? null,
+                'height' => $data['height'] ?? null,
+                'width' => $data['width'] ?? null,
+                'placement' => $data['placement'] ?? null,
+                'num_colors' => $data['num_colors'] ?? null,
+                'file_format' => $data['file_format'] ?? null,
+                'patch_type' => $data['patch_type'] ?? null,
+                'quantity' => $data['quantity'] ?? null,
+                'backing' => $data['backing'] ?? null,
+                'merrow_border' => $data['merrow_border'] ?? null,
+                'fabric' => $data['fabric'] ?? null,
+                'shipping_address' => $data['shipping_address'] ?? null,
+                'need_by' => $data['need_by'] ?? null,
+                'color_type' => $data['color_type'] ?? null,
+                'vector_order_type' => $data['vector_order_type'] ?? null,
+                'required_format' => $data['required_format'] ?? null,
                 'status' => OrderStatus::RECEIVED,
                 'priority' => $data['priority'],
                 'due_at' => $data['due_at'] ?? null,
@@ -249,11 +267,27 @@ class OrderController extends Controller
             'order' => [
                 'id' => $order->id,
                 'order_number' => $order->order_number,
+                'po_number' => $order->po_number,
                 'title' => $order->title,
                 'type' => $order->type->value,
                 'status' => $order->status->value,
                 'priority' => $order->priority->value,
                 'instructions' => $order->instructions,
+                'height' => $order->height,
+                'width' => $order->width,
+                'placement' => $order->placement,
+                'num_colors' => $order->num_colors,
+                'file_format' => $order->file_format,
+                'patch_type' => $order->patch_type,
+                'quantity' => $order->quantity,
+                'backing' => $order->backing,
+                'merrow_border' => $order->merrow_border,
+                'fabric' => $order->fabric,
+                'shipping_address' => $order->shipping_address,
+                'need_by' => $order->need_by?->format('Y-m-d'),
+                'color_type' => $order->color_type,
+                'vector_order_type' => $order->vector_order_type,
+                'required_format' => $order->required_format,
                 'client' => [
                     'id' => $order->client->id,
                     'name' => $order->client->name,
@@ -332,11 +366,27 @@ class OrderController extends Controller
             'order' => [
                 'id' => $order->id,
                 'order_number' => $order->order_number,
+                'po_number' => $order->po_number,
                 'client_id' => $order->client_id,
                 'title' => $order->title,
                 'type' => $order->type->value,
                 'priority' => $order->priority->value,
                 'instructions' => $order->instructions,
+                'height' => $order->height,
+                'width' => $order->width,
+                'placement' => $order->placement,
+                'num_colors' => $order->num_colors,
+                'file_format' => $order->file_format,
+                'patch_type' => $order->patch_type,
+                'quantity' => $order->quantity,
+                'backing' => $order->backing,
+                'merrow_border' => $order->merrow_border,
+                'fabric' => $order->fabric,
+                'shipping_address' => $order->shipping_address,
+                'need_by' => $order->need_by?->format('Y-m-d'),
+                'color_type' => $order->color_type,
+                'vector_order_type' => $order->vector_order_type,
+                'required_format' => $order->required_format,
                 'price_amount' => $order->price_amount,
                 'currency' => $order->currency,
                 'due_at' => $order->due_at?->format('Y-m-d'),
@@ -365,6 +415,7 @@ class OrderController extends Controller
                     'value' => $case->value,
                 ]),
             'maxUploadMb' => (int) $request->user()->tenant->getSetting('max_upload_mb', 25),
+            'fieldOptions' => $this->fieldOptions(),
         ]);
     }
 
@@ -372,12 +423,28 @@ class OrderController extends Controller
     {
         $this->authorize('update', $order);
 
-        $data = $this->validateOrderUpdate($request);
+        $data = $this->validateOrderUpdate($request, $order);
 
         $order->update([
             'client_id' => $data['client_id'],
+            'po_number' => $data['po_number'] ?? null,
             'title' => $data['title'],
             'instructions' => $data['instructions'] ?? null,
+            'height' => $data['height'] ?? null,
+            'width' => $data['width'] ?? null,
+            'placement' => $data['placement'] ?? null,
+            'num_colors' => $data['num_colors'] ?? null,
+            'file_format' => $data['file_format'] ?? null,
+            'patch_type' => $data['patch_type'] ?? null,
+            'quantity' => $data['quantity'] ?? null,
+            'backing' => $data['backing'] ?? null,
+            'merrow_border' => $data['merrow_border'] ?? null,
+            'fabric' => $data['fabric'] ?? null,
+            'shipping_address' => $data['shipping_address'] ?? null,
+            'need_by' => $data['need_by'] ?? null,
+            'color_type' => $data['color_type'] ?? null,
+            'vector_order_type' => $data['vector_order_type'] ?? null,
+            'required_format' => $data['required_format'] ?? null,
             'priority' => $data['priority'],
             'due_at' => $data['due_at'] ?? null,
             'price_amount' => $data['price_amount'] ?? null,
@@ -545,12 +612,13 @@ class OrderController extends Controller
             ->map->value
             ->all();
 
-        return $request->validate([
+        $rules = [
             'client_id' => [
                 'required',
                 Rule::exists('clients', 'id')->where('tenant_id', $tenantId),
             ],
             'title' => ['required', 'string', 'max:255'],
+            'po_number' => ['nullable', 'string', 'max:100'],
             'instructions' => ['nullable', 'string'],
             'priority' => ['required', Rule::in(array_map(fn ($case) => $case->value, OrderPriority::cases()))],
             'type' => ['required', Rule::in($allowedTypes)],
@@ -561,10 +629,31 @@ class OrderController extends Controller
             'attachments' => ['nullable', 'array'],
             'attachments.*' => $attachmentRules,
             'quote' => ['nullable', 'boolean'],
-        ]);
+            // Shared type-specific
+            'height' => ['nullable', 'string', 'max:50'],
+            'width' => ['nullable', 'string', 'max:50'],
+            'placement' => ['nullable', 'string', 'max:100'],
+            'num_colors' => ['nullable', 'integer', 'min:0'],
+            // Digitizing
+            'file_format' => ['nullable', 'string', 'max:100'],
+            // Patch
+            'patch_type' => ['nullable', 'string', 'max:100'],
+            'quantity' => ['nullable', 'integer', 'min:1'],
+            'backing' => ['nullable', 'string', 'max:100'],
+            'merrow_border' => ['nullable', 'string', 'max:100'],
+            'fabric' => ['nullable', 'string', 'max:100'],
+            'shipping_address' => ['nullable', 'string', 'max:1000'],
+            'need_by' => ['nullable', 'date'],
+            // Vector
+            'color_type' => ['nullable', 'string', 'max:100'],
+            'vector_order_type' => ['nullable', 'string', 'max:100'],
+            'required_format' => ['nullable', 'string', 'max:100'],
+        ];
+
+        return $request->validate($rules);
     }
 
-    private function validateOrderUpdate(Request $request): array
+    private function validateOrderUpdate(Request $request, Order $order): array
     {
         $tenantId = $request->user()->tenant_id;
         $tenant = $request->user()->tenant;
@@ -580,12 +669,13 @@ class OrderController extends Controller
             $attachmentRules[] = 'mimes:'.$allowedExtensions->implode(',');
         }
 
-        return $request->validate([
+        $rules = [
             'client_id' => [
                 'required',
                 Rule::exists('clients', 'id')->where('tenant_id', $tenantId),
             ],
             'title' => ['required', 'string', 'max:255'],
+            'po_number' => ['nullable', 'string', 'max:100'],
             'instructions' => ['nullable', 'string'],
             'priority' => ['required', Rule::in(array_map(fn ($case) => $case->value, OrderPriority::cases()))],
             'due_at' => ['nullable', 'date'],
@@ -594,7 +684,28 @@ class OrderController extends Controller
             'source' => ['nullable', 'string', 'max:255'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => $attachmentRules,
-        ]);
+            // Shared type-specific
+            'height' => ['nullable', 'string', 'max:50'],
+            'width' => ['nullable', 'string', 'max:50'],
+            'placement' => ['nullable', 'string', 'max:100'],
+            'num_colors' => ['nullable', 'integer', 'min:0'],
+            // Digitizing
+            'file_format' => ['nullable', 'string', 'max:100'],
+            // Patch
+            'patch_type' => ['nullable', 'string', 'max:100'],
+            'quantity' => ['nullable', 'integer', 'min:1'],
+            'backing' => ['nullable', 'string', 'max:100'],
+            'merrow_border' => ['nullable', 'string', 'max:100'],
+            'fabric' => ['nullable', 'string', 'max:100'],
+            'shipping_address' => ['nullable', 'string', 'max:1000'],
+            'need_by' => ['nullable', 'date'],
+            // Vector
+            'color_type' => ['nullable', 'string', 'max:100'],
+            'vector_order_type' => ['nullable', 'string', 'max:100'],
+            'required_format' => ['nullable', 'string', 'max:100'],
+        ];
+
+        return $request->validate($rules);
     }
 
     private function typeStats(int $tenantId, string $type, bool $isQuote): ?array
@@ -640,6 +751,68 @@ class OrderController extends Controller
             ->whereHas('roles', fn ($q) => $q->where('name', 'Designer'))
             ->orderBy('name')
             ->get(['id', 'name']);
+    }
+
+    private function fieldOptions(): array
+    {
+        return [
+            'placements' => [
+                'Cap Front', 'Cap Side', 'Cap Back', 'Low Profile Cap',
+                'Left Chest', 'Right Chest', 'Front Pocket', 'Full Front',
+                'Jacket Back', 'Cap/Chest', 'Knit Caps', 'Beanie Caps',
+                'Visor', 'Sleeve', 'Patches', 'Apron', 'Applique Design',
+                'Bags', 'Towel', 'Gloves', 'Blankets', 'Sweatshirt',
+                'Hoodie', 'Wrist Band', 'Seat Cover', 'Quilt',
+            ],
+            'fileFormats' => [
+                'Tajima Machine File (.DST)',
+                'Barudan Machine File (.DSB)',
+                'Janome Machine File (.JEF)',
+                'Compucon Machine File (.XXX)',
+                'Happy Machine File (.TAP)',
+                'Toyota Machine File (.100)',
+                '.EMB/.DST',
+                '.PES/.DST',
+                '.EXP/.DST',
+                '.CND/.DST',
+                '.OFM/.DST',
+                '.PXF/.DST',
+            ],
+            'patchTypes' => [
+                'Embroidered Patch', 'Sublimated', 'Emb + Sublimated',
+                'PVC Patch', 'Leather Patch', 'Chenille Patch',
+                'Woven Label', 'Lapel Pins',
+            ],
+            'backings' => [
+                'Iron on Patch', 'Velcro Patch', 'Plain sew on Patch',
+                'Peel and Stick', 'Peel & Stick + IronOn', 'Not Sure',
+            ],
+            'merrowBorders' => [
+                'Yes', 'No', 'Not Sure',
+            ],
+            'fabrics' => [
+                'Twill', 'Felt', 'Canvas', 'Denim', 'Leather',
+                'Velvet', 'Cotton', 'Polyester', 'Not Sure',
+            ],
+            'colorTypes' => [
+                'Pantone Matching System (PMS)',
+                'Three Color Process (RGB)',
+                'Four Color Process (CMYK)',
+            ],
+            'vectorOrderTypes' => [
+                'Screen Printing', 'DTG Printing', 'Silk Screening',
+                'Vinyl Cutting', 'Sublimation', 'Photo Touchup',
+            ],
+            'requiredFormats' => [
+                'AI (Adobe Illustrator)',
+                'EPS (Encapsulated PostScript)',
+                'PDF (Vector)',
+                'SVG (Scalable Vector)',
+                'CDR (CorelDRAW)',
+                'PSD (Photoshop)',
+                'PNG (High Res)',
+            ],
+        ];
     }
 
     private function generateOrderNumber(string $prefix, int $sequence): string

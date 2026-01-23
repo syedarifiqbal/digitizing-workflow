@@ -210,6 +210,10 @@ const priorityBadgeClass = (priority) => {
                                         <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Designer</dt>
                                         <dd class="mt-1 text-sm text-gray-900">{{ order.designer?.name ?? 'Unassigned' }}</dd>
                                     </div>
+                                    <div v-if="order.po_number">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">PO #</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.po_number }}</dd>
+                                    </div>
                                     <div>
                                         <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Price</dt>
                                         <dd class="mt-1 text-sm text-gray-900">
@@ -223,6 +227,111 @@ const priorityBadgeClass = (priority) => {
                                     <div>
                                         <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</dt>
                                         <dd class="mt-1 text-sm text-gray-900">{{ formatDate(order.created_at, true) }}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <!-- Digitizing Details -->
+                        <div v-if="order.type === 'digitizing' && (order.height || order.width || order.placement || order.file_format)" class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-5 py-4 border-b border-gray-100">
+                                <h3 class="text-sm font-semibold text-gray-900">Digitizing Details</h3>
+                            </div>
+                            <div class="px-5 py-4">
+                                <dl class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+                                    <div v-if="order.height">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Height</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.height }}"</dd>
+                                    </div>
+                                    <div v-if="order.width">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Width</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.width }}"</dd>
+                                    </div>
+                                    <div v-if="order.placement">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Placement</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.placement }}</dd>
+                                    </div>
+                                    <div v-if="order.file_format">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Format</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.file_format }}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <!-- Patch Details -->
+                        <div v-if="order.type === 'patch' && (order.patch_type || order.quantity || order.height || order.backing)" class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-5 py-4 border-b border-gray-100">
+                                <h3 class="text-sm font-semibold text-gray-900">Patch Details</h3>
+                            </div>
+                            <div class="px-5 py-4">
+                                <dl class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+                                    <div v-if="order.patch_type">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Patch Type</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.patch_type }}</dd>
+                                    </div>
+                                    <div v-if="order.quantity">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Quantity</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.quantity }}</dd>
+                                    </div>
+                                    <div v-if="order.height">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Size</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.height }}" x {{ order.width }}"</dd>
+                                    </div>
+                                    <div v-if="order.backing">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Backing</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.backing }}</dd>
+                                    </div>
+                                    <div v-if="order.placement">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Placement</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.placement }}</dd>
+                                    </div>
+                                    <div v-if="order.merrow_border">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Merrow Border</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.merrow_border }}</dd>
+                                    </div>
+                                    <div v-if="order.num_colors">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Colors</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.num_colors }}</dd>
+                                    </div>
+                                    <div v-if="order.fabric">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Fabric</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.fabric }}</dd>
+                                    </div>
+                                    <div v-if="order.need_by">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Need By</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ formatDate(order.need_by) }}</dd>
+                                    </div>
+                                </dl>
+                                <div v-if="order.shipping_address" class="mt-4 pt-4 border-t border-gray-100">
+                                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Shipping Address</dt>
+                                    <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line">{{ order.shipping_address }}</dd>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vector Details -->
+                        <div v-if="order.type === 'vector' && (order.color_type || order.vector_order_type || order.required_format)" class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-5 py-4 border-b border-gray-100">
+                                <h3 class="text-sm font-semibold text-gray-900">Vector Details</h3>
+                            </div>
+                            <div class="px-5 py-4">
+                                <dl class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+                                    <div v-if="order.color_type">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Color Type</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.color_type }}</dd>
+                                    </div>
+                                    <div v-if="order.num_colors">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Colors</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.num_colors }}</dd>
+                                    </div>
+                                    <div v-if="order.vector_order_type">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Order Type</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.vector_order_type }}</dd>
+                                    </div>
+                                    <div v-if="order.required_format">
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Format</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.required_format }}</dd>
                                     </div>
                                 </dl>
                             </div>
