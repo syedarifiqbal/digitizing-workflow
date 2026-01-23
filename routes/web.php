@@ -67,6 +67,7 @@ Route::middleware('auth')->group(function () {
         Route::post('orders/{order}/assign', [OrderController::class, 'assign'])->name('orders.assign');
         Route::delete('orders/{order}/assign', [OrderController::class, 'unassign'])->name('orders.unassign');
         Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
+        Route::post('orders/{order}/submit-work', [OrderController::class, 'submitWork'])->name('orders.submit-work');
         Route::get('orders/files/{file}/download', [OrderFileController::class, 'download'])
             ->name('orders.files.download')
             ->middleware('signed');

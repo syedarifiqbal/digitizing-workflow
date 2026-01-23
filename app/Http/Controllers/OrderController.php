@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Models\User;
 use App\Actions\Orders\AssignOrderAction;
+use App\Actions\Orders\SubmitWorkAction;
 use App\Actions\Orders\TransitionOrderStatusAction;
 use App\Services\FileStorageService;
 use App\Services\WorkflowService;
@@ -267,10 +268,9 @@ class OrderController extends Controller
                 'due_at' => optional($order->due_at)?->toDateTimeString(),
                 'created_at' => $order->created_at?->toDateTimeString(),
             ],
-            'files' => $order->files->map(fn ($file) => [
+            'inputFiles' => $order->files->where('type', 'input')->values()->map(fn ($file) => [
                 'id' => $file->id,
                 'original_name' => $file->original_name,
-                'type' => $file->type,
                 'size' => $file->size,
                 'uploaded_at' => $file->created_at?->toDateTimeString(),
                 'download_url' => URL::temporarySignedRoute(
@@ -279,17 +279,42 @@ class OrderController extends Controller
                     ['file' => $file->id]
                 ),
             ]),
+            'outputFiles' => in_array($order->status, [
+                OrderStatus::SUBMITTED,
+                OrderStatus::IN_REVIEW,
+                OrderStatus::REVISION_REQUESTED,
+                OrderStatus::APPROVED,
+                OrderStatus::DELIVERED,
+                OrderStatus::CLOSED,
+            ]) ? $order->files->where('type', 'output')->values()->map(fn ($file) => [
+                'id' => $file->id,
+                'original_name' => $file->original_name,
+                'size' => $file->size,
+                'uploaded_at' => $file->created_at?->toDateTimeString(),
+                'download_url' => URL::temporarySignedRoute(
+                    'orders.files.download',
+                    now()->addMinutes(30),
+                    ['file' => $file->id]
+                ),
+            ]) : [],
             'canAssign' => $canAssign,
             'designers' => $canAssign ? $this->designerOptions($request)->map(fn ($designer) => [
                 'id' => $designer->id,
                 'name' => $designer->name,
             ]) : [],
             'allowedTransitions' => collect($this->workflowService->getAllowedTransitions($order->status))
+                ->reject(fn ($status) => $status === OrderStatus::SUBMITTED)
                 ->map(fn ($status) => [
                     'value' => $status->value,
                     'label' => $this->workflowService->getStatusLabel($status),
                     'style' => $this->workflowService->getTransitionStyle($status),
-                ]),
+                ])
+                ->values(),
+            'canSubmitWork' => $order->status === OrderStatus::IN_PROGRESS
+                && $user->isDesigner()
+                && $order->designer_id === $user->id,
+            'maxUploadMb' => (int) $request->user()->tenant->getSetting('max_upload_mb', 25),
+            'allowedOutputExtensions' => $request->user()->tenant->getSetting('allowed_output_extensions', ''),
         ]);
     }
 
@@ -442,6 +467,49 @@ class OrderController extends Controller
             return back()->with('success', 'Order status updated.');
         } catch (\InvalidArgumentException $e) {
             return back()->withErrors(['status' => $e->getMessage()]);
+        }
+    }
+
+    public function submitWork(Request $request, Order $order, SubmitWorkAction $action): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $user = $request->user();
+
+        if (! $user->isDesigner() || $order->designer_id !== $user->id) {
+            abort(403, 'Only the assigned designer can submit work.');
+        }
+
+        $tenant = $user->tenant;
+        $maxUploadMb = (int) ($tenant->getSetting('max_upload_mb', 25));
+        $maxKilobytes = $maxUploadMb * 1024;
+        $allowedExtensions = collect(explode(',', (string) $tenant->getSetting('allowed_output_extensions', '')))
+            ->map(fn ($ext) => strtolower(trim($ext)))
+            ->filter()
+            ->values();
+
+        $fileRules = ['file', 'max:'.$maxKilobytes];
+        if ($allowedExtensions->isNotEmpty()) {
+            $fileRules[] = 'mimes:'.$allowedExtensions->implode(',');
+        }
+
+        $validated = $request->validate([
+            'files' => ['required', 'array', 'min:1'],
+            'files.*' => $fileRules,
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $action->execute(
+                $order,
+                $request->file('files', []),
+                $request->user(),
+                $validated['notes'] ?? null
+            );
+
+            return back()->with('success', 'Work submitted successfully.');
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['files' => $e->getMessage()]);
         }
     }
 
