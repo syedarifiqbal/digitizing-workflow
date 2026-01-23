@@ -25,6 +25,14 @@ class WorkflowService
     ];
 
     /**
+     * Transitions that a designer (assigned) is allowed to perform.
+     */
+    private array $designerTransitions = [
+        'assigned' => ['in_progress'],
+        'revision_requested' => ['in_progress'],
+    ];
+
+    /**
      * Get allowed transitions for a given status.
      */
     public function getAllowedTransitions(OrderStatus $currentStatus): array
@@ -32,6 +40,31 @@ class WorkflowService
         $allowed = $this->transitions[$currentStatus->value] ?? [];
 
         return array_map(fn ($status) => OrderStatus::from($status), $allowed);
+    }
+
+    /**
+     * Get allowed transitions filtered by user role.
+     */
+    public function getAllowedTransitionsForRole(OrderStatus $currentStatus, string $role): array
+    {
+        if ($role === 'designer') {
+            $allowed = $this->designerTransitions[$currentStatus->value] ?? [];
+        } else {
+            // Admin/Manager can do all transitions except submitted (handled by submit work)
+            $allowed = $this->transitions[$currentStatus->value] ?? [];
+        }
+
+        return array_map(fn ($status) => OrderStatus::from($status), $allowed);
+    }
+
+    /**
+     * Check if a user role can perform a specific transition.
+     */
+    public function canRoleTransition(OrderStatus $from, OrderStatus $to, string $role): bool
+    {
+        $allowed = $this->getAllowedTransitionsForRole($from, $role);
+
+        return in_array($to, $allowed);
     }
 
     /**

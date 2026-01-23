@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import OrderTimeline from '@/Components/OrderTimeline.vue';
 
 const props = defineProps({
     order: Object,
@@ -13,6 +14,7 @@ const props = defineProps({
     canSubmitWork: Boolean,
     maxUploadMb: Number,
     allowedOutputExtensions: String,
+    timeline: Array,
 });
 
 const selectedDesigner = ref(props.order?.designer?.id ?? '');
@@ -149,7 +151,7 @@ const getButtonClass = (style) => {
         <div class="py-12">
             <div class="max-w-5xl mx-auto space-y-6 sm:px-6 lg:px-8">
                 <!-- Status Actions -->
-                <div v-if="allowedTransitions?.length || canSubmitWork" class="bg-white shadow sm:rounded-lg">
+                <div v-if="allowedTransitions?.length" class="bg-white shadow sm:rounded-lg">
                     <div class="p-6">
                         <h3 class="text-sm font-medium text-gray-500 mb-3">Actions</h3>
                         <div class="flex flex-wrap gap-2">
@@ -296,6 +298,14 @@ const getButtonClass = (style) => {
                                 </a>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div v-if="timeline?.length" class="bg-white shadow sm:rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Activity</h3>
+                        <OrderTimeline :events="timeline" />
                     </div>
                 </div>
 

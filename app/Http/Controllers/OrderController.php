@@ -240,7 +240,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['client', 'designer', 'files']);
+        $order->load(['client', 'designer', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy']);
 
         $user = $request->user();
         $canAssign = $user->isAdmin() || $user->isManager();
@@ -302,7 +302,10 @@ class OrderController extends Controller
                 'id' => $designer->id,
                 'name' => $designer->name,
             ]) : [],
-            'allowedTransitions' => collect($this->workflowService->getAllowedTransitions($order->status))
+            'allowedTransitions' => collect($this->workflowService->getAllowedTransitionsForRole(
+                    $order->status,
+                    $user->isDesigner() ? 'designer' : 'admin'
+                ))
                 ->reject(fn ($status) => $status === OrderStatus::SUBMITTED)
                 ->map(fn ($status) => [
                     'value' => $status->value,
@@ -315,6 +318,7 @@ class OrderController extends Controller
                 && $order->designer_id === $user->id,
             'maxUploadMb' => (int) $request->user()->tenant->getSetting('max_upload_mb', 25),
             'allowedOutputExtensions' => $request->user()->tenant->getSetting('allowed_output_extensions', ''),
+            'timeline' => $this->buildTimeline($order),
         ]);
     }
 
@@ -460,9 +464,16 @@ class OrderController extends Controller
             'status' => ['required', Rule::in(array_map(fn ($case) => $case->value, OrderStatus::cases()))],
         ]);
 
+        $user = $request->user();
+        $newStatus = OrderStatus::from($validated['status']);
+        $role = $user->isDesigner() ? 'designer' : 'admin';
+
+        if (! $this->workflowService->canRoleTransition($order->status, $newStatus, $role)) {
+            return back()->withErrors(['status' => 'You do not have permission to perform this transition.']);
+        }
+
         try {
-            $newStatus = OrderStatus::from($validated['status']);
-            $action->execute($order, $newStatus, $request->user());
+            $action->execute($order, $newStatus, $user);
 
             return back()->with('success', 'Order status updated.');
         } catch (\InvalidArgumentException $e) {
@@ -636,5 +647,63 @@ class OrderController extends Controller
         $prefix = $prefix !== '' ? strtoupper($prefix) : 'ORD';
 
         return sprintf('%s-%05d', $prefix, $sequence);
+    }
+
+    private function buildTimeline(Order $order): array
+    {
+        $events = collect();
+
+        // Order created event
+        $events->push([
+            'type' => 'created',
+            'description' => 'Order created',
+            'user' => $order->creator?->name ?? 'System',
+            'timestamp' => $order->created_at?->toDateTimeString(),
+            'sort_at' => $order->created_at,
+        ]);
+
+        // Status change events
+        foreach ($order->statusHistory as $history) {
+            $fromLabel = ucwords(str_replace('_', ' ', $history->from_status->value));
+            $toLabel = ucwords(str_replace('_', ' ', $history->to_status->value));
+
+            $events->push([
+                'type' => 'status_change',
+                'description' => "Status changed from {$fromLabel} to {$toLabel}",
+                'user' => $history->changedBy?->name ?? 'System',
+                'notes' => $history->notes,
+                'timestamp' => $history->changed_at?->toDateTimeString(),
+                'sort_at' => $history->changed_at,
+            ]);
+        }
+
+        // Assignment events
+        foreach ($order->assignments as $assignment) {
+            $events->push([
+                'type' => 'assigned',
+                'description' => "Assigned to {$assignment->designer?->name}",
+                'user' => $assignment->assignedBy?->name ?? 'System',
+                'timestamp' => $assignment->assigned_at?->toDateTimeString(),
+                'sort_at' => $assignment->assigned_at,
+            ]);
+
+            if ($assignment->ended_at) {
+                $events->push([
+                    'type' => 'unassigned',
+                    'description' => "Unassigned from {$assignment->designer?->name}",
+                    'user' => null,
+                    'timestamp' => $assignment->ended_at?->toDateTimeString(),
+                    'sort_at' => $assignment->ended_at,
+                ]);
+            }
+        }
+
+        return $events->sortBy('sort_at')->values()->map(fn ($event) => [
+            'type' => $event['type'],
+            'description' => $event['description'],
+            'user' => $event['user'],
+            'notes' => $event['notes'] ?? null,
+            'timestamp' => $event['timestamp'],
+        ])->all();
     }
 }

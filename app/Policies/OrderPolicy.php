@@ -40,7 +40,20 @@ class OrderPolicy
 
     public function update(User $user, Order $order): bool
     {
-        return $user->tenant_id === $order->tenant_id && ($user->isAdmin() || $user->isManager());
+        if ($user->tenant_id !== $order->tenant_id) {
+            return false;
+        }
+
+        if ($user->isAdmin() || $user->isManager()) {
+            return true;
+        }
+
+        // Assigned designer can update (submit work, change status)
+        if ($user->isDesigner() && $order->designer_id === $user->id) {
+            return true;
+        }
+
+        return false;
     }
 
     public function delete(User $user, Order $order): bool
