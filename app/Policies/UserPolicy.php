@@ -8,7 +8,7 @@ class UserPolicy
 {
     private function canManage(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->hasAnyRole('Admin', 'Manager');
     }
 
     public function viewAny(User $user): bool

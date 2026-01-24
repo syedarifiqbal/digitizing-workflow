@@ -21,6 +21,7 @@ class Order extends Model
         'client_id',
         'created_by_user_id',
         'designer_id',
+        'sales_user_id',
         'order_number',
         'po_number',
         'sequence',
@@ -91,9 +92,19 @@ class Order extends Model
         return $this->belongsTo(User::class, 'designer_id');
     }
 
+    public function sales(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sales_user_id');
+    }
+
     public function files(): HasMany
     {
         return $this->hasMany(OrderFile::class);
+    }
+
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(OrderRevision::class)->latest();
     }
 
     public function assignments(): HasMany

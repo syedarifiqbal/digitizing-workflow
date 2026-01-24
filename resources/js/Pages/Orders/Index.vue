@@ -18,6 +18,7 @@ const props = defineProps({
     typeOptions: Array,
     clients: Array,
     designers: Array,
+    salesUsers: Array,
     counts: Object,
     typeStats: Object,
     showOrderCards: {
@@ -34,6 +35,7 @@ const filters = reactive({
     quote: props.filters?.quote ?? "0",
     client_id: props.filters?.client_id ?? "all",
     designer_id: props.filters?.designer_id ?? "all",
+    sales_user_id: props.filters?.sales_user_id ?? "all",
 });
 
 const orders = computed(() => {
@@ -147,6 +149,7 @@ const orderColumns = [
     { key: "type", label: "Type" },
     { key: "client", label: "Client" },
     { key: "designer", label: "Designer" },
+    { key: "sales", label: "Sales" },
     { key: "status", label: "Status" },
     { key: "priority", label: "Priority" },
     { key: "actions", label: "", headerClass: "text-right" },
@@ -268,7 +271,7 @@ const orderColumns = [
                 <div class="p-6">
                     <form
                         @submit.prevent="submitFilters"
-                        class="grid gap-5 md:grid-cols-6"
+                        class="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
                     >
                         <div>
                             <label
@@ -395,8 +398,30 @@ const orderColumns = [
                             </select>
                         </div>
 
+                        <div v-if="salesUsers && salesUsers.length">
+                            <label
+                                class="block text-sm font-medium text-slate-700"
+                                for="sales_user"
+                                >Sales</label
+                            >
+                            <select
+                                v-model="filters.sales_user_id"
+                                id="sales_user"
+                                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-400 focus:ring-indigo-400"
+                            >
+                                <option value="all">All sales</option>
+                                <option
+                                    v-for="user in salesUsers"
+                                    :key="user.id"
+                                    :value="user.id"
+                                >
+                                    {{ user.name }}
+                                </option>
+                            </select>
+                        </div>
+
                         <div
-                            class="md:col-span-6 flex flex-wrap items-center gap-3"
+                            class="md:col-span-full flex flex-wrap items-center gap-3"
                         >
                             <template v-if="isAllView">
                                 <Link
@@ -658,6 +683,11 @@ const orderColumns = [
                         <template #cell-designer="{ row }">
                             <span class="text-sm text-slate-900">{{
                                 row.designer ?? "—"
+                            }}</span>
+                        </template>
+                        <template #cell-sales="{ row }">
+                            <span class="text-sm text-slate-900">{{
+                                row.sales ?? "—"
                             }}</span>
                         </template>
                         <template #cell-status="{ row }">

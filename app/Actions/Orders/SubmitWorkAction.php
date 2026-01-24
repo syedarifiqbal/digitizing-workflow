@@ -28,6 +28,14 @@ class SubmitWorkAction
                 $this->fileStorageService->storeOrderFile($order, $file, 'output');
             }
 
+            // Resolve any open revisions
+            $order->revisions()
+                ->where('status', 'open')
+                ->update([
+                    'status' => 'resolved',
+                    'resolved_at' => now(),
+                ]);
+
             // Transition to submitted
             $previousStatus = $order->status;
             $order = $this->workflowService->transitionTo($order, OrderStatus::SUBMITTED);

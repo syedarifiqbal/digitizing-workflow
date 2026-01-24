@@ -14,7 +14,7 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
-    private array $roles = ['Admin', 'Manager', 'Designer', 'Client'];
+    private array $roles = ['Admin', 'Manager', 'Designer', 'Client', 'Sales'];
 
     public function index(Request $request): Response
     {

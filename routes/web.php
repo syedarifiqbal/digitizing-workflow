@@ -67,7 +67,12 @@ Route::middleware('auth')->group(function () {
         Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
         Route::post('orders/{order}/assign', [OrderController::class, 'assign'])->name('orders.assign');
         Route::delete('orders/{order}/assign', [OrderController::class, 'unassign'])->name('orders.unassign');
+        Route::post('orders/{order}/assign-sales', [OrderController::class, 'assignSales'])->name('orders.assign-sales');
+        Route::delete('orders/{order}/assign-sales', [OrderController::class, 'unassignSales'])->name('orders.unassign-sales');
         Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
+        Route::post('orders/{order}/request-revision', [OrderController::class, 'requestRevision'])->name('orders.request-revision');
+        Route::post('orders/{order}/deliver', [OrderController::class, 'deliverOrder'])->name('orders.deliver');
+        Route::post('orders/{order}/cancel', [OrderController::class, 'cancelOrder'])->name('orders.cancel');
         Route::post('orders/{order}/submit-work', [OrderController::class, 'submitWork'])->name('orders.submit-work');
         Route::get('orders/files/{file}/download', [OrderFileController::class, 'download'])
             ->name('orders.files.download')

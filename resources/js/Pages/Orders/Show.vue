@@ -13,7 +13,12 @@ const props = defineProps({
     outputFiles: Array,
     canAssign: Boolean,
     designers: Array,
+    salesUsers: Array,
     allowedTransitions: Array,
+    canRequestRevision: Boolean,
+    canDeliver: Boolean,
+    canCancel: Boolean,
+    revisions: Array,
     canSubmitWork: Boolean,
     maxUploadMb: Number,
     allowedOutputExtensions: String,
@@ -21,12 +26,27 @@ const props = defineProps({
 });
 
 const selectedDesigner = ref(props.order?.designer?.id ?? '');
+const selectedSales = ref(props.order?.sales?.id ?? '');
 const assigning = ref(false);
+const assigningSales = ref(false);
 const transitioning = ref(false);
 const submitting = ref(false);
 const submitFiles = ref([]);
 const submitNotes = ref('');
 const fileInput = ref(null);
+
+const showRevisionModal = ref(false);
+const revisionNotes = ref('');
+const requestingRevision = ref(false);
+
+const showDeliverModal = ref(false);
+const deliverMessage = ref('');
+const selectedFileIds = ref([]);
+const delivering = ref(false);
+
+const showCancelModal = ref(false);
+const cancelReason = ref('');
+const cancelling = ref(false);
 
 const page = usePage();
 
@@ -58,6 +78,96 @@ const unassignDesigner = () => {
         onFinish: () => {
             assigning.value = false;
             selectedDesigner.value = '';
+        },
+    });
+};
+
+const assignSales = () => {
+    if (!selectedSales.value) return;
+
+    assigningSales.value = true;
+    router.post(route('orders.assign-sales', props.order.id), {
+        sales_user_id: selectedSales.value,
+    }, {
+        preserveScroll: true,
+        onFinish: () => {
+            assigningSales.value = false;
+        },
+    });
+};
+
+const unassignSales = () => {
+    assigningSales.value = true;
+    router.delete(route('orders.unassign-sales', props.order.id), {
+        preserveScroll: true,
+        onFinish: () => {
+            assigningSales.value = false;
+            selectedSales.value = '';
+        },
+    });
+};
+
+const submitRevision = () => {
+    requestingRevision.value = true;
+    router.post(route('orders.request-revision', props.order.id), {
+        notes: revisionNotes.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showRevisionModal.value = false;
+            revisionNotes.value = '';
+        },
+        onFinish: () => {
+            requestingRevision.value = false;
+        },
+    });
+};
+
+const submitDeliver = () => {
+    delivering.value = true;
+    router.post(route('orders.deliver', props.order.id), {
+        message: deliverMessage.value,
+        file_ids: selectedFileIds.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showDeliverModal.value = false;
+            deliverMessage.value = '';
+            selectedFileIds.value = [];
+        },
+        onFinish: () => {
+            delivering.value = false;
+        },
+    });
+};
+
+const toggleFileSelection = (fileId) => {
+    const index = selectedFileIds.value.indexOf(fileId);
+    if (index === -1) {
+        selectedFileIds.value.push(fileId);
+    } else {
+        selectedFileIds.value.splice(index, 1);
+    }
+};
+
+const selectAllFiles = () => {
+    if (props.outputFiles?.length) {
+        selectedFileIds.value = props.outputFiles.map(f => f.id);
+    }
+};
+
+const submitCancel = () => {
+    cancelling.value = true;
+    router.post(route('orders.cancel', props.order.id), {
+        reason: cancelReason.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showCancelModal.value = false;
+            cancelReason.value = '';
+        },
+        onFinish: () => {
+            cancelling.value = false;
         },
     });
 };
@@ -210,6 +320,10 @@ const priorityBadgeClass = (priority) => {
                                         <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Designer</dt>
                                         <dd class="mt-1 text-sm text-gray-900">{{ order.designer?.name ?? 'Unassigned' }}</dd>
                                     </div>
+                                    <div>
+                                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Sales</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ order.sales?.name ?? 'Unassigned' }}</dd>
+                                    </div>
                                     <div v-if="order.po_number">
                                         <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">PO #</dt>
                                         <dd class="mt-1 text-sm text-gray-900">{{ order.po_number }}</dd>
@@ -349,6 +463,33 @@ const priorityBadgeClass = (priority) => {
                             </div>
                         </div>
 
+                        <!-- Revision History -->
+                        <div v-if="revisions?.length" class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-5 py-4 border-b border-gray-100">
+                                <h3 class="text-sm font-semibold text-gray-900">Revisions ({{ revisions.length }})</h3>
+                            </div>
+                            <div class="divide-y divide-gray-50">
+                                <div v-for="revision in revisions" :key="revision.id" class="px-5 py-3">
+                                    <div class="flex items-start justify-between">
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-sm text-gray-700 whitespace-pre-line">{{ revision.notes || 'No notes provided.' }}</p>
+                                            <p class="mt-1 text-xs text-gray-500">
+                                                Requested by {{ revision.requested_by }} &bull; {{ formatDate(revision.created_at, true) }}
+                                            </p>
+                                        </div>
+                                        <span
+                                            :class="[
+                                                'ml-3 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                                                revision.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                            ]"
+                                        >
+                                            {{ revision.status === 'resolved' ? 'Resolved' : 'Open' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Input Files -->
                         <div class="bg-white shadow-sm rounded-lg border border-gray-200">
                             <div class="px-5 py-4 border-b border-gray-100">
@@ -462,7 +603,7 @@ const priorityBadgeClass = (priority) => {
                     <div class="space-y-6">
 
                         <!-- Actions -->
-                        <div v-if="allowedTransitions?.length" class="bg-white shadow-sm rounded-lg border border-gray-200">
+                        <div v-if="allowedTransitions?.length || canRequestRevision || canDeliver || canCancel" class="bg-white shadow-sm rounded-lg border border-gray-200">
                             <div class="px-5 py-4 border-b border-gray-100">
                                 <h3 class="text-sm font-semibold text-gray-900">Actions</h3>
                             </div>
@@ -480,6 +621,30 @@ const priorityBadgeClass = (priority) => {
                                         @click="changeStatus(transition.value)"
                                     >
                                         {{ transition.label }}
+                                    </button>
+                                    <button
+                                        v-if="canDeliver"
+                                        type="button"
+                                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium shadow-sm bg-green-600 hover:bg-green-700 text-white"
+                                        @click="showDeliverModal = true; selectAllFiles()"
+                                    >
+                                        Deliver Order
+                                    </button>
+                                    <button
+                                        v-if="canRequestRevision"
+                                        type="button"
+                                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium shadow-sm bg-yellow-500 hover:bg-yellow-600 text-white"
+                                        @click="showRevisionModal = true"
+                                    >
+                                        Request Revision
+                                    </button>
+                                    <button
+                                        v-if="canCancel"
+                                        type="button"
+                                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium shadow-sm bg-red-600 hover:bg-red-700 text-white"
+                                        @click="showCancelModal = true"
+                                    >
+                                        Cancel Order
                                     </button>
                                 </div>
                             </div>
@@ -530,6 +695,51 @@ const priorityBadgeClass = (priority) => {
                             </div>
                         </div>
 
+                        <!-- Sales Assignment -->
+                        <div v-if="canAssign && salesUsers?.length" class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-5 py-4 border-b border-gray-100">
+                                <h3 class="text-sm font-semibold text-gray-900">Assign Sales</h3>
+                            </div>
+                            <div class="px-5 py-4">
+                                <div class="space-y-3">
+                                    <select
+                                        v-model="selectedSales"
+                                        class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        :disabled="assigningSales"
+                                    >
+                                        <option value="">Unassigned</option>
+                                        <option
+                                            v-for="user in salesUsers"
+                                            :key="user.id"
+                                            :value="user.id"
+                                        >
+                                            {{ user.name }}
+                                        </option>
+                                    </select>
+                                    <div class="flex gap-2">
+                                        <button
+                                            v-if="selectedSales && selectedSales !== order.sales?.id"
+                                            type="button"
+                                            class="flex-1 inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                                            :disabled="assigningSales"
+                                            @click="assignSales"
+                                        >
+                                            Assign
+                                        </button>
+                                        <button
+                                            v-if="order.sales && selectedSales === ''"
+                                            type="button"
+                                            class="flex-1 inline-flex justify-center items-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                                            :disabled="assigningSales"
+                                            @click="unassignSales"
+                                        >
+                                            Unassign
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Activity Timeline -->
                         <div v-if="timeline?.length" class="bg-white shadow-sm rounded-lg border border-gray-200">
                             <div class="px-5 py-4 border-b border-gray-100">
@@ -539,6 +749,146 @@ const priorityBadgeClass = (priority) => {
                                 <OrderTimeline :events="timeline" />
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Deliver Order Modal -->
+        <div v-if="showDeliverModal" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-gray-500/75" @click="showDeliverModal = false"></div>
+                <div class="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+                    <h3 class="text-lg font-semibold text-gray-900">Deliver Order</h3>
+                    <p class="mt-1 text-sm text-gray-500">Send the completed work to the client via email.</p>
+
+                    <div class="mt-4 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Message to Client (optional)</label>
+                            <textarea
+                                v-model="deliverMessage"
+                                rows="3"
+                                placeholder="Add a message or feedback for the client..."
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                            ></textarea>
+                        </div>
+
+                        <div v-if="outputFiles?.length">
+                            <label class="block text-sm font-medium text-gray-700">Attach Files</label>
+                            <p class="text-xs text-gray-500 mt-0.5">Select which files to send as email attachments.</p>
+                            <div class="mt-2 max-h-48 overflow-y-auto rounded-md border border-gray-200 divide-y divide-gray-100">
+                                <label
+                                    v-for="file in outputFiles"
+                                    :key="file.id"
+                                    class="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        :checked="selectedFileIds.includes(file.id)"
+                                        @change="toggleFileSelection(file.id)"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-medium text-gray-900 truncate">{{ file.original_name }}</p>
+                                        <p class="text-xs text-gray-500">{{ formatSize(file.size) }}</p>
+                                    </div>
+                                </label>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">{{ selectedFileIds.length }} of {{ outputFiles.length }} files selected</p>
+                        </div>
+
+                        <div v-else class="rounded-md border border-yellow-200 bg-yellow-50 p-3">
+                            <p class="text-sm text-yellow-700">No output files available. The email will be sent without attachments.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            @click="showDeliverModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            :disabled="delivering"
+                            class="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                            @click="submitDeliver"
+                        >
+                            {{ delivering ? 'Delivering...' : 'Deliver & Notify Client' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revision Request Modal -->
+        <div v-if="showRevisionModal" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-gray-500/75" @click="showRevisionModal = false"></div>
+                <div class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                    <h3 class="text-lg font-semibold text-gray-900">Request Revision</h3>
+                    <p class="mt-1 text-sm text-gray-500">Provide feedback on what needs to be changed.</p>
+                    <div class="mt-4">
+                        <textarea
+                            v-model="revisionNotes"
+                            rows="4"
+                            placeholder="Describe what changes are needed..."
+                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        ></textarea>
+                    </div>
+                    <div class="mt-4 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            @click="showRevisionModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            :disabled="requestingRevision"
+                            class="rounded-md bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 disabled:opacity-50"
+                            @click="submitRevision"
+                        >
+                            {{ requestingRevision ? 'Requesting...' : 'Request Revision' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cancel Order Modal -->
+        <div v-if="showCancelModal" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-gray-500/75" @click="showCancelModal = false"></div>
+                <div class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                    <h3 class="text-lg font-semibold text-gray-900">Cancel Order</h3>
+                    <p class="mt-1 text-sm text-gray-500">This action cannot be undone. Please provide a reason.</p>
+                    <div class="mt-4">
+                        <textarea
+                            v-model="cancelReason"
+                            rows="3"
+                            placeholder="Reason for cancellation..."
+                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        ></textarea>
+                    </div>
+                    <div class="mt-4 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            @click="showCancelModal = false"
+                        >
+                            Keep Order
+                        </button>
+                        <button
+                            type="button"
+                            :disabled="!cancelReason.trim() || cancelling"
+                            class="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                            @click="submitCancel"
+                        >
+                            {{ cancelling ? 'Cancelling...' : 'Cancel Order' }}
+                        </button>
                     </div>
                 </div>
             </div>

@@ -7,6 +7,7 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Models\Client;
 use App\Models\Order;
+use App\Models\OrderStatusHistory;
 use App\Models\User;
 use App\Actions\Orders\AssignOrderAction;
 use App\Actions\Orders\SubmitWorkAction;
@@ -33,12 +34,12 @@ class OrderController extends Controller
     {
         $this->authorize('viewAny', Order::class);
 
-        $filters = $request->only(['search', 'status', 'priority', 'client_id', 'designer_id', 'type', 'quote']);
+        $filters = $request->only(['search', 'status', 'priority', 'client_id', 'designer_id', 'sales_user_id', 'type', 'quote']);
         $tenantId = $request->user()->tenant_id;
         $quoteView = filter_var($filters['quote'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $query = Order::query()
-            ->with(['client:id,name', 'designer:id,name'])
+            ->with(['client:id,name', 'designer:id,name', 'sales:id,name'])
             ->forTenant($tenantId)
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($subQuery) use ($search) {
@@ -69,6 +70,11 @@ class OrderController extends Controller
             ->when($filters['designer_id'] ?? null, function ($query, $designerId) {
                 if ($designerId !== 'all') {
                     $query->where('designer_id', $designerId);
+                }
+            })
+            ->when($filters['sales_user_id'] ?? null, function ($query, $salesUserId) {
+                if ($salesUserId !== 'all') {
+                    $query->where('sales_user_id', $salesUserId);
                 }
             })
             ->when($quoteView, fn ($query) => $query->where('is_quote', true), function ($query) {
@@ -103,6 +109,7 @@ class OrderController extends Controller
                 'quote' => $quoteView ? '1' : '0',
                 'client_id' => $filters['client_id'] ?? 'all',
                 'designer_id' => $filters['designer_id'] ?? 'all',
+                'sales_user_id' => $filters['sales_user_id'] ?? 'all',
             ],
             'statusOptions' => collect(OrderStatus::cases())->map(fn ($case) => [
                 'label' => ucwords(str_replace('_', ' ', $case->value)),
@@ -125,6 +132,10 @@ class OrderController extends Controller
             'designers' => $this->designerOptions($request)->map(fn ($designer) => [
                 'id' => $designer->id,
                 'name' => $designer->name,
+            ]),
+            'salesUsers' => $this->salesOptions($request)->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
             ]),
             'counts' => [
                 'orders' => [
@@ -151,6 +162,7 @@ class OrderController extends Controller
                     'priority' => $order->priority->value,
                     'client' => $order->client?->name,
                     'designer' => $order->designer?->name,
+                    'sales' => $order->sales?->name,
                     'due_at' => optional($order->due_at)?->toDateTimeString(),
                     'created_at' => $order->created_at?->toDateTimeString(),
                 ]),
@@ -258,7 +270,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['client', 'designer', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy']);
+        $order->load(['client', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'revisions.requestedBy']);
 
         $user = $request->user();
         $canAssign = $user->isAdmin() || $user->isManager();
@@ -296,6 +308,10 @@ class OrderController extends Controller
                 'designer' => $order->designer ? [
                     'id' => $order->designer->id,
                     'name' => $order->designer->name,
+                ] : null,
+                'sales' => $order->sales ? [
+                    'id' => $order->sales->id,
+                    'name' => $order->sales->name,
                 ] : null,
                 'price_amount' => $order->price_amount,
                 'currency' => $order->currency,
@@ -336,17 +352,37 @@ class OrderController extends Controller
                 'id' => $designer->id,
                 'name' => $designer->name,
             ]) : [],
+            'salesUsers' => $canAssign ? $this->salesOptions($request)->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+            ]) : [],
             'allowedTransitions' => collect($this->workflowService->getAllowedTransitionsForRole(
                     $order->status,
                     $user->isDesigner() ? 'designer' : 'admin'
                 ))
-                ->reject(fn ($status) => $status === OrderStatus::SUBMITTED)
+                ->reject(fn ($status) => in_array($status, [
+                    OrderStatus::SUBMITTED,
+                    OrderStatus::REVISION_REQUESTED,
+                    OrderStatus::DELIVERED,
+                    OrderStatus::CANCELLED,
+                ]))
                 ->map(fn ($status) => [
                     'value' => $status->value,
                     'label' => $this->workflowService->getStatusLabel($status),
                     'style' => $this->workflowService->getTransitionStyle($status),
                 ])
                 ->values(),
+            'canRequestRevision' => $canAssign && in_array($order->status, [OrderStatus::SUBMITTED, OrderStatus::IN_REVIEW]),
+            'canDeliver' => $canAssign && $order->status === OrderStatus::APPROVED,
+            'canCancel' => $canAssign && $this->workflowService->canTransitionTo($order->status, OrderStatus::CANCELLED),
+            'revisions' => $order->revisions->map(fn ($rev) => [
+                'id' => $rev->id,
+                'notes' => $rev->notes,
+                'status' => $rev->status,
+                'requested_by' => $rev->requestedBy?->name,
+                'created_at' => $rev->created_at?->toDateTimeString(),
+                'resolved_at' => $rev->resolved_at?->toDateTimeString(),
+            ]),
             'canSubmitWork' => $order->status === OrderStatus::IN_PROGRESS
                 && $user->isDesigner()
                 && $order->designer_id === $user->id,
@@ -523,6 +559,65 @@ class OrderController extends Controller
         return back()->with('success', 'Designer unassigned.');
     }
 
+    public function assignSales(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $validated = $request->validate([
+            'sales_user_id' => [
+                'required',
+                Rule::exists('users', 'id')->where('tenant_id', $request->user()->tenant_id),
+            ],
+        ]);
+
+        $salesUser = User::findOrFail($validated['sales_user_id']);
+
+        if (! $salesUser->hasRole('Sales')) {
+            return back()->withErrors(['sales_user_id' => 'Selected user is not a sales person.']);
+        }
+
+        $previousSales = $order->sales;
+
+        $order->update(['sales_user_id' => $salesUser->id]);
+
+        // Log in status history
+        OrderStatusHistory::create([
+            'tenant_id' => $order->tenant_id,
+            'order_id' => $order->id,
+            'from_status' => $order->status->value,
+            'to_status' => $order->status->value,
+            'changed_by_user_id' => $request->user()->id,
+            'changed_at' => now(),
+            'notes' => $previousSales
+                ? "Sales reassigned from {$previousSales->name} to {$salesUser->name}"
+                : "Sales assigned to {$salesUser->name}",
+        ]);
+
+        return back()->with('success', 'Sales person assigned.');
+    }
+
+    public function unassignSales(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $previousSales = $order->sales;
+        $order->update(['sales_user_id' => null]);
+
+        if ($previousSales) {
+            OrderStatusHistory::create([
+                'tenant_id' => $order->tenant_id,
+                'order_id' => $order->id,
+                'from_status' => $order->status->value,
+                'to_status' => $order->status->value,
+                'changed_by_user_id' => $request->user()->id,
+                'changed_at' => now(),
+                'notes' => "Sales unassigned ({$previousSales->name})",
+            ]);
+        }
+
+        return back()->with('success', 'Sales person unassigned.');
+    }
+
     public function updateStatus(Request $request, Order $order, TransitionOrderStatusAction $action): RedirectResponse
     {
         $this->authorize('update', $order);
@@ -540,12 +635,117 @@ class OrderController extends Controller
         }
 
         try {
-            $action->execute($order, $newStatus, $user);
+            $order = $action->execute($order, $newStatus, $user);
 
             return back()->with('success', 'Order status updated.');
         } catch (\InvalidArgumentException $e) {
             return back()->withErrors(['status' => $e->getMessage()]);
         }
+    }
+
+    public function requestRevision(Request $request, Order $order, \App\Actions\Orders\RequestRevisionAction $action): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $validated = $request->validate([
+            'notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $user = $request->user();
+
+        if (! ($user->isAdmin() || $user->isManager())) {
+            abort(403, 'Only admins and managers can request revisions.');
+        }
+
+        if (! in_array($order->status, [OrderStatus::SUBMITTED, OrderStatus::IN_REVIEW])) {
+            return back()->withErrors(['status' => 'Revisions can only be requested for submitted or in-review orders.']);
+        }
+
+        $action->execute($order, $user, $validated['notes'] ?? null);
+
+        return back()->with('success', 'Revision requested.');
+    }
+
+    public function cancelOrder(Request $request, Order $order, TransitionOrderStatusAction $action): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $this->workflowService->canTransitionTo($order->status, OrderStatus::CANCELLED)) {
+            return back()->withErrors(['status' => 'This order cannot be cancelled.']);
+        }
+
+        $order = $action->execute($order, OrderStatus::CANCELLED, $user);
+
+        // Log the cancellation reason
+        $order->statusHistory()->create([
+            'tenant_id' => $order->tenant_id,
+            'from_status' => OrderStatus::CANCELLED->value,
+            'to_status' => OrderStatus::CANCELLED->value,
+            'changed_by_user_id' => $user->id,
+            'changed_at' => now(),
+            'notes' => "Cancellation reason: {$validated['reason']}",
+        ]);
+
+        return back()->with('success', 'Order cancelled.');
+    }
+
+    public function deliverOrder(Request $request, Order $order, TransitionOrderStatusAction $action): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $validated = $request->validate([
+            'message' => ['nullable', 'string', 'max:5000'],
+            'file_ids' => ['nullable', 'array'],
+            'file_ids.*' => ['integer', 'exists:order_files,id'],
+        ]);
+
+        $user = $request->user();
+
+        if ($order->status !== OrderStatus::APPROVED) {
+            return back()->withErrors(['status' => 'Only approved orders can be delivered.']);
+        }
+
+        // Transition to delivered
+        $order = $action->execute($order, OrderStatus::DELIVERED, $user);
+
+        // Log delivery message
+        if (! empty($validated['message'])) {
+            $order->statusHistory()->create([
+                'tenant_id' => $order->tenant_id,
+                'from_status' => OrderStatus::DELIVERED->value,
+                'to_status' => OrderStatus::DELIVERED->value,
+                'changed_by_user_id' => $user->id,
+                'changed_at' => now(),
+                'notes' => "Delivery message: {$validated['message']}",
+            ]);
+        }
+
+        // Send delivery notification to client with attachments
+        $order->load('client');
+        $notification = new \App\Notifications\OrderDeliveredNotification(
+            $order,
+            $validated['message'] ?? null,
+            $validated['file_ids'] ?? []
+        );
+
+        $clientUser = User::where('client_id', $order->client_id)
+            ->where('tenant_id', $order->tenant_id)
+            ->first();
+
+        if ($clientUser) {
+            $clientUser->notify($notification);
+        } elseif ($order->client?->email) {
+            \Illuminate\Support\Facades\Notification::route('mail', $order->client->email)
+                ->notify($notification);
+        }
+
+        return back()->with('success', 'Order delivered and client notified.');
     }
 
     public function submitWork(Request $request, Order $order, SubmitWorkAction $action): RedirectResponse
@@ -749,6 +949,15 @@ class OrderController extends Controller
         return User::query()
             ->where('tenant_id', $request->user()->tenant_id)
             ->whereHas('roles', fn ($q) => $q->where('name', 'Designer'))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    private function salesOptions(Request $request)
+    {
+        return User::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->whereHas('roles', fn ($q) => $q->where('name', 'Sales'))
             ->orderBy('name')
             ->get(['id', 'name']);
     }
