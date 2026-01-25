@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderFileController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
@@ -103,5 +104,12 @@ Route::middleware('auth')->group(function () {
 
         // Designer Portal
         Route::get('/my-work', [DesignerController::class, 'dashboard'])->name('designer.dashboard');
+
+        // Client Portal
+        Route::get('/client/dashboard', [ClientPortalController::class, 'dashboard'])->name('client.dashboard');
+        Route::get('/client/orders', [ClientPortalController::class, 'orders'])->name('client.orders.index');
+        Route::get('/client/orders/create', [ClientPortalController::class, 'createOrder'])->name('client.orders.create');
+        Route::post('/client/orders', [ClientPortalController::class, 'storeOrder'])->name('client.orders.store');
+        Route::get('/client/orders/{order}', [ClientPortalController::class, 'showOrder'])->name('client.orders.show');
     });
 });
