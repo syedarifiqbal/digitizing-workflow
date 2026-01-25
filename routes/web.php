@@ -15,6 +15,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DesignerController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\CommissionRuleController;
 use App\Http\Controllers\TenantSettingsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +82,13 @@ Route::middleware('auth')->group(function () {
             ->name('orders.files.destroy');
         Route::delete('users/bulk', [UserController::class, 'bulkDestroy'])->name('users.bulk-destroy');
         Route::resource('users', UserController::class)->except(['show']);
+
+        // Commission Rules
+        Route::get('/commission-rules/sales', [CommissionRuleController::class, 'salesIndex'])->name('commission-rules.sales.index');
+        Route::get('/commission-rules/designer', [CommissionRuleController::class, 'designerIndex'])->name('commission-rules.designer.index');
+        Route::post('/commission-rules', [CommissionRuleController::class, 'store'])->name('commission-rules.store');
+        Route::put('/commission-rules/{commissionRule}', [CommissionRuleController::class, 'update'])->name('commission-rules.update');
+        Route::delete('/commission-rules/{commissionRule}', [CommissionRuleController::class, 'destroy'])->name('commission-rules.destroy');
 
         // Designer Portal
         Route::get('/my-work', [DesignerController::class, 'dashboard'])->name('designer.dashboard');
