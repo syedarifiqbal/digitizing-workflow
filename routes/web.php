@@ -16,6 +16,7 @@ use App\Http\Controllers\DesignerController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\CommissionRuleController;
+use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\TenantSettingsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -89,6 +90,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/commission-rules', [CommissionRuleController::class, 'store'])->name('commission-rules.store');
         Route::put('/commission-rules/{commissionRule}', [CommissionRuleController::class, 'update'])->name('commission-rules.update');
         Route::delete('/commission-rules/{commissionRule}', [CommissionRuleController::class, 'destroy'])->name('commission-rules.destroy');
+
+        // Commissions
+        Route::get('/commissions', [CommissionController::class, 'index'])->name('commissions.index');
+        Route::get('/commissions/export', [CommissionController::class, 'export'])->name('commissions.export');
+        Route::post('/commissions/{commission}/mark-paid', [CommissionController::class, 'markAsPaid'])->name('commissions.mark-paid');
+        Route::post('/commissions/bulk-mark-paid', [CommissionController::class, 'bulkMarkAsPaid'])->name('commissions.bulk-mark-paid');
+
+        // My Earnings (Sales & Designer)
+        Route::get('/my-earnings', [CommissionController::class, 'myCommissions'])->name('commissions.my');
+        Route::get('/my-earnings/export', [CommissionController::class, 'exportMy'])->name('commissions.my.export');
 
         // Designer Portal
         Route::get('/my-work', [DesignerController::class, 'dashboard'])->name('designer.dashboard');

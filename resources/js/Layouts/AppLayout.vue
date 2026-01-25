@@ -4,6 +4,7 @@ import { Link, usePage, useForm } from "@inertiajs/vue3";
 
 const showMobileMenu = ref(false);
 const showUserMenu = ref(false);
+const showReportsMenu = ref(false);
 
 const page = usePage();
 const user = page.props.auth?.user;
@@ -133,30 +134,80 @@ const logout = () => {
                             >
                                 Users
                             </Link>
-                            <Link
-                                v-if="user?.is_admin || user?.is_manager"
-                                :href="route('commission-rules.sales.index')"
-                                class="inline-flex items-center rounded-full px-3 py-1.5 transition"
-                                :class="
-                                    route().current('commission-rules.sales.*')
-                                        ? 'bg-indigo-100 text-indigo-700'
-                                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                                "
-                            >
-                                Sales
-                            </Link>
-                            <Link
-                                v-if="user?.is_admin || user?.is_manager"
-                                :href="route('commission-rules.designer.index')"
-                                class="inline-flex items-center rounded-full px-3 py-1.5 transition"
-                                :class="
-                                    route().current('commission-rules.designer.*')
-                                        ? 'bg-indigo-100 text-indigo-700'
-                                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                                "
-                            >
-                                Designers
-                            </Link>
+                            <!-- Reports Dropdown -->
+                            <div v-if="user?.is_admin || user?.is_manager || user?.is_sales || user?.is_designer" class="relative">
+                                <button
+                                    @click="showReportsMenu = !showReportsMenu"
+                                    class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 transition"
+                                    :class="
+                                        route().current('commissions.*') || route().current('commission-rules.*')
+                                            ? 'bg-indigo-100 text-indigo-700'
+                                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                                    "
+                                >
+                                    Reports
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div
+                                    v-if="showReportsMenu"
+                                    @click="showReportsMenu = false"
+                                    class="absolute left-0 top-full mt-1 w-56 origin-top-left rounded-lg border border-slate-200 bg-white shadow-lg"
+                                >
+                                    <div class="py-1">
+                                        <Link
+                                            v-if="user?.is_admin || user?.is_manager"
+                                            :href="route('commissions.index')"
+                                            class="block px-4 py-2 text-sm transition hover:bg-slate-50"
+                                            :class="
+                                                route().current('commissions.index')
+                                                    ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                    : 'text-slate-700'
+                                            "
+                                        >
+                                            All Commissions
+                                        </Link>
+                                        <Link
+                                            v-if="user?.is_sales || user?.is_designer"
+                                            :href="route('commissions.my')"
+                                            class="block px-4 py-2 text-sm transition hover:bg-slate-50"
+                                            :class="
+                                                route().current('commissions.my')
+                                                    ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                    : 'text-slate-700'
+                                            "
+                                        >
+                                            My Earnings
+                                        </Link>
+                                        <div v-if="user?.is_admin || user?.is_manager" class="my-1 border-t border-slate-200"></div>
+                                        <Link
+                                            v-if="user?.is_admin || user?.is_manager"
+                                            :href="route('commission-rules.sales.index')"
+                                            class="block px-4 py-2 text-sm transition hover:bg-slate-50"
+                                            :class="
+                                                route().current('commission-rules.sales.*')
+                                                    ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                    : 'text-slate-700'
+                                            "
+                                        >
+                                            Sales Rules
+                                        </Link>
+                                        <Link
+                                            v-if="user?.is_admin || user?.is_manager"
+                                            :href="route('commission-rules.designer.index')"
+                                            class="block px-4 py-2 text-sm transition hover:bg-slate-50"
+                                            :class="
+                                                route().current('commission-rules.designer.*')
+                                                    ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                    : 'text-slate-700'
+                                            "
+                                        >
+                                            Designer Rules
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
                             <Link
                                 v-if="user?.is_admin"
                                 :href="route('settings.edit')"
@@ -330,30 +381,60 @@ const logout = () => {
                         >
                             Users
                         </Link>
-                        <Link
-                            v-if="user?.is_admin || user?.is_manager"
-                            :href="route('commission-rules.sales.index')"
-                            class="block rounded-lg px-4 py-2 text-base font-medium"
-                            :class="
-                                route().current('commission-rules.sales.*')
-                                    ? 'bg-indigo-50 text-indigo-700'
-                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                            "
-                        >
-                            Sales Commissions
-                        </Link>
-                        <Link
-                            v-if="user?.is_admin || user?.is_manager"
-                            :href="route('commission-rules.designer.index')"
-                            class="block rounded-lg px-4 py-2 text-base font-medium"
-                            :class="
-                                route().current('commission-rules.designer.*')
-                                    ? 'bg-indigo-50 text-indigo-700'
-                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                            "
-                        >
-                            Designer Bonuses
-                        </Link>
+                        <!-- Reports Section -->
+                        <div v-if="user?.is_admin || user?.is_manager || user?.is_sales || user?.is_designer" class="space-y-1">
+                            <div class="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Reports
+                            </div>
+                            <Link
+                                v-if="user?.is_admin || user?.is_manager"
+                                :href="route('commissions.index')"
+                                class="block rounded-lg px-4 py-2 text-base font-medium"
+                                :class="
+                                    route().current('commissions.index')
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                All Commissions
+                            </Link>
+                            <Link
+                                v-if="user?.is_sales || user?.is_designer"
+                                :href="route('commissions.my')"
+                                class="block rounded-lg px-4 py-2 text-base font-medium"
+                                :class="
+                                    route().current('commissions.my')
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                My Earnings
+                            </Link>
+                            <Link
+                                v-if="user?.is_admin || user?.is_manager"
+                                :href="route('commission-rules.sales.index')"
+                                class="block rounded-lg px-4 py-2 text-base font-medium"
+                                :class="
+                                    route().current('commission-rules.sales.*')
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                Sales Rules
+                            </Link>
+                            <Link
+                                v-if="user?.is_admin || user?.is_manager"
+                                :href="route('commission-rules.designer.index')"
+                                class="block rounded-lg px-4 py-2 text-base font-medium"
+                                :class="
+                                    route().current('commission-rules.designer.*')
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                Designer Rules
+                            </Link>
+                        </div>
                         <Link
                             v-if="user?.is_admin"
                             :href="route('settings.edit')"

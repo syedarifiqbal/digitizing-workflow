@@ -60,6 +60,8 @@ class RegisterTenantAction
             'date_format' => 'DD/MM/YYYY',
             'order_number_prefix' => '',
             'show_order_cards' => false,
+            'auto_assign_on_designer' => true,
+            'auto_submit_on_upload' => true,
         ];
     }
 }
