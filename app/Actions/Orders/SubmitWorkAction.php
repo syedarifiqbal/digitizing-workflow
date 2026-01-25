@@ -5,6 +5,7 @@ namespace App\Actions\Orders;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\CommissionCalculator;
 use App\Services\FileStorageService;
 use App\Services\WorkflowService;
 use Illuminate\Http\UploadedFile;
@@ -14,7 +15,8 @@ class SubmitWorkAction
 {
     public function __construct(
         private WorkflowService $workflowService,
-        private FileStorageService $fileStorageService
+        private FileStorageService $fileStorageService,
+        private CommissionCalculator $commissionCalculator
     ) {}
 
     /**
@@ -49,6 +51,9 @@ class SubmitWorkAction
                 'changed_at' => now(),
                 'notes' => $notes,
             ]);
+
+            // Process commissions
+            $this->commissionCalculator->processOrderCommissions($order, OrderStatus::SUBMITTED->value);
 
             return $order;
         });
