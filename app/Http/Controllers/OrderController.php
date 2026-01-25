@@ -270,7 +270,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['client', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'revisions.requestedBy']);
+        $order->load(['client', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'revisions.requestedBy', 'commissions.user']);
 
         $user = $request->user();
         $canAssign = $user->isAdmin() || $user->isManager();
@@ -389,6 +389,26 @@ class OrderController extends Controller
             'maxUploadMb' => (int) $request->user()->tenant->getSetting('max_upload_mb', 25),
             'allowedOutputExtensions' => $request->user()->tenant->getSetting('allowed_output_extensions', ''),
             'timeline' => $this->buildTimeline($order),
+            'enableDesignerTips' => $order->tenant->getSetting('enable_designer_tips', false),
+            'currency' => $order->tenant->getSetting('currency', 'USD'),
+            'commissions' => $order->commissions->map(fn ($commission) => [
+                'id' => $commission->id,
+                'user' => $commission->user ? [
+                    'id' => $commission->user->id,
+                    'name' => $commission->user->name,
+                ] : null,
+                'role_type' => $commission->role_type->value,
+                'role_label' => $commission->role_type->label(),
+                'base_amount' => $commission->base_amount,
+                'extra_amount' => $commission->extra_amount,
+                'total_amount' => $commission->total_amount,
+                'currency' => $commission->currency,
+                'earned_on_status' => $commission->earned_on_status,
+                'earned_at' => $commission->earned_at?->toDateTimeString(),
+                'is_paid' => $commission->is_paid,
+                'paid_at' => $commission->paid_at?->toDateTimeString(),
+                'notes' => $commission->notes,
+            ]),
         ]);
     }
 
@@ -703,12 +723,18 @@ class OrderController extends Controller
             'message' => ['nullable', 'string', 'max:5000'],
             'file_ids' => ['nullable', 'array'],
             'file_ids.*' => ['integer', 'exists:order_files,id'],
+            'designer_tip' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $user = $request->user();
 
         if ($order->status !== OrderStatus::APPROVED) {
             return back()->withErrors(['status' => 'Only approved orders can be delivered.']);
+        }
+
+        // Store designer tip to pass to commission calculator
+        if (isset($validated['designer_tip']) && $validated['designer_tip'] > 0) {
+            $order->setAttribute('pending_designer_tip', (float) $validated['designer_tip']);
         }
 
         // Transition to delivered
@@ -1078,6 +1104,22 @@ class OrderController extends Controller
                     'sort_at' => $assignment->ended_at,
                 ]);
             }
+        }
+
+        // Commission events
+        foreach ($order->commissions as $commission) {
+            $userName = $commission->user?->name ?? 'Unknown';
+            $roleLabel = $commission->role_type->label();
+            $amount = number_format($commission->total_amount, 2);
+
+            $events->push([
+                'type' => 'commission',
+                'description' => "{$roleLabel} earned for {$userName}: {$commission->currency} {$amount}",
+                'user' => 'System',
+                'notes' => $commission->notes,
+                'timestamp' => $commission->earned_at?->toDateTimeString(),
+                'sort_at' => $commission->earned_at,
+            ]);
         }
 
         return $events->sortBy('sort_at')->values()->map(fn ($event) => [

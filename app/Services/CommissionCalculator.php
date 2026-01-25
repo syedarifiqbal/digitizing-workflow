@@ -59,6 +59,12 @@ class CommissionCalculator
             return $existing;
         }
 
+        // Prepare notes for tip
+        $notes = null;
+        if ($extraAmount > 0 && $roleType === RoleType::DESIGNER) {
+            $notes = "Includes {$rule->currency} " . number_format($extraAmount, 2) . " tip from admin";
+        }
+
         // Create commission record
         return Commission::create([
             'tenant_id' => $order->tenant_id,
@@ -71,6 +77,7 @@ class CommissionCalculator
             'currency' => $rule->currency,
             'earned_on_status' => $earnedOnStatus,
             'earned_at' => now(),
+            'notes' => $notes,
             'rule_snapshot' => [
                 'type' => $rule->type->value,
                 'fixed_amount' => $rule->fixed_amount,
@@ -119,16 +126,20 @@ class CommissionCalculator
             }
         }
 
-        // Designer bonus
+        // Designer bonus (with optional tip)
         if ($order->designer_user_id) {
             $designerEarnedOn = $tenant->getSetting('designer_bonus_earned_on', 'delivered');
 
             if ($status === $designerEarnedOn) {
+                // Check for designer tip (set during delivery)
+                $tip = $order->getAttribute('pending_designer_tip') ?? 0;
+
                 $this->calculateAndCreate(
                     $order,
                     $order->designer_user_id,
                     RoleType::DESIGNER,
-                    $status
+                    $status,
+                    $tip > 0 ? $tip : null
                 );
             }
         }

@@ -23,6 +23,9 @@ const props = defineProps({
     maxUploadMb: Number,
     allowedOutputExtensions: String,
     timeline: Array,
+    enableDesignerTips: Boolean,
+    currency: String,
+    commissions: Array,
 });
 
 const selectedDesigner = ref(props.order?.designer?.id ?? '');
@@ -43,10 +46,15 @@ const showDeliverModal = ref(false);
 const deliverMessage = ref('');
 const selectedFileIds = ref([]);
 const delivering = ref(false);
+const designerTip = ref('');
 
 const showCancelModal = ref(false);
 const cancelReason = ref('');
 const cancelling = ref(false);
+
+const showStatusModal = ref(false);
+const pendingStatus = ref(null);
+const pendingTransition = ref(null);
 
 const page = usePage();
 
@@ -125,15 +133,24 @@ const submitRevision = () => {
 
 const submitDeliver = () => {
     delivering.value = true;
-    router.post(route('orders.deliver', props.order.id), {
+
+    const data = {
         message: deliverMessage.value,
         file_ids: selectedFileIds.value,
-    }, {
+    };
+
+    // Add designer tip if enabled and has value
+    if (props.enableDesignerTips && designerTip.value) {
+        data.designer_tip = parseFloat(designerTip.value) || 0;
+    }
+
+    router.post(route('orders.deliver', props.order.id), data, {
         preserveScroll: true,
         onSuccess: () => {
             showDeliverModal.value = false;
             deliverMessage.value = '';
             selectedFileIds.value = [];
+            designerTip.value = '';
         },
         onFinish: () => {
             delivering.value = false;
@@ -172,14 +189,26 @@ const submitCancel = () => {
     });
 };
 
-const changeStatus = (status) => {
+const showStatusConfirmation = (status, transition) => {
+    pendingStatus.value = status;
+    pendingTransition.value = transition;
+    showStatusModal.value = true;
+};
+
+const confirmStatusChange = () => {
+    if (!pendingStatus.value) return;
+
     transitioning.value = true;
+    showStatusModal.value = false;
+
     router.patch(route('orders.status', props.order.id), {
-        status: status,
+        status: pendingStatus.value,
     }, {
         preserveScroll: true,
         onFinish: () => {
             transitioning.value = false;
+            pendingStatus.value = null;
+            pendingTransition.value = null;
         },
     });
 };
@@ -618,7 +647,7 @@ const priorityBadgeClass = (priority) => {
                                             'inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium shadow-sm disabled:opacity-50',
                                             getButtonClass(transition.style)
                                         ]"
-                                        @click="changeStatus(transition.value)"
+                                        @click="showStatusConfirmation(transition.value, transition)"
                                     >
                                         {{ transition.label }}
                                     </button>
@@ -740,6 +769,59 @@ const priorityBadgeClass = (priority) => {
                             </div>
                         </div>
 
+                        <!-- Commissions -->
+                        <div v-if="commissions?.length" class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-5 py-4 border-b border-gray-100">
+                                <h3 class="text-sm font-semibold text-gray-900">Commissions & Earnings</h3>
+                            </div>
+                            <div class="divide-y divide-gray-50">
+                                <div v-for="commission in commissions" :key="commission.id" class="px-5 py-4">
+                                    <div class="flex items-start justify-between">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
+                                                    :class="{
+                                                        'bg-blue-50 text-blue-700 ring-blue-600/20': commission.role_type === 'sales',
+                                                        'bg-purple-50 text-purple-700 ring-purple-600/20': commission.role_type === 'designer'
+                                                    }">
+                                                    {{ commission.role_label }}
+                                                </span>
+                                                <span class="text-sm font-medium text-gray-900">
+                                                    {{ commission.user?.name ?? 'Unknown' }}
+                                                </span>
+                                            </div>
+                                            <div class="mt-1 text-xs text-gray-500">
+                                                Earned on {{ commission.earned_on_status }} • {{ formatDate(commission.earned_at) }}
+                                            </div>
+                                            <div v-if="commission.notes" class="mt-2 text-xs text-gray-600 bg-gray-50 rounded px-2 py-1">
+                                                {{ commission.notes }}
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col items-end gap-1 ml-4">
+                                            <div class="text-right">
+                                                <div class="text-sm font-semibold text-gray-900">
+                                                    {{ commission.currency }} {{ commission.total_amount.toFixed(2) }}
+                                                </div>
+                                                <div v-if="commission.extra_amount > 0" class="text-xs text-gray-500">
+                                                    Base: {{ commission.currency }} {{ commission.base_amount.toFixed(2) }}
+                                                </div>
+                                                <div v-if="commission.extra_amount > 0" class="text-xs text-indigo-600 font-medium">
+                                                    + Tip: {{ commission.currency }} {{ commission.extra_amount.toFixed(2) }}
+                                                </div>
+                                            </div>
+                                            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                                                :class="{
+                                                    'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20': commission.is_paid,
+                                                    'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20': !commission.is_paid
+                                                }">
+                                                {{ commission.is_paid ? 'Paid' : 'Unpaid' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Activity Timeline -->
                         <div v-if="timeline?.length" class="bg-white shadow-sm rounded-lg border border-gray-200">
                             <div class="px-5 py-4 border-b border-gray-100">
@@ -770,6 +852,25 @@ const priorityBadgeClass = (priority) => {
                                 placeholder="Add a message or feedback for the client..."
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                             ></textarea>
+                        </div>
+
+                        <!-- Designer Tip (if enabled) -->
+                        <div v-if="enableDesignerTips && order?.designer" class="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+                            <label class="block text-sm font-medium text-indigo-900">Designer Tip (optional)</label>
+                            <p class="text-xs text-indigo-700 mt-0.5 mb-2">
+                                Reward exceptional work! This tip will be added to {{ order.designer.name }}'s earnings.
+                            </p>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-medium text-indigo-700">{{ currency || 'USD' }}</span>
+                                <input
+                                    v-model="designerTip"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.00"
+                                    class="block w-32 rounded-md border-indigo-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                />
+                            </div>
                         </div>
 
                         <div v-if="outputFiles?.length">
@@ -888,6 +989,40 @@ const priorityBadgeClass = (priority) => {
                             @click="submitCancel"
                         >
                             {{ cancelling ? 'Cancelling...' : 'Cancel Order' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Change Confirmation Modal -->
+        <div v-if="showStatusModal" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-gray-500/75" @click="showStatusModal = false; pendingStatus = null; pendingTransition = null"></div>
+                <div class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                    <h3 class="text-lg font-semibold text-gray-900">Confirm Status Change</h3>
+                    <p class="mt-2 text-sm text-gray-600">
+                        Are you sure you want to change the order status to
+                        <span class="font-semibold">{{ pendingTransition?.label }}</span>?
+                    </p>
+                    <div class="mt-5 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            @click="showStatusModal = false; pendingStatus = null; pendingTransition = null"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            :disabled="transitioning"
+                            :class="[
+                                'rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50',
+                                getButtonClass(pendingTransition?.style)
+                            ]"
+                            @click="confirmStatusChange"
+                        >
+                            {{ transitioning ? 'Processing...' : 'Confirm' }}
                         </button>
                     </div>
                 </div>

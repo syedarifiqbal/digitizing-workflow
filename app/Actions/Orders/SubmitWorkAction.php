@@ -38,22 +38,58 @@ class SubmitWorkAction
                     'resolved_at' => now(),
                 ]);
 
-            // Transition to submitted
             $previousStatus = $order->status;
-            $order = $this->workflowService->transitionTo($order, OrderStatus::SUBMITTED);
+            $tenant = $order->tenant;
 
-            // Log status change
-            $order->statusHistory()->create([
-                'tenant_id' => $order->tenant_id,
-                'from_status' => $previousStatus->value,
-                'to_status' => OrderStatus::SUBMITTED->value,
-                'changed_by_user_id' => $submittedBy->id,
-                'changed_at' => now(),
-                'notes' => $notes,
-            ]);
+            // Check if auto-transition to SUBMITTED is enabled
+            $autoSubmit = $tenant->getSetting('auto_submit_on_upload', true);
 
-            // Process commissions
-            $this->commissionCalculator->processOrderCommissions($order, OrderStatus::SUBMITTED->value);
+            if ($autoSubmit && $order->status === OrderStatus::IN_PROGRESS) {
+                // Transition to submitted
+                $order = $this->workflowService->transitionTo($order, OrderStatus::SUBMITTED);
+
+                // Log status change
+                $order->statusHistory()->create([
+                    'tenant_id' => $order->tenant_id,
+                    'from_status' => $previousStatus->value,
+                    'to_status' => OrderStatus::SUBMITTED->value,
+                    'changed_by_user_id' => $submittedBy->id,
+                    'changed_at' => now(),
+                    'notes' => $notes ?? 'Work files uploaded',
+                ]);
+
+                // Check if auto-transition to IN_REVIEW is enabled
+                $autoReview = $tenant->getSetting('auto_review_on_submit', false);
+
+                if ($autoReview) {
+                    $order = $this->workflowService->transitionTo($order, OrderStatus::IN_REVIEW);
+
+                    // Log automatic review transition
+                    $order->statusHistory()->create([
+                        'tenant_id' => $order->tenant_id,
+                        'from_status' => OrderStatus::SUBMITTED->value,
+                        'to_status' => OrderStatus::IN_REVIEW->value,
+                        'changed_by_user_id' => $submittedBy->id,
+                        'changed_at' => now(),
+                        'notes' => 'Auto-transitioned to review',
+                    ]);
+                }
+
+                // Process commissions
+                $this->commissionCalculator->processOrderCommissions($order, $order->status->value);
+            } else {
+                // Just log the file upload without status change
+                if (!$autoSubmit) {
+                    $order->statusHistory()->create([
+                        'tenant_id' => $order->tenant_id,
+                        'from_status' => $order->status->value,
+                        'to_status' => $order->status->value,
+                        'changed_by_user_id' => $submittedBy->id,
+                        'changed_at' => now(),
+                        'notes' => ($notes ? $notes . ' - ' : '') . 'Work files uploaded (status unchanged)',
+                    ]);
+                }
+            }
 
             return $order;
         });

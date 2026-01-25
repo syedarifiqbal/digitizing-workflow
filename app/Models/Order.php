@@ -122,6 +122,11 @@ class Order extends Model
         return $this->hasMany(OrderStatusHistory::class)->orderByDesc('changed_at');
     }
 
+    public function commissions(): HasMany
+    {
+        return $this->hasMany(Commission::class);
+    }
+
     public function scopeForTenant($query, int $tenantId)
     {
         return $query->where('tenant_id', $tenantId);

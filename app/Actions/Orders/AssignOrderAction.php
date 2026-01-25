@@ -31,9 +31,21 @@ class AssignOrderAction
             // Update order designer
             $order->update(['designer_id' => $designer->id]);
 
-            // Transition status if currently RECEIVED
-            if ($order->status === OrderStatus::RECEIVED) {
+            // Transition status if currently RECEIVED and auto_assign_on_designer setting is enabled
+            $autoAssign = $order->tenant->getSetting('auto_assign_on_designer', true);
+
+            if ($order->status === OrderStatus::RECEIVED && $autoAssign) {
                 $order->update(['status' => OrderStatus::ASSIGNED]);
+
+                // Log the automatic status change
+                $order->statusHistory()->create([
+                    'tenant_id' => $order->tenant_id,
+                    'from_status' => OrderStatus::RECEIVED->value,
+                    'to_status' => OrderStatus::ASSIGNED->value,
+                    'changed_by_user_id' => $assignedBy->id,
+                    'changed_at' => now(),
+                    'notes' => 'Auto-assigned when designer was assigned',
+                ]);
             }
 
             return $assignment;

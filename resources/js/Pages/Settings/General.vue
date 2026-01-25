@@ -19,7 +19,12 @@ const form = useForm({
     email_verification_required:
         props.settings.email_verification_required ?? true,
     date_format: props.settings.date_format ?? "MM/DD/YYYY",
-    commission_earned_on: props.settings.commission_earned_on ?? "delivered",
+    sales_commission_earned_on: props.settings.sales_commission_earned_on ?? "delivered",
+    designer_bonus_earned_on: props.settings.designer_bonus_earned_on ?? "delivered",
+    enable_designer_tips: props.settings.enable_designer_tips ?? false,
+    auto_assign_on_designer: props.settings.auto_assign_on_designer ?? true,
+    auto_submit_on_upload: props.settings.auto_submit_on_upload ?? true,
+    auto_review_on_submit: props.settings.auto_review_on_submit ?? false,
     allowed_input_extensions: props.settings.allowed_input_extensions ?? "",
     allowed_output_extensions: props.settings.allowed_output_extensions ?? "",
     max_upload_mb: props.settings.max_upload_mb ?? 25,
@@ -250,24 +255,126 @@ const successMessage = computed(() => page.props.flash?.success);
                             <!-- Workflow -->
                             <div class="bg-white shadow-sm rounded-lg border border-gray-200">
                                 <div class="px-5 py-4 border-b border-gray-100">
-                                    <h3 class="text-sm font-semibold text-gray-900">Workflow</h3>
+                                    <h3 class="text-sm font-semibold text-gray-900">Workflow Automation</h3>
+                                    <p class="mt-0.5 text-xs text-gray-500">Configure automatic status transitions.</p>
                                 </div>
-                                <div class="px-5 py-4">
-                                    <label class="block text-xs font-medium text-gray-700" for="commission_earned_on">
-                                        Commission Earned On
-                                    </label>
-                                    <select
-                                        v-model="form.commission_earned_on"
-                                        id="commission_earned_on"
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    >
-                                        <option value="approved">Approved</option>
-                                        <option value="delivered">Delivered</option>
-                                    </select>
-                                    <p class="mt-1.5 text-xs text-gray-400">When the designer's commission is considered earned.</p>
-                                    <p v-if="form.errors.commission_earned_on" class="mt-1 text-xs text-red-600">
-                                        {{ form.errors.commission_earned_on }}
-                                    </p>
+                                <div class="px-5 py-4 space-y-4">
+                                    <!-- Auto-assign on designer -->
+                                    <div class="border-b border-gray-100 pb-4">
+                                        <div class="flex items-start">
+                                            <input
+                                                v-model="form.auto_assign_on_designer"
+                                                id="auto_assign_on_designer"
+                                                type="checkbox"
+                                                class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            <label class="ml-2 block text-sm text-gray-700" for="auto_assign_on_designer">
+                                                Auto-transition to ASSIGNED when designer is assigned
+                                            </label>
+                                        </div>
+                                        <p class="mt-1 ml-6 text-xs text-gray-400">Orders will automatically change from RECEIVED to ASSIGNED when a designer is assigned.</p>
+                                        <p v-if="form.errors.auto_assign_on_designer" class="mt-1 ml-6 text-xs text-red-600">
+                                            {{ form.errors.auto_assign_on_designer }}
+                                        </p>
+                                    </div>
+
+                                    <!-- Auto-submit on upload -->
+                                    <div class="border-b border-gray-100 pb-4">
+                                        <div class="flex items-start">
+                                            <input
+                                                v-model="form.auto_submit_on_upload"
+                                                id="auto_submit_on_upload"
+                                                type="checkbox"
+                                                class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            <label class="ml-2 block text-sm text-gray-700" for="auto_submit_on_upload">
+                                                Auto-transition to SUBMITTED when designer uploads work
+                                            </label>
+                                        </div>
+                                        <p class="mt-1 ml-6 text-xs text-gray-400">When designer uploads output files, automatically change status from IN_PROGRESS to SUBMITTED.</p>
+                                        <p v-if="form.errors.auto_submit_on_upload" class="mt-1 ml-6 text-xs text-red-600">
+                                            {{ form.errors.auto_submit_on_upload }}
+                                        </p>
+                                    </div>
+
+                                    <!-- Auto-review on submit -->
+                                    <div>
+                                        <div class="flex items-start">
+                                            <input
+                                                v-model="form.auto_review_on_submit"
+                                                id="auto_review_on_submit"
+                                                type="checkbox"
+                                                class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            <label class="ml-2 block text-sm text-gray-700" for="auto_review_on_submit">
+                                                Auto-transition to IN_REVIEW when work is submitted
+                                            </label>
+                                        </div>
+                                        <p class="mt-1 ml-6 text-xs text-gray-400">Automatically change status from SUBMITTED to IN_REVIEW (requires auto-submit to be enabled).</p>
+                                        <p v-if="form.errors.auto_review_on_submit" class="mt-1 ml-6 text-xs text-red-600">
+                                            {{ form.errors.auto_review_on_submit }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Commissions -->
+                            <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                                <div class="px-5 py-4 border-b border-gray-100">
+                                    <h3 class="text-sm font-semibold text-gray-900">Commissions</h3>
+                                </div>
+                                <div class="px-5 py-4 space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700" for="sales_commission_earned_on">
+                                            Sales Commission Earned On
+                                        </label>
+                                        <select
+                                            v-model="form.sales_commission_earned_on"
+                                            id="sales_commission_earned_on"
+                                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        >
+                                            <option value="approved">Approved</option>
+                                            <option value="delivered">Delivered</option>
+                                        </select>
+                                        <p class="mt-1.5 text-xs text-gray-400">When sales commission is considered earned.</p>
+                                        <p v-if="form.errors.sales_commission_earned_on" class="mt-1 text-xs text-red-600">
+                                            {{ form.errors.sales_commission_earned_on }}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700" for="designer_bonus_earned_on">
+                                            Designer Bonus Earned On
+                                        </label>
+                                        <select
+                                            v-model="form.designer_bonus_earned_on"
+                                            id="designer_bonus_earned_on"
+                                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        >
+                                            <option value="approved">Approved</option>
+                                            <option value="delivered">Delivered</option>
+                                        </select>
+                                        <p class="mt-1.5 text-xs text-gray-400">When designer bonus is considered earned.</p>
+                                        <p v-if="form.errors.designer_bonus_earned_on" class="mt-1 text-xs text-red-600">
+                                            {{ form.errors.designer_bonus_earned_on }}
+                                        </p>
+                                    </div>
+                                    <div class="pt-2">
+                                        <div class="flex items-start">
+                                            <input
+                                                v-model="form.enable_designer_tips"
+                                                id="enable_designer_tips"
+                                                type="checkbox"
+                                                class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            <label class="ml-2 block text-sm text-gray-700" for="enable_designer_tips">
+                                                Enable designer tips on delivery
+                                            </label>
+                                        </div>
+                                        <p class="mt-1.5 text-xs text-gray-400">Allow admins to add optional tips for exceptional work when delivering orders.</p>
+                                        <p v-if="form.errors.enable_designer_tips" class="mt-1 text-xs text-red-600">
+                                            {{ form.errors.enable_designer_tips }}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
