@@ -19,7 +19,7 @@ class Order extends Model
     protected $fillable = [
         'tenant_id',
         'client_id',
-        'created_by_user_id',
+        'created_by',
         'designer_id',
         'sales_user_id',
         'order_number',
@@ -47,7 +47,7 @@ class Order extends Model
         'status',
         'priority',
         'due_at',
-        'price_amount',
+        'price',
         'currency',
         'source',
         'submitted_at',
@@ -84,7 +84,7 @@ class Order extends Model
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by_user_id');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function designer(): BelongsTo

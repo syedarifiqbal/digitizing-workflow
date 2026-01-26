@@ -226,7 +226,7 @@ class OrderController extends Controller
             $order = Order::create([
                 'tenant_id' => $tenant->id,
                 'client_id' => $data['client_id'],
-                'created_by_user_id' => $request->user()->id,
+                'created_by' => $request->user()->id,
                 'order_number' => $orderNumber,
                 'po_number' => $data['po_number'] ?? null,
                 'sequence' => $sequence,

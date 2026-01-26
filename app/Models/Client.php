@@ -20,18 +20,19 @@ class Client extends Model
         'phone',
         'company',
         'notes',
-        'status',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
             'tenant_id' => 'integer',
+            'is_active' => 'boolean',
         ];
     }
 
     public function isActive(): bool
     {
-        return $this->status === 'active';
+        return $this->is_active === true;
     }
 }

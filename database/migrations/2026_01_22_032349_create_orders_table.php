@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('created_by_user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->foreignId('designer_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('order_number');
             $table->unsignedInteger('sequence');
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('status');
             $table->string('priority')->default('normal');
             $table->dateTime('due_at')->nullable();
-            $table->decimal('price_amount', 10, 2)->nullable();
+            $table->decimal('price', 10, 2)->nullable();
             $table->string('currency', 3)->default('USD');
             $table->string('source')->nullable();
             $table->timestamp('submitted_at')->nullable();

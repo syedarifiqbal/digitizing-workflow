@@ -25,9 +25,9 @@ class ClientController extends Controller
                         ->orWhere('company', 'like', "%{$search}%");
                 });
             })
-            ->when($filters['status'] ?? null, function ($query, $status) {
+            ->when($filters['status'], function ($query, $status) {
                 if ($status !== 'all') {
-                    $query->where('status', $status);
+                    $query->where('is_active', $status==='active');
                 }
             })
             ->orderBy('name')
@@ -46,7 +46,7 @@ class ClientController extends Controller
                     'email' => $client->email,
                     'phone' => $client->phone,
                     'company' => $client->company,
-                    'status' => $client->status,
+                    'is_active' => $client->is_active,
                     'created_at' => $client->created_at?->toDateTimeString(),
                 ]),
                 'links' => $clients->linkCollection(),
@@ -121,7 +121,7 @@ class ClientController extends Controller
         $this->authorize('update', $client);
 
         $client->update([
-            'status' => $client->isActive() ? 'inactive' : 'active',
+            'is_active' => $client->isActive() ? 0: 1,
         ]);
 
         return back()->with('success', 'Client status updated.');
@@ -152,7 +152,7 @@ class ClientController extends Controller
             'phone' => ['nullable', 'string', 'max:50'],
             'company' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
-            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'is_active' => ['required', 'boolean'],
         ]);
     }
 
@@ -165,7 +165,7 @@ class ClientController extends Controller
             'phone' => $client->phone,
             'company' => $client->company,
             'notes' => $client->notes,
-            'status' => $client->status,
+            'is_active' => $client->is_active,
             'created_at' => $client->created_at?->toDateTimeString(),
             'updated_at' => $client->updated_at?->toDateTimeString(),
         ];

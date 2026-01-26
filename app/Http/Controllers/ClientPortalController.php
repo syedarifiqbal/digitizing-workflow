@@ -229,7 +229,7 @@ class ClientPortalController extends Controller
             'type' => $validated['type'],
             'is_quote' => $validated['is_quote'] ?? false,
             'status' => OrderStatus::RECEIVED,
-            'created_by_user_id' => $user->id,
+            'created_by' => $user->id,
         ]);
 
         // Upload files

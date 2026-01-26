@@ -31,7 +31,9 @@ const statusOptions = [
     { label: "Inactive", value: "inactive" },
 ];
 
-const clients = computed(() => props.clients?.data?.data ?? props.clients?.data ?? []);
+const clients = computed(
+    () => props.clients?.data?.data ?? props.clients?.data ?? []
+);
 const paginationLinks = computed(
     () => props.clients?.links ?? props.clients?.data?.links ?? []
 );
@@ -228,7 +230,7 @@ const clientColumns = [
                             </button>
                             <button
                                 type="button"
-                                    class="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-600"
+                                class="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-600"
                                 @click="openDeleteModal(selectedIds, true)"
                             >
                                 Delete selected
@@ -271,12 +273,12 @@ const clientColumns = [
                             <span
                                 :class="[
                                     'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
-                                    row.status === 'active'
+                                    row.is_active
                                         ? 'bg-emerald-500/20 text-emerald-300'
                                         : 'bg-amber-500/20 text-amber-300',
                                 ]"
                             >
-                                {{ row.status }}
+                                {{ row.is_active ? "active" : "inactive" }}
                             </span>
                         </template>
                         <template #cell-actions="{ row }">

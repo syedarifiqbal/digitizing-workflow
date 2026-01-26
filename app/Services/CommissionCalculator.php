@@ -127,7 +127,7 @@ class CommissionCalculator
         }
 
         // Designer bonus (with optional tip)
-        if ($order->designer_user_id) {
+        if ($order->designer_id) {
             $designerEarnedOn = $tenant->getSetting('designer_bonus_earned_on', 'delivered');
 
             if ($status === $designerEarnedOn) {
@@ -136,7 +136,7 @@ class CommissionCalculator
 
                 $this->calculateAndCreate(
                     $order,
-                    $order->designer_user_id,
+                    $order->designer_id,
                     RoleType::DESIGNER,
                     $status,
                     $tip > 0 ? $tip : null

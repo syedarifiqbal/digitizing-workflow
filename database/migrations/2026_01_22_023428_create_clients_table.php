@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('company')->nullable();
             $table->text('notes')->nullable();
-            $table->string('status')->default('active');
+            $table->string('is_active')->default('active');
             $table->softDeletes();
             $table->timestamps();
         });
