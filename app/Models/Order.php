@@ -127,6 +127,11 @@ class Order extends Model
         return $this->hasMany(Commission::class);
     }
 
+    public function comments(): HasMany
+    {
+        return $this->hasMany(OrderComment::class)->latest();
+    }
+
     public function scopeForTenant($query, int $tenantId)
     {
         return $query->where('tenant_id', $tenantId);

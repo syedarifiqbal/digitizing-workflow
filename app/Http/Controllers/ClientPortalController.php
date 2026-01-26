@@ -214,6 +214,7 @@ class ClientPortalController extends Controller
         $lastOrder = Order::where('tenant_id', $tenant->id)->latest('id')->first();
         $nextNumber = $lastOrder ? (intval(substr($lastOrder->order_number, strlen($prefix))) + 1) : 1;
         $orderNumber = $prefix . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+        $sequence = ((int) Order::forTenant($tenant->id)->max('sequence')) + 1;
 
         // Create order
         $order = Order::create([
@@ -221,12 +222,14 @@ class ClientPortalController extends Controller
             'client_id' => $client->id,
             'order_number' => $orderNumber,
             'title' => $validated['title'],
+            'sequence' => $sequence,
             'description' => $validated['description'],
             'quantity' => $validated['quantity'],
             'priority' => $validated['priority'],
             'type' => $validated['type'],
             'is_quote' => $validated['is_quote'] ?? false,
             'status' => OrderStatus::RECEIVED,
+            'created_by_user_id' => $user->id,
         ]);
 
         // Upload files
@@ -261,6 +264,8 @@ class ClientPortalController extends Controller
             'files.uploader:id,name',
             'revisions' => fn ($q) => $q->where('status', 'pending')->orderBy('created_at', 'desc'),
             'revisions.requestedBy:id,name',
+            'comments' => fn ($q) => $q->where('visibility', 'client')->latest(),
+            'comments.user:id,name',
         ]);
 
         // Only show output files after submission
@@ -325,6 +330,36 @@ class ClientPortalController extends Controller
                 'requested_by' => $revision->requestedBy ? ['id' => $revision->requestedBy->id, 'name' => $revision->requestedBy->name] : null,
                 'created_at' => $revision->created_at,
             ]),
+            'comments' => $order->comments->map(fn ($comment) => [
+                'id' => $comment->id,
+                'body' => $comment->body,
+                'user' => ['id' => $comment->user->id, 'name' => $comment->user->name],
+                'created_at' => $comment->created_at,
+            ]),
         ]);
+    }
+
+    public function storeComment(Request $request, Order $order)
+    {
+        $user = $request->user();
+        $client = $user->client;
+
+        if (!$client || $order->client_id !== $client->id || $order->tenant_id !== $user->tenant_id) {
+            abort(403, 'Unauthorized to comment on this order.');
+        }
+
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:2000'],
+        ]);
+
+        \App\Models\OrderComment::create([
+            'tenant_id' => $order->tenant_id,
+            'order_id' => $order->id,
+            'user_id' => $user->id,
+            'visibility' => 'client', // Clients can only create client-visible comments
+            'body' => $validated['body'],
+        ]);
+
+        return back()->with('success', 'Comment added successfully.');
     }
 }

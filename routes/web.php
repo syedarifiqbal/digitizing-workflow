@@ -77,6 +77,7 @@ Route::middleware('auth')->group(function () {
         Route::post('orders/{order}/deliver', [OrderController::class, 'deliverOrder'])->name('orders.deliver');
         Route::post('orders/{order}/cancel', [OrderController::class, 'cancelOrder'])->name('orders.cancel');
         Route::post('orders/{order}/submit-work', [OrderController::class, 'submitWork'])->name('orders.submit-work');
+        Route::post('orders/{order}/comments', [OrderController::class, 'storeComment'])->name('orders.comments.store');
         Route::get('orders/files/{file}/download', [OrderFileController::class, 'download'])
             ->name('orders.files.download')
             ->middleware('signed');
@@ -97,6 +98,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/commissions/export', [CommissionController::class, 'export'])->name('commissions.export');
         Route::post('/commissions/{commission}/mark-paid', [CommissionController::class, 'markAsPaid'])->name('commissions.mark-paid');
         Route::post('/commissions/bulk-mark-paid', [CommissionController::class, 'bulkMarkAsPaid'])->name('commissions.bulk-mark-paid');
+        Route::post('/commissions/{commission}/update-tip', [CommissionController::class, 'updateExtraAmount'])->name('commissions.update-tip');
 
         // My Earnings (Sales & Designer)
         Route::get('/my-earnings', [CommissionController::class, 'myCommissions'])->name('commissions.my');
@@ -111,5 +113,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/client/orders/create', [ClientPortalController::class, 'createOrder'])->name('client.orders.create');
         Route::post('/client/orders', [ClientPortalController::class, 'storeOrder'])->name('client.orders.store');
         Route::get('/client/orders/{order}', [ClientPortalController::class, 'showOrder'])->name('client.orders.show');
+        Route::post('/client/orders/{order}/comments', [ClientPortalController::class, 'storeComment'])->name('client.orders.comments.store');
     });
 });

@@ -1,5 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useDateFormat } from '@/Composables/useDateFormat';
 
@@ -11,7 +12,28 @@ const props = defineProps({
     outputFiles: Array,
     showOutputFiles: Boolean,
     revisions: Array,
+    comments: Array,
 });
+
+const newComment = ref('');
+const submitting = ref(false);
+
+const submitComment = () => {
+    if (!newComment.value.trim()) return;
+
+    submitting.value = true;
+    router.post(route('client.orders.comments.store', props.order.id), {
+        body: newComment.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            newComment.value = '';
+        },
+        onFinish: () => {
+            submitting.value = false;
+        },
+    });
+};
 
 const getStatusColor = (status) => {
     const colors = {
@@ -193,6 +215,48 @@ const formatFileSize = (bytes) => {
                                 </a>
                             </li>
                         </ul>
+                    </div>
+                </div>
+
+                <!-- Comments -->
+                <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                    <div class="px-5 py-4 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900">Comments</h3>
+                    </div>
+                    <div class="px-5 py-4 space-y-4">
+                        <!-- Comment List -->
+                        <div v-if="comments.length > 0" class="space-y-3 mb-4">
+                            <div v-for="comment in comments" :key="comment.id" class="border-l-2 border-indigo-200 pl-4">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ comment.user.name }}</p>
+                                        <p class="text-xs text-gray-500">{{ formatDate(comment.created_at) }}</p>
+                                    </div>
+                                </div>
+                                <p class="mt-2 text-sm text-gray-700 whitespace-pre-wrap">{{ comment.body }}</p>
+                            </div>
+                        </div>
+                        <p v-else class="text-sm text-gray-500">No comments yet.</p>
+
+                        <!-- Add Comment Form -->
+                        <div class="pt-4 border-t border-gray-200">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Add a comment</label>
+                            <textarea
+                                v-model="newComment"
+                                rows="3"
+                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                placeholder="Type your comment..."
+                            ></textarea>
+                            <div class="mt-2 flex justify-end">
+                                <button
+                                    @click="submitComment"
+                                    :disabled="!newComment.trim() || submitting"
+                                    class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                                >
+                                    {{ submitting ? 'Posting...' : 'Post Comment' }}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

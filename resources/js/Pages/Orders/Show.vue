@@ -26,6 +26,7 @@ const props = defineProps({
     enableDesignerTips: Boolean,
     currency: String,
     commissions: Array,
+    comments: Array,
 });
 
 const selectedDesigner = ref(props.order?.designer?.id ?? '');
@@ -55,6 +56,16 @@ const cancelling = ref(false);
 const showStatusModal = ref(false);
 const pendingStatus = ref(null);
 const pendingTransition = ref(null);
+
+const showCommissionTipModal = ref(false);
+const selectedCommission = ref(null);
+const commissionTipAmount = ref('');
+const commissionTipNotes = ref('');
+const updatingTip = ref(false);
+
+const newComment = ref('');
+const commentVisibility = ref('client');
+const submittingComment = ref(false);
 
 const page = usePage();
 
@@ -185,6 +196,50 @@ const submitCancel = () => {
         },
         onFinish: () => {
             cancelling.value = false;
+        },
+    });
+};
+
+const openCommissionTipModal = (commission) => {
+    selectedCommission.value = commission;
+    commissionTipAmount.value = commission.extra_amount.toString();
+    commissionTipNotes.value = '';
+    showCommissionTipModal.value = true;
+};
+
+const submitCommissionTip = () => {
+    updatingTip.value = true;
+    router.post(route('commissions.update-tip', selectedCommission.value.id), {
+        extra_amount: parseFloat(commissionTipAmount.value) || 0,
+        notes: commissionTipNotes.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showCommissionTipModal.value = false;
+            selectedCommission.value = null;
+            commissionTipAmount.value = '';
+            commissionTipNotes.value = '';
+        },
+        onFinish: () => {
+            updatingTip.value = false;
+        },
+    });
+};
+
+const submitComment = () => {
+    if (!newComment.value.trim()) return;
+
+    submittingComment.value = true;
+    router.post(route('orders.comments.store', props.order.id), {
+        body: newComment.value,
+        visibility: commentVisibility.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            newComment.value = '';
+        },
+        onFinish: () => {
+            submittingComment.value = false;
         },
     });
 };
@@ -818,6 +873,15 @@ const priorityBadgeClass = (priority) => {
                                             </span>
                                         </div>
                                     </div>
+                                    <div v-if="canAssign && commission.role_type === 'designer'" class="mt-3 flex justify-end">
+                                        <button
+                                            @click="openCommissionTipModal(commission)"
+                                            type="button"
+                                            class="text-xs text-indigo-600 hover:text-indigo-900 font-medium"
+                                        >
+                                            {{ commission.extra_amount > 0 ? 'Edit Tip' : 'Add Tip' }}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -829,6 +893,75 @@ const priorityBadgeClass = (priority) => {
                             </div>
                             <div class="px-5 py-4">
                                 <OrderTimeline :events="timeline" />
+                            </div>
+                        </div>
+
+                        <!-- Comments -->
+                        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-5 py-4 border-b border-gray-100">
+                                <h3 class="text-sm font-semibold text-gray-900">Comments</h3>
+                            </div>
+                            <div class="px-5 py-4 space-y-4">
+                                <!-- Comment List -->
+                                <div v-if="comments?.length > 0" class="space-y-3 mb-4">
+                                    <div v-for="comment in comments" :key="comment.id" class="border-l-2 pl-4"
+                                        :class="comment.visibility === 'internal' ? 'border-yellow-300 bg-yellow-50/30' : 'border-indigo-200'">
+                                        <div class="flex items-start justify-between">
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <p class="text-sm font-medium text-gray-900">{{ comment.user.name }}</p>
+                                                    <span v-if="comment.visibility === 'internal'"
+                                                        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                        Internal
+                                                    </span>
+                                                </div>
+                                                <p class="text-xs text-gray-500">{{ formatDate(comment.created_at) }}</p>
+                                            </div>
+                                        </div>
+                                        <p class="mt-2 text-sm text-gray-700 whitespace-pre-wrap">{{ comment.body }}</p>
+                                    </div>
+                                </div>
+                                <p v-else class="text-sm text-gray-500">No comments yet.</p>
+
+                                <!-- Add Comment Form -->
+                                <div class="pt-4 border-t border-gray-200">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Add a comment</label>
+                                    <textarea
+                                        v-model="newComment"
+                                        rows="3"
+                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        placeholder="Type your comment..."
+                                    ></textarea>
+                                    <div class="mt-2 flex items-center justify-between">
+                                        <div v-if="canAssign" class="flex items-center gap-4">
+                                            <label class="flex items-center">
+                                                <input
+                                                    v-model="commentVisibility"
+                                                    type="radio"
+                                                    value="client"
+                                                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                />
+                                                <span class="ml-2 text-sm text-gray-700">Visible to client</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input
+                                                    v-model="commentVisibility"
+                                                    type="radio"
+                                                    value="internal"
+                                                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                />
+                                                <span class="ml-2 text-sm text-gray-700">Internal only</span>
+                                            </label>
+                                        </div>
+                                        <button
+                                            @click="submitComment"
+                                            :disabled="!newComment.trim() || submittingComment"
+                                            class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                                        >
+                                            {{ submittingComment ? 'Posting...' : 'Post Comment' }}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1023,6 +1156,67 @@ const priorityBadgeClass = (priority) => {
                             @click="confirmStatusChange"
                         >
                             {{ transitioning ? 'Processing...' : 'Confirm' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commission Tip Modal -->
+        <div v-if="showCommissionTipModal" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-gray-500/75" @click="showCommissionTipModal = false"></div>
+                <div class="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+                    <h3 class="text-lg font-semibold text-gray-900">{{ selectedCommission?.extra_amount > 0 ? 'Edit' : 'Add' }} Commission Tip</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Add an extra amount (tip/bonus) for {{ selectedCommission?.user?.name }}.
+                    </p>
+
+                    <div class="mt-4 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tip Amount *</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">{{ currency }}</span>
+                                </div>
+                                <input
+                                    v-model="commissionTipAmount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    class="block w-full pl-12 pr-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Current base: {{ currency }} {{ selectedCommission?.base_amount?.toFixed(2) }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Notes (Optional)</label>
+                            <textarea
+                                v-model="commissionTipNotes"
+                                rows="3"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                placeholder="Add a note about this tip..."
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            @click="showCommissionTipModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            :disabled="!commissionTipAmount || updatingTip"
+                            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                            @click="submitCommissionTip"
+                        >
+                            {{ updatingTip ? 'Updating...' : 'Update Tip' }}
                         </button>
                     </div>
                 </div>

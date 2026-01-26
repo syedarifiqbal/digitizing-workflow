@@ -7,6 +7,7 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Models\Client;
 use App\Models\Order;
+use App\Models\OrderComment;
 use App\Models\OrderStatusHistory;
 use App\Models\User;
 use App\Actions\Orders\AssignOrderAction;
@@ -270,7 +271,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['client', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'revisions.requestedBy', 'commissions.user']);
+        $order->load(['client', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'revisions.requestedBy', 'commissions.user', 'comments.user']);
 
         $user = $request->user();
         $canAssign = $user->isAdmin() || $user->isManager();
@@ -409,6 +410,19 @@ class OrderController extends Controller
                 'paid_at' => $commission->paid_at?->toDateTimeString(),
                 'notes' => $commission->notes,
             ]),
+            'comments' => $order->comments
+                ->when($user->hasRole('Client'), fn ($comments) => $comments->where('visibility', 'client'))
+                ->map(fn ($comment) => [
+                    'id' => $comment->id,
+                    'body' => $comment->body,
+                    'visibility' => $comment->visibility,
+                    'user' => [
+                        'id' => $comment->user->id,
+                        'name' => $comment->user->name,
+                    ],
+                    'created_at' => $comment->created_at?->toDateTimeString(),
+                ])
+                ->values(),
         ]);
     }
 
@@ -1055,6 +1069,31 @@ class OrderController extends Controller
         $prefix = $prefix !== '' ? strtoupper($prefix) : 'ORD';
 
         return sprintf('%s-%05d', $prefix, $sequence);
+    }
+
+    public function storeComment(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorize('view', $order);
+
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:2000'],
+            'visibility' => ['required', 'in:internal,client'],
+        ]);
+
+        // Only admins/managers can create internal comments
+        if ($validated['visibility'] === 'internal' && !($request->user()->isAdmin() || $request->user()->isManager())) {
+            abort(403, 'Only admins and managers can create internal comments.');
+        }
+
+        OrderComment::create([
+            'tenant_id' => $order->tenant_id,
+            'order_id' => $order->id,
+            'user_id' => $request->user()->id,
+            'visibility' => $validated['visibility'],
+            'body' => $validated['body'],
+        ]);
+
+        return back()->with('success', 'Comment added successfully.');
     }
 
     private function buildTimeline(Order $order): array

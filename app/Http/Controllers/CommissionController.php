@@ -6,6 +6,7 @@ use App\Enums\RoleType;
 use App\Enums\OrderType;
 use App\Models\Commission;
 use App\Models\User;
+use App\Services\CommissionCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -66,54 +67,6 @@ class CommissionController extends Controller
         $selectedRole = $filters['role_type'] ?? 'all';
         $users = $this->getUsersByRole($request, $selectedRole);
 
-// dd([
-//     'filters' => [
-//         'search' => $filters['search'] ?? '',
-//         'role_type' => $filters['role_type'] ?? 'all',
-//         'is_paid' => $filters['is_paid'] ?? '',
-//         'start_date' => $filters['start_date'] ?? '',
-//         'end_date' => $filters['end_date'] ?? '',
-//     ],
-//     'roleTypeOptions' => [
-//         ['label' => 'All Roles', 'value' => 'all'],
-//         ['label' => 'Sales Commission', 'value' => RoleType::SALES->value],
-//         ['label' => 'Designer Bonus', 'value' => RoleType::DESIGNER->value],
-//     ],
-//     'totals' => $totals,
-//     'currency' => $request->user()->tenant->getSetting('currency', 'USD'),
-//     'commissions' => [
-//         'data' => $commissions->through(fn (Commission $commission) => [
-//             'id' => $commission->id,
-//             'user' => $commission->user ? [
-//                 'id' => $commission->user->id,
-//                 'name' => $commission->user->name,
-//             ] : null,
-//             'order' => $commission->order ? [
-//                 'id' => $commission->order->id,
-//                 'order_number' => $commission->order->order_number,
-//                 'title' => $commission->order->title,
-//             ] : null,
-//             'role_type' => $commission->role_type->value,
-//             'role_label' => $commission->role_type->label(),
-//             'base_amount' => $commission->base_amount,
-//             'extra_amount' => $commission->extra_amount,
-//             'total_amount' => $commission->total_amount,
-//             'currency' => $commission->currency,
-//             'earned_on_status' => $commission->earned_on_status,
-//             'earned_at' => $commission->earned_at?->toDateTimeString(),
-//             'is_paid' => $commission->is_paid,
-//             'paid_at' => $commission->paid_at?->toDateTimeString(),
-//             'notes' => $commission->notes,
-//         ]),
-//         'links' => $commissions->linkCollection(),
-//         'meta' => [
-//             'total' => $commissions->total(),
-//             'from' => $commissions->firstItem(),
-//             'to' => $commissions->lastItem(),
-//             'per_page' => $commissions->perPage(),
-//         ],
-//     ],
-// ]);
         return Inertia::render('Commissions/Index', [
             'filters' => [
                 'search' => $filters['search'] ?? '',
@@ -286,6 +239,25 @@ class CommissionController extends Controller
         }
 
         return back()->with('success', count($commissions) . ' commission(s) marked as paid.');
+    }
+
+    public function updateExtraAmount(Request $request, Commission $commission): RedirectResponse
+    {
+        $this->authorize('update', $commission);
+
+        $validated = $request->validate([
+            'extra_amount' => ['required', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $calculator = app(CommissionCalculator::class);
+        $calculator->updateExtraAmount(
+            $commission,
+            $validated['extra_amount'],
+            $validated['notes'] ?? null
+        );
+
+        return back()->with('success', 'Commission tip updated successfully.');
     }
 
     public function export(Request $request)
