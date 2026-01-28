@@ -35,6 +35,16 @@ class TenantSeeder extends Seeder
                 'api_enabled' => false,
                 'api_key_hash' => null,
                 'api_key_last_four' => null,
+                'invoice_number_prefix' => 'INV-',
+                'default_payment_terms' => 'Net 30',
+                'default_tax_rate' => 0,
+                'company_details' => [
+                    'name' => 'Demo Digitizing Company',
+                    'address' => '123 Embroidery Lane, Austin, TX',
+                    'phone' => '+1 (555) 123-4567',
+                    'email' => 'billing@demo-digitizing.test',
+                ],
+                'bank_details' => "Bank: Demo Bank\nAccount: 123456789\nRouting: 987654321",
             ],
         ]);
 

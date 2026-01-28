@@ -49,6 +49,15 @@ class TenantSettingsController extends Controller
             'show_order_cards' => ['required', 'boolean'],
             'notify_on_assignment' => ['required', 'boolean'],
             'api_enabled' => ['required', 'boolean'],
+            'invoice_number_prefix' => ['nullable', 'string', 'max:10'],
+            'default_payment_terms' => ['nullable', 'string', 'max:255'],
+            'default_tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'company_details' => ['nullable', 'array'],
+            'company_details.name' => ['nullable', 'string', 'max:255'],
+            'company_details.address' => ['nullable', 'string', 'max:500'],
+            'company_details.phone' => ['nullable', 'string', 'max:100'],
+            'company_details.email' => ['nullable', 'email', 'max:255'],
+            'bank_details' => ['nullable', 'string'],
         ]);
 
         $tenant = $request->user()->tenant;
@@ -70,6 +79,16 @@ class TenantSettingsController extends Controller
             'show_order_cards' => $validated['show_order_cards'],
             'notify_on_assignment' => $validated['notify_on_assignment'],
             'api_enabled' => $validated['api_enabled'],
+            'invoice_number_prefix' => $validated['invoice_number_prefix'] ?? 'INV-',
+            'default_payment_terms' => $validated['default_payment_terms'] ?? 'Net 30',
+            'default_tax_rate' => (float) ($validated['default_tax_rate'] ?? 0),
+            'company_details' => $validated['company_details'] ?? [
+                'name' => '',
+                'address' => '',
+                'phone' => '',
+                'email' => '',
+            ],
+            'bank_details' => $validated['bank_details'] ?? '',
         ]);
 
         $tenant->update([
@@ -101,6 +120,16 @@ class TenantSettingsController extends Controller
             'api_enabled' => false,
             'api_key_hash' => null,
             'api_key_last_four' => null,
+            'invoice_number_prefix' => 'INV-',
+            'default_payment_terms' => 'Net 30',
+            'default_tax_rate' => 0,
+            'company_details' => [
+                'name' => '',
+                'address' => '',
+                'phone' => '',
+                'email' => '',
+            ],
+            'bank_details' => '',
         ];
     }
 }

@@ -42,6 +42,16 @@ class TenantFactory extends Factory
                 'api_enabled' => false,
                 'api_key_hash' => null,
                 'api_key_last_four' => null,
+                'invoice_number_prefix' => 'INV-',
+                'default_payment_terms' => 'Net 30',
+                'default_tax_rate' => 0,
+                'company_details' => [
+                    'name' => '',
+                    'address' => '',
+                    'phone' => '',
+                    'email' => '',
+                ],
+                'bank_details' => '',
             ],
         ];
     }
