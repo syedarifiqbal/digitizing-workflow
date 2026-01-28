@@ -38,7 +38,7 @@ class UserController extends Controller
             })
             ->when($filters['status'] ?? null, function ($query, $status) {
                 if ($status !== 'all') {
-                    $query->where('status', $status);
+                    $query->where('is_active', $status==='active');
                 }
             })
             ->orderBy('name')
@@ -57,7 +57,7 @@ class UserController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'status' => $user->status,
+                    'is_active' => $user->is_active,
                     'role' => $user->roles->pluck('name')->first(),
                     'client' => $user->client ? [
                         'id' => $user->client->id,
@@ -98,7 +98,7 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
-            'status' => $data['status'] ?? 'active',
+            'is_active' => $data['status'] ?? 1,
             'password' => Str::random(32),
         ]);
 
@@ -120,7 +120,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'status' => $user->status,
+                'is_active' => $user->is_active,
                 'role' => $user->roles->pluck('name')->first(),
                 'client_id' => $user->client_id,
             ],
@@ -140,7 +140,7 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
-            'status' => $data['status'] ?? $user->status,
+            'is_active' => $data['status'] ?? $user->is_active,
             'client_id' => $data['client_id'] ?? null,
         ]);
 

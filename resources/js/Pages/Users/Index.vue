@@ -33,7 +33,9 @@ const statusOptions = [
     { label: "Inactive", value: "inactive" },
 ];
 
-const users = computed(() => props.users?.data?.data ?? props.users?.data ?? []);
+const users = computed(
+    () => props.users?.data?.data ?? props.users?.data ?? []
+);
 const paginationLinks = computed(
     () => props.users?.links ?? props.users?.data?.links ?? []
 );
@@ -273,12 +275,12 @@ const userColumns = [
                             <span
                                 :class="[
                                     'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
-                                    row.status === 'active'
+                                    row.is_active
                                         ? 'bg-emerald-500/20 text-emerald-300'
                                         : 'bg-amber-100 text-amber-700',
                                 ]"
                             >
-                                {{ row.status }}
+                                {{ row.is_active ? "Active" : "Inactive" }}
                             </span>
                         </template>
                         <template #cell-client="{ row }">

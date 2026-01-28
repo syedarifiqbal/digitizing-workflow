@@ -14,7 +14,7 @@ const form = useForm({
     email: props.user?.email ?? "",
     phone: props.user?.phone ?? "",
     role: props.user?.role ?? props.roles?.[0] ?? "Admin",
-    status: props.user?.status ?? "active",
+    is_active: props.user?.is_active ?? "1",
     client_id: props.user?.client_id ?? "",
 });
 
@@ -146,18 +146,18 @@ const submit = () => {
                                     >Status</label
                                 >
                                 <select
-                                    v-model="form.status"
+                                    v-model="form.is_active"
                                     id="status"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 >
                                     <option value="1">Active</option>
-                                    <option value="2">Inactive</option>
+                                    <option value="0">Inactive</option>
                                 </select>
                                 <p
-                                    v-if="form.errors.status"
+                                    v-if="form.errors.is_active"
                                     class="mt-1 text-sm text-red-600"
                                 >
-                                    {{ form.errors.status }}
+                                    {{ form.errors.is_active }}
                                 </p>
                             </div>
 
