@@ -52,7 +52,9 @@ class RegisterTenantAction
     {
         return [
             'email_verification_required' => true,
-            'commission_earned_on' => 'delivered',
+            'sales_commission_earned_on' => 'delivered',
+            'designer_bonus_earned_on' => 'delivered',
+            'enable_designer_tips' => false,
             'allowed_input_extensions' => 'jpg,jpeg,png,pdf',
             'allowed_output_extensions' => 'dst,emb,pes,exp,pdf,ai,psd,png,jpg',
             'max_upload_mb' => 25,
@@ -62,6 +64,11 @@ class RegisterTenantAction
             'show_order_cards' => false,
             'auto_assign_on_designer' => true,
             'auto_submit_on_upload' => true,
+            'auto_review_on_submit' => false,
+            'notify_on_assignment' => true,
+            'api_enabled' => false,
+            'api_key_hash' => null,
+            'api_key_last_four' => null,
         ];
     }
 }

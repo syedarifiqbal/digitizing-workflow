@@ -15,13 +15,15 @@ class TenantSettingsController extends Controller
 
         $tenant = $request->user()->tenant;
 
+        $settings = array_merge($this->defaultSettings(), $tenant->settings ?? []);
+
         return Inertia::render('Settings/General', [
             'tenant' => [
                 'id' => $tenant->id,
                 'name' => $tenant->name,
                 'slug' => $tenant->slug,
             ],
-            'settings' => $tenant->settings ?? $this->defaultSettings(),
+            'settings' => $settings,
         ]);
     }
 
@@ -46,29 +48,33 @@ class TenantSettingsController extends Controller
             'date_format' => ['required', 'string', 'in:MM/DD/YYYY,DD/MM/YYYY,YYYY-MM-DD,DD-MM-YYYY,DD.MM.YYYY'],
             'show_order_cards' => ['required', 'boolean'],
             'notify_on_assignment' => ['required', 'boolean'],
+            'api_enabled' => ['required', 'boolean'],
         ]);
 
         $tenant = $request->user()->tenant;
 
+        $settings = array_merge($tenant->settings ?? $this->defaultSettings(), [
+            'email_verification_required' => $validated['email_verification_required'],
+            'date_format' => $validated['date_format'],
+            'sales_commission_earned_on' => $validated['sales_commission_earned_on'],
+            'designer_bonus_earned_on' => $validated['designer_bonus_earned_on'],
+            'enable_designer_tips' => $validated['enable_designer_tips'],
+            'auto_assign_on_designer' => $validated['auto_assign_on_designer'],
+            'auto_submit_on_upload' => $validated['auto_submit_on_upload'],
+            'auto_review_on_submit' => $validated['auto_review_on_submit'],
+            'allowed_input_extensions' => $validated['allowed_input_extensions'],
+            'allowed_output_extensions' => $validated['allowed_output_extensions'],
+            'max_upload_mb' => $validated['max_upload_mb'],
+            'currency' => $validated['currency'],
+            'order_number_prefix' => $validated['order_number_prefix'] ?? '',
+            'show_order_cards' => $validated['show_order_cards'],
+            'notify_on_assignment' => $validated['notify_on_assignment'],
+            'api_enabled' => $validated['api_enabled'],
+        ]);
+
         $tenant->update([
             'name' => $validated['name'],
-            'settings' => [
-                'email_verification_required' => $validated['email_verification_required'],
-                'date_format' => $validated['date_format'],
-                'sales_commission_earned_on' => $validated['sales_commission_earned_on'],
-                'designer_bonus_earned_on' => $validated['designer_bonus_earned_on'],
-                'enable_designer_tips' => $validated['enable_designer_tips'],
-                'auto_assign_on_designer' => $validated['auto_assign_on_designer'],
-                'auto_submit_on_upload' => $validated['auto_submit_on_upload'],
-                'auto_review_on_submit' => $validated['auto_review_on_submit'],
-                'allowed_input_extensions' => $validated['allowed_input_extensions'],
-                'allowed_output_extensions' => $validated['allowed_output_extensions'],
-                'max_upload_mb' => $validated['max_upload_mb'],
-                'currency' => $validated['currency'],
-                'order_number_prefix' => $validated['order_number_prefix'] ?? '',
-                'show_order_cards' => $validated['show_order_cards'],
-                'notify_on_assignment' => $validated['notify_on_assignment'],
-            ],
+            'settings' => $settings,
         ]);
 
         return back()->with('success', 'Settings saved.');
@@ -92,6 +98,9 @@ class TenantSettingsController extends Controller
             'order_number_prefix' => '',
             'show_order_cards' => false,
             'notify_on_assignment' => true,
+            'api_enabled' => false,
+            'api_key_hash' => null,
+            'api_key_last_four' => null,
         ];
     }
 }

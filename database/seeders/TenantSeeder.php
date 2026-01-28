@@ -19,11 +19,22 @@ class TenantSeeder extends Seeder
             'settings' => [
                 'order_number_prefix' => 'DMO-',
                 'allowed_input_extensions' => 'jpg,jpeg,png,pdf,ai,psd',
+                'allowed_output_extensions' => 'dst,emb,pes,exp,pdf,ai,psd,png,jpg',
                 'max_upload_mb' => 50,
                 'sales_commission_earned_on' => 'delivered',
                 'designer_bonus_earned_on' => 'delivered',
-                'default_currency' => 'USD',
+                'enable_designer_tips' => false,
+                'auto_assign_on_designer' => true,
+                'auto_submit_on_upload' => true,
+                'auto_review_on_submit' => false,
+                'notify_on_assignment' => true,
+                'currency' => 'USD',
                 'date_format' => 'M d, Y',
+                'show_order_cards' => false,
+                'email_verification_required' => true,
+                'api_enabled' => false,
+                'api_key_hash' => null,
+                'api_key_last_four' => null,
             ],
         ]);
 
