@@ -16,9 +16,9 @@ class TransitionOrderStatusAction
         private CommissionCalculator $commissionCalculator
     ) {}
 
-    public function execute(Order $order, OrderStatus $newStatus, User $changedBy): Order
+    public function execute(Order $order, OrderStatus $newStatus, User $changedBy, ?float $designerTip = null): Order
     {
-        return DB::transaction(function () use ($order, $newStatus, $changedBy) {
+        return DB::transaction(function () use ($order, $newStatus, $changedBy, $designerTip) {
             $previousStatus = $order->status;
 
             // Use workflow service to transition
@@ -34,7 +34,7 @@ class TransitionOrderStatusAction
             ]);
 
             // Process commissions based on new status
-            $this->commissionCalculator->processOrderCommissions($order, $newStatus->value);
+            $this->commissionCalculator->processOrderCommissions($order, $newStatus->value, $designerTip);
 
             return $order;
         });

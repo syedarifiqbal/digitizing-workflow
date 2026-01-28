@@ -13,6 +13,8 @@ class OrderComment extends Model
         'user_id',
         'visibility',
         'body',
+        'created_at',
+        'updated_at',
     ];
 
     public function order(): BelongsTo

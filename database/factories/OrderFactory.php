@@ -30,7 +30,6 @@ class OrderFactory extends Factory
             'order_number' => 'ORD-' . fake()->unique()->numberBetween(10000, 99999),
             'sequence' => fake()->unique()->numberBetween(1, 10000),
             'title' => fake()->sentence(4),
-            'description' => fake()->optional()->paragraph(),
             'quantity' => fake()->numberBetween(1, 100),
             'priority' => fake()->randomElement([OrderPriority::NORMAL, OrderPriority::RUSH]),
             'type' => fake()->randomElement(['digitizing', 'vector', 'patch']),

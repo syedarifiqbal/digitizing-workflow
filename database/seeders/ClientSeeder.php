@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Client;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -44,6 +45,11 @@ class ClientSeeder extends Seeder
             ],
         ];
 
+        $clientRole = Role::firstOrCreate(
+            ['tenant_id' => $tenant->id, 'name' => 'Client'],
+            ['guard_name' => 'web']
+        );
+
         foreach ($clients as $clientData) {
             $client = Client::create([
                 'tenant_id' => $tenant->id,
@@ -55,14 +61,17 @@ class ClientSeeder extends Seeder
             ]);
 
             // Create a user account for each client
-            User::create([
+            $clientUser = User::create([
                 'tenant_id' => $tenant->id,
                 'name' => $clientData['name'],
                 'email' => $clientData['email'],
                 'password' => Hash::make('password'),
                 'is_active' => true,
                 'client_id' => $client->id,
+                'email_verified_at' => now(),
             ]);
+
+            $clientUser->roles()->attach($clientRole);
         }
 
         // Create additional random clients

@@ -15,7 +15,7 @@ class WorkflowService
         'received' => ['assigned', 'cancelled'],
         'assigned' => ['in_progress', 'received', 'cancelled'],
         'in_progress' => ['submitted', 'cancelled'],
-        'submitted' => ['in_review', 'cancelled'],
+        'submitted' => ['in_review', 'revision_requested', 'cancelled'],
         'in_review' => ['revision_requested', 'approved', 'cancelled'],
         'revision_requested' => ['in_progress', 'cancelled'],
         'approved' => ['delivered', 'cancelled'],

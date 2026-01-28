@@ -195,6 +195,10 @@ class ClientPortalController extends Controller
             'is_quote' => 'boolean',
             'input_files' => 'required|array|min:1',
             'input_files.*' => 'file|max:' . ($tenant->getSetting('max_upload_mb', 25) * 1024),
+        ],
+        [],
+        [
+            'input_files.*' => 'input_files',   // remap array keys to the field name
         ]);
 
         $allowedExtensions = explode(',', $tenant->getSetting('allowed_input_extensions', 'jpg,jpeg,png,pdf'));
@@ -223,7 +227,7 @@ class ClientPortalController extends Controller
             'order_number' => $orderNumber,
             'title' => $validated['title'],
             'sequence' => $sequence,
-            'description' => $validated['description'],
+            'instructions' => $validated['description'] ?? null,
             'quantity' => $validated['quantity'],
             'priority' => $validated['priority'],
             'type' => $validated['type'],
@@ -304,7 +308,7 @@ class ClientPortalController extends Controller
                 'id' => $order->id,
                 'order_number' => $order->order_number,
                 'title' => $order->title,
-                'description' => $order->description,
+                'description' => $order->instructions,
                 'quantity' => $order->quantity,
                 'priority' => $order->priority->value,
                 'priority_label' => $order->priority->label(),

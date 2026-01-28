@@ -31,7 +31,6 @@ class CommissionRuleFactory extends Factory
             'fixed_amount' => null,
             'percent_rate' => fake()->randomFloat(2, 5, 20),
             'currency' => 'USD',
-            'order_types' => null,
             'is_active' => true,
         ];
     }
@@ -43,7 +42,6 @@ class CommissionRuleFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role_type' => RoleType::SALES,
-            'percent_rate' => fake()->randomFloat(2, 8, 15),
         ]);
     }
 
@@ -54,7 +52,6 @@ class CommissionRuleFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role_type' => RoleType::DESIGNER,
-            'percent_rate' => fake()->randomFloat(2, 3, 10),
         ]);
     }
 

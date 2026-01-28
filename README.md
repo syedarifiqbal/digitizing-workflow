@@ -95,13 +95,26 @@ php artisan queue:work
 
 ### Running Tests
 ```bash
-php artisan test
+./vendor/bin/phpunit
 ```
+
+- Uses the in-memory sqlite database defined in `phpunit.xml`
+- Filter individual cases with `./vendor/bin/phpunit --filter OrderWorkflowTest`
 
 ### Code Style
 ```bash
 ./vendor/bin/pint
 ```
+
+### Demo Data Reset
+
+Regenerate the entire demo environment (migrations + seeders) with:
+
+```bash
+php artisan demo:reset
+```
+
+The command is also scheduled to run every two hours in `routes/console.php` so local demos stay fresh.
 
 ## Project Structure
 

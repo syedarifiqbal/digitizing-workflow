@@ -25,7 +25,7 @@ class ClientController extends Controller
                         ->orWhere('company', 'like', "%{$search}%");
                 });
             })
-            ->when($filters['status'], function ($query, $status) {
+            ->when($filters['status'] ?? null, function ($query, $status) {
                 if ($status !== 'all') {
                     $query->where('is_active', $status==='active');
                 }

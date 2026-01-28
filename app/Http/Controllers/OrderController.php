@@ -747,12 +747,13 @@ class OrderController extends Controller
         }
 
         // Store designer tip to pass to commission calculator
+        $designerTip = null;
         if (isset($validated['designer_tip']) && $validated['designer_tip'] > 0) {
-            $order->setAttribute('pending_designer_tip', (float) $validated['designer_tip']);
+            $designerTip = (float) $validated['designer_tip'];
         }
 
         // Transition to delivered
-        $order = $action->execute($order, OrderStatus::DELIVERED, $user);
+        $order = $action->execute($order, OrderStatus::DELIVERED, $user, $designerTip);
 
         // Log delivery message
         if (! empty($validated['message'])) {

@@ -108,7 +108,7 @@ class CommissionCalculator
     /**
      * Process commissions for an order based on tenant settings
      */
-    public function processOrderCommissions(Order $order, string $status): void
+    public function processOrderCommissions(Order $order, string $status, ?float $designerTip = null): void
     {
         $tenant = $order->tenant;
 
@@ -131,8 +131,7 @@ class CommissionCalculator
             $designerEarnedOn = $tenant->getSetting('designer_bonus_earned_on', 'delivered');
 
             if ($status === $designerEarnedOn) {
-                // Check for designer tip (set during delivery)
-                $tip = $order->getAttribute('pending_designer_tip') ?? 0;
+                $tip = $designerTip ?? $order->getAttribute('pending_designer_tip') ?? 0;
 
                 $this->calculateAndCreate(
                     $order,
