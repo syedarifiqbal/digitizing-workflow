@@ -118,7 +118,7 @@ class CommissionManagementTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Commissions/MyEarnings')
             ->has('commissions.data')
-            ->has('stats')
+            ->has('totals')
         );
     }
 
@@ -188,20 +188,21 @@ class CommissionManagementTest extends TestCase
             ->create();
 
         $response = $this->actingAs($this->admin)
-            ->get(route('commission-rules.index', ['role_type' => 'sales']));
+            ->get(route('commission-rules.sales.index'));
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->component('CommissionRules/Index')
-            ->has('rules.data')
+            ->has('rules')
         );
     }
 
     public function test_admin_can_create_commission_rule(): void
     {
         $response = $this->actingAs($this->admin)
-            ->post(route('commission-rules.store', ['role_type' => 'sales']), [
+            ->post(route('commission-rules.store'), [
                 'user_id' => $this->sales->id,
+                'role_type' => 'sales',
                 'type' => 'percent',
                 'percent_rate' => 10.00,
                 'currency' => 'USD',
@@ -227,7 +228,7 @@ class CommissionManagementTest extends TestCase
             ->create();
 
         $response = $this->actingAs($this->admin)
-            ->put(route('commission-rules.update', ['role_type' => 'sales', 'commission_rule' => $rule]), [
+            ->put(route('commission-rules.update', ['commissionRule' => $rule]), [
                 'user_id' => $this->sales->id,
                 'type' => 'percent',
                 'percent_rate' => 12.00,
@@ -250,11 +251,12 @@ class CommissionManagementTest extends TestCase
             ->create();
 
         $response = $this->actingAs($this->admin)
-            ->delete(route('commission-rules.destroy', ['role_type' => 'sales', 'commission_rule' => $rule]));
+            ->delete(route('commission-rules.destroy', ['commissionRule' => $rule]));
 
         $response->assertRedirect();
 
-        $rule->refresh();
-        $this->assertFalse($rule->is_active);
+        $this->assertDatabaseMissing('commission_rules', [
+            'id' => $rule->id,
+        ]);
     }
 }

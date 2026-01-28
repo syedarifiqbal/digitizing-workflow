@@ -42,7 +42,8 @@ class CommissionCalculatorTest extends TestCase
         $order = Order::factory()
             ->for($this->tenant)
             ->delivered()
-            ->create(['price' => 100.00]);
+            ->create();
+        $order->update(['price' => 100.00]);
 
         $commission = $this->calculator->calculateAndCreate(
             $order,
@@ -68,7 +69,8 @@ class CommissionCalculatorTest extends TestCase
         $order = Order::factory()
             ->for($this->tenant)
             ->delivered()
-            ->create(['price' => 100.00]);
+            ->create();
+        $order->update(['price' => 100.00]);
 
         $commission = $this->calculator->calculateAndCreate(
             $order,
@@ -94,7 +96,8 @@ class CommissionCalculatorTest extends TestCase
         $order = Order::factory()
             ->for($this->tenant)
             ->delivered()
-            ->create(['price' => 100.00]);
+            ->create();
+        $order->update(['price' => 100.00]);
 
         $commission = $this->calculator->calculateAndCreate(
             $order,
@@ -120,7 +123,8 @@ class CommissionCalculatorTest extends TestCase
         $order = Order::factory()
             ->for($this->tenant)
             ->delivered()
-            ->create(['price' => 100.00]);
+            ->create();
+        $order->update(['price' => 100.00]);
 
         $commission = $this->calculator->calculateAndCreate(
             $order,
@@ -149,7 +153,8 @@ class CommissionCalculatorTest extends TestCase
         $order = Order::factory()
             ->for($this->tenant)
             ->delivered()
-            ->create(['price' => 100.00]);
+            ->create();
+        $order->update(['price' => 100.00]);
 
         $commission1 = $this->calculator->calculateAndCreate(
             $order,
@@ -174,7 +179,8 @@ class CommissionCalculatorTest extends TestCase
         $order = Order::factory()
             ->for($this->tenant)
             ->delivered()
-            ->create(['price' => 100.00]);
+            ->create();
+        $order->update(['price' => 100.00]);
 
         $commission = $this->calculator->calculateAndCreate(
             $order,
@@ -246,7 +252,8 @@ class CommissionCalculatorTest extends TestCase
         $order = Order::factory()
             ->for($this->tenant)
             ->delivered()
-            ->create(['price' => 100.00]);
+            ->create();
+        $order->update(['price' => 100.00]);
 
         $commission = $this->calculator->calculateAndCreate(
             $order,

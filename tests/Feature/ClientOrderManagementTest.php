@@ -199,6 +199,6 @@ class ClientOrderManagementTest extends TestCase
             ]);
 
         $order = Order::where('title', 'New Order')->first();
-        $this->assertEquals($this->clientUser->id, $order->created_by_user_id);
+        $this->assertEquals($this->clientUser->id, $order->created_by);
     }
 }
