@@ -10,6 +10,7 @@ class GenerateApiKeyAction
     public function execute(Tenant $tenant): string
     {
         $plainKey = Str::random(40);
+        // Only the hash is stored so the plaintext never touches the database
         $hash = hash('sha256', $plainKey);
 
         $settings = $tenant->settings ?? [];
@@ -23,4 +24,3 @@ class GenerateApiKeyAction
         return $plainKey;
     }
 }
-

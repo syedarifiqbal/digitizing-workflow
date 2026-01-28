@@ -32,9 +32,9 @@ class ValidateApiKey
             ], 401);
         }
 
+        // Downstream controllers/actions can grab the resolved tenant from the request
         $request->attributes->set('apiTenant', $tenant);
 
         return $next($request);
     }
 }
-

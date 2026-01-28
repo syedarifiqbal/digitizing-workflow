@@ -106,6 +106,19 @@ php artisan queue:work
 ./vendor/bin/pint
 ```
 
+### API Documentation
+
+- Regenerate docs (OpenAPI + HTML + Postman) with:
+
+  ```bash
+  php artisan scribe:generate
+  ```
+
+- Browse the docs locally at `http://localhost:8000/docs` (Scribe auto-registers the route).
+- Download the Postman collection or OpenAPI spec from `/docs.postman` and `/docs.openapi`.
+
+The documentation currently covers the intake API. Future endpoints (webhooks, etc.) will be added as they are implemented.
+
 ### Demo Data Reset
 
 Regenerate the entire demo environment (migrations + seeders) with:

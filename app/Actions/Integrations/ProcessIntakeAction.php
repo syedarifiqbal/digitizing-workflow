@@ -22,10 +22,10 @@ class ProcessIntakeAction
             $clientPayload = Arr::get($payload, 'client', []);
             $orderPayload = Arr::get($payload, 'order', []);
 
-            $client = Client::firstOrNew([
-                'tenant_id' => $tenant->id,
-                'email' => $clientPayload['email'],
-            ]);
+        $client = Client::firstOrNew([
+            'tenant_id' => $tenant->id,
+            'email' => $clientPayload['email'],
+        ]);
 
             $client->fill([
                 'name' => $clientPayload['name'],
@@ -64,10 +64,10 @@ class ProcessIntakeAction
                 }
             }
 
-            $order = $this->createOrder($tenant, $client, $clientUser, $orderPayload);
+        $order = $this->createOrder($tenant, $client, $clientUser, $orderPayload);
 
-            return [
-                'message' => 'Order created successfully.',
+        return [
+            'message' => 'Order created successfully.',
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
                 'client_id' => $client->id,
@@ -81,6 +81,7 @@ class ProcessIntakeAction
         $prefix = $tenant->getSetting('order_number_prefix', '');
         $lastSequence = Order::where('tenant_id', $tenant->id)->max('sequence') ?? 0;
         $sequence = $lastSequence + 1;
+        // Keep order numbers predictable for downstream systems
         $orderNumber = $prefix . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
 
         $priorityValue = strtolower($orderPayload['priority'] ?? OrderPriority::NORMAL->value);
@@ -89,6 +90,7 @@ class ProcessIntakeAction
         $typeValue = strtolower($orderPayload['type'] ?? OrderType::DIGITIZING->value);
         $type = OrderType::tryFrom($typeValue) ?? OrderType::DIGITIZING;
 
+        // Fall back to any tenant user if no admin exists (seed data always has one)
         $adminUser = $tenant->users()
             ->whereHas('roles', fn ($q) => $q->where('name', 'Admin'))
             ->first()
@@ -120,4 +122,3 @@ class ProcessIntakeAction
         return $order;
     }
 }
-
