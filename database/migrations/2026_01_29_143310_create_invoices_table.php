@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('sequence')->default(0);
             $table->string('invoice_number')->nullable();
             $table->string('status')->default('draft');
             $table->date('issue_date')->nullable();
@@ -34,6 +35,7 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->unique(['tenant_id', 'invoice_number']);
+            $table->unique(['tenant_id', 'sequence']);
             $table->index(['tenant_id', 'client_id']);
             $table->index('status');
         });

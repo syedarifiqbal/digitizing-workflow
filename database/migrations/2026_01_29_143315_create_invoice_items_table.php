@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('quantity', 10, 2)->default(1);
             $table->decimal('unit_price', 12, 2)->default(0);
             $table->decimal('amount', 12, 2)->default(0);
+            $table->text('note')->nullable();
             $table->timestamps();
 
             $table->index(['tenant_id', 'invoice_id']);

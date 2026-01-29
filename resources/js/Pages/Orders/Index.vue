@@ -25,6 +25,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    invoiceBulkActionEnabled: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const filters = reactive({
@@ -75,14 +79,120 @@ const labelFor = (type) => type.charAt(0).toUpperCase() + type.slice(1);
 const isAllView = computed(() => (filters.type ?? "all") === "all");
 const typeStats = computed(() => props.typeStats ?? null);
 const showTypeStats = computed(() => !isAllView.value && typeStats.value);
+const invoiceBulkEnabled = computed(() => props.invoiceBulkActionEnabled);
+const isSingleClientFilter = computed(
+    () => filters.client_id && filters.client_id !== "all"
+);
+
+const selectedOrderDetails = computed(() =>
+    selectedIds.value
+        .map((id) => selectionMeta[id])
+        .filter((order) => Boolean(order))
+);
+
+const allSelectedMatchClient = computed(() => {
+    if (!isSingleClientFilter.value) {
+        return false;
+    }
+    return selectedOrderDetails.value.every(
+        (order) => Number(order?.client_id ?? 0) === Number(filters.client_id)
+    );
+});
+
+const eligibleStatuses = ["delivered", "closed"];
+const selectedOrdersEligible = computed(() =>
+    selectedOrderDetails.value.filter(
+        (order) =>
+            order &&
+            !order.is_invoiced &&
+            eligibleStatuses.includes(order.status)
+    )
+);
+
+const canCreateInvoiceFromSelection = computed(() => {
+    return (
+        invoiceBulkEnabled.value &&
+        !isQuoteView.value &&
+        isSingleClientFilter.value &&
+        selectedIds.value.length > 0 &&
+        selectedOrdersEligible.value.length === selectedIds.value.length &&
+        allSelectedMatchClient.value
+    );
+});
+
+const invoiceBulkDisabledReason = computed(() => {
+    if (!invoiceBulkEnabled.value) {
+        return "Bulk invoicing is disabled in Workspace Settings.";
+    }
+    if (isQuoteView.value) {
+        return "Invoices can only be created from orders.";
+    }
+    if (!isSingleClientFilter.value) {
+        return "Filter orders by a single client to create an invoice.";
+    }
+    if (selectedIds.value.length === 0) {
+        return "Select at least one eligible order.";
+    }
+    if (!allSelectedMatchClient.value) {
+        return "Selected orders belong to different clients.";
+    }
+    if (selectedOrdersEligible.value.length !== selectedIds.value.length) {
+        return "Only delivered/closed orders that have not been invoiced can be included.";
+    }
+    return "";
+});
 
 const selectedIds = ref([]);
+const selectionMeta = reactive({});
 
 watch(
-    () => props.orders,
+    selectedIds,
+    (newIds, oldIds = []) => {
+        const added = newIds.filter((id) => !oldIds.includes(id));
+        const removed = oldIds.filter((id) => !newIds.includes(id));
+
+        added.forEach((id) => {
+            const row = orders.value.find((order) => order.id === id);
+            if (row) {
+                selectionMeta[id] = row;
+            }
+        });
+
+        removed.forEach((id) => {
+            if (selectionMeta[id]) {
+                delete selectionMeta[id];
+            }
+        });
+    },
+    { deep: true },
+);
+
+watch(
+    () => orders.value,
+    (newRows) => {
+        newRows.forEach((row) => {
+            if (selectedIds.value.includes(row.id)) {
+                selectionMeta[row.id] = row;
+            }
+        });
+    },
+    { deep: true },
+);
+
+watch(
+    () => filters.client_id,
     () => {
         selectedIds.value = [];
-    }
+        Object.keys(selectionMeta).forEach((key) => delete selectionMeta[key]);
+    },
+);
+
+watch(
+    () => filters.quote,
+    () => {
+        selectedIds.value = [];
+        Object.keys(selectionMeta).forEach((key) => delete selectionMeta[key]);
+    },
 );
 
 const submitFilters = () => {
@@ -142,6 +252,20 @@ const confirmDelete = () => {
 
 const clearSelection = () => {
     selectedIds.value = [];
+    Object.keys(selectionMeta).forEach((key) => delete selectionMeta[key]);
+};
+
+const goToInvoiceCreation = () => {
+    if (!canCreateInvoiceFromSelection.value) {
+        return;
+    }
+
+    router.get(
+        route("invoices.create", {
+            client_id: filters.client_id,
+            orders: selectedIds.value,
+        })
+    );
 };
 
 const orderColumns = [
@@ -644,7 +768,33 @@ const orderColumns = [
                             >
                                 Delete selected
                             </button>
+                            <button
+                                v-if="invoiceBulkEnabled && !isQuoteView"
+                                type="button"
+                                class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                                :class="
+                                    canCreateInvoiceFromSelection
+                                        ? 'bg-indigo-500/10 text-indigo-600'
+                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                "
+                                :disabled="!canCreateInvoiceFromSelection"
+                                @click="goToInvoiceCreation"
+                            >
+                                Create invoice
+                            </button>
                         </div>
+                        <p
+                            v-if="
+                                invoiceBulkEnabled &&
+                                !isQuoteView &&
+                                selectedIds.length &&
+                                !canCreateInvoiceFromSelection &&
+                                invoiceBulkDisabledReason
+                            "
+                            class="mt-2 text-xs text-slate-500"
+                        >
+                            {{ invoiceBulkDisabledReason }}
+                        </p>
                     </div>
 
                     <DataTable

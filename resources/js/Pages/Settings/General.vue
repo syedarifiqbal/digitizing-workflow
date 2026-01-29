@@ -38,6 +38,7 @@ const form = useForm({
     order_number_prefix: props.settings.order_number_prefix ?? "",
     show_order_cards: props.settings.show_order_cards ?? false,
     notify_on_assignment: props.settings.notify_on_assignment ?? true,
+    enable_invoice_bulk_action: props.settings.enable_invoice_bulk_action ?? true,
     api_enabled: props.settings.api_enabled ?? false,
     invoice_number_prefix: props.settings.invoice_number_prefix ?? "INV-",
     default_payment_terms: props.settings.default_payment_terms ?? "Net 30",

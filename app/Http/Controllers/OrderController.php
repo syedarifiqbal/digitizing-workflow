@@ -152,6 +152,7 @@ class OrderController extends Controller
             ],
             'typeStats' => $this->typeStats($tenantId, $filters['type'] ?? 'all', $quoteView),
             'showOrderCards' => $showOrderCards,
+            'invoiceBulkActionEnabled' => $request->user()->tenant->getSetting('enable_invoice_bulk_action', true),
             'orders' => [
                 'data' => $orders->through(fn (Order $order) => [
                     'id' => $order->id,
@@ -164,6 +165,11 @@ class OrderController extends Controller
                     'client' => $order->client?->name,
                     'designer' => $order->designer?->name,
                     'sales' => $order->sales?->name,
+                    'client_id' => $order->client_id,
+                    'price' => (float) ($order->price ?? 0),
+                    'currency' => $order->currency ?? $request->user()->tenant->getSetting('currency', 'USD'),
+                    'is_invoiced' => (bool) $order->is_invoiced,
+                    'is_invoice_eligible' => ! $order->is_invoiced && in_array($order->status->value, [OrderStatus::DELIVERED->value, OrderStatus::CLOSED->value], true),
                     'due_at' => optional($order->due_at)?->toDateTimeString(),
                     'created_at' => $order->created_at?->toDateTimeString(),
                 ]),

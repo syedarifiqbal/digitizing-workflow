@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\Client;
+use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\User;
 use App\Policies\ClientPolicy;
+use App\Policies\InvoicePolicy;
 use App\Policies\OrderPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Client::class, ClientPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Order::class, OrderPolicy::class);
+        Gate::policy(Invoice::class, InvoicePolicy::class);
 
         RateLimiter::for('api', function (Request $request) {
             $tenant = $request->attributes->get('apiTenant');

@@ -20,6 +20,7 @@ class InvoiceItem extends Model
         'quantity',
         'unit_price',
         'amount',
+        'note',
     ];
 
     protected function casts(): array

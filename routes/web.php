@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DesignerController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\CommissionRuleController;
@@ -101,6 +102,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/commissions/{commission}/mark-paid', [CommissionController::class, 'markAsPaid'])->name('commissions.mark-paid');
         Route::post('/commissions/bulk-mark-paid', [CommissionController::class, 'bulkMarkAsPaid'])->name('commissions.bulk-mark-paid');
         Route::post('/commissions/{commission}/update-tip', [CommissionController::class, 'updateExtraAmount'])->name('commissions.update-tip');
+
+        Route::get('/invoices/eligible-orders', [InvoiceController::class, 'eligibleOrders'])->name('invoices.eligible-orders');
+        Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store']);
 
         // My Earnings (Sales & Designer)
         Route::get('/my-earnings', [CommissionController::class, 'myCommissions'])->name('commissions.my');
