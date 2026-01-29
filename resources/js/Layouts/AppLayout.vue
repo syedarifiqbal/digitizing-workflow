@@ -5,13 +5,15 @@ import { Link, usePage, useForm } from "@inertiajs/vue3";
 const showMobileMenu = ref(false);
 const showUserMenu = ref(false);
 const showReportsMenu = ref(false);
+const showOrdersMenu = ref(false);
+const showQuotesMenu = ref(false);
 
 const page = usePage();
 const user = page.props.auth?.user;
 const orderTypes = [
     { label: "Digitizing", value: "digitizing" },
     { label: "Vector", value: "vector" },
-    { label: "Patch", value: "patch" },
+    { label: "Patches", value: "patch" },
 ];
 const queryParams = computed(() => {
     const parts = page.url?.split("?") ?? [];
@@ -29,11 +31,42 @@ const currentType = computed(() => {
     return type && type !== "all" ? type : null;
 });
 const isQuoteContext = computed(() => queryParams.value.quote);
+const currentQuoteType = computed(() => {
+    if (!queryParams.value.quote) {
+        return null;
+    }
+    const type = queryParams.value.type;
+    return type && type !== "all" ? type : null;
+});
 
 const logoutForm = useForm({});
 
 const logout = () => {
     logoutForm.post(route("logout"));
+};
+
+const toggleOrdersMenu = () => {
+    showOrdersMenu.value = !showOrdersMenu.value;
+    if (showOrdersMenu.value) {
+        showQuotesMenu.value = false;
+        showReportsMenu.value = false;
+    }
+};
+
+const toggleQuotesMenu = () => {
+    showQuotesMenu.value = !showQuotesMenu.value;
+    if (showQuotesMenu.value) {
+        showOrdersMenu.value = false;
+        showReportsMenu.value = false;
+    }
+};
+
+const toggleReportsMenu = () => {
+    showReportsMenu.value = !showReportsMenu.value;
+    if (showReportsMenu.value) {
+        showOrdersMenu.value = false;
+        showQuotesMenu.value = false;
+    }
 };
 </script>
 
@@ -62,41 +95,111 @@ const logout = () => {
                             </Link>
 
                             <template v-if="user?.is_admin || user?.is_manager || user?.is_designer">
-                                <Link
-                                    :href="route('orders.index')"
-                                    class="inline-flex items-center rounded-full px-3 py-1.5 transition"
-                                    :class="
-                                        route().current('orders.index') && !currentType && !isQuoteContext
-                                            ? 'bg-indigo-100 text-indigo-700'
-                                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                                    "
-                                >
-                                    All Orders
-                                </Link>
-                                <Link
-                                    :href="route('orders.index', { quote: 1 })"
-                                    class="inline-flex items-center rounded-full px-3 py-1.5 transition"
-                                    :class="
-                                        route().current('orders.index') && isQuoteContext
-                                            ? 'bg-indigo-100 text-indigo-700'
-                                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                                    "
-                                >
-                                    Quotes
-                                </Link>
-                                <Link
-                                    v-for="type in orderTypes"
-                                    :key="'desktop-orders-' + type.value"
-                                    :href="route('orders.index', { type: type.value })"
-                                    class="inline-flex items-center rounded-full px-3 py-1.5 capitalize transition"
-                                    :class="
-                                        route().current('orders.index') && !isQuoteContext && currentType === type.value
-                                            ? 'bg-indigo-100 text-indigo-700'
-                                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                                    "
-                                >
-                                    {{ type.label }}
-                                </Link>
+                                <div class="relative">
+                                    <button
+                                        @click="toggleOrdersMenu"
+                                        class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 transition"
+                                        :class="
+                                            route().current('orders.index') && !isQuoteContext
+                                                ? 'bg-indigo-100 text-indigo-700'
+                                                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                                        "
+                                    >
+                                        Orders
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div
+                                        v-if="showOrdersMenu"
+                                        @click="showOrdersMenu = false"
+                                        class="absolute left-0 top-full mt-1 w-56 origin-top-left rounded-lg border border-slate-200 bg-white shadow-lg"
+                                    >
+                                        <div class="py-1">
+                                            <Link
+                                                :href="route('orders.index')"
+                                                class="block px-4 py-2 text-sm transition hover:bg-slate-50"
+                                                :class="
+                                                    route().current('orders.index') && !currentType && !isQuoteContext
+                                                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                        : 'text-slate-700'
+                                                "
+                                            >
+                                                All Orders
+                                            </Link>
+                                            <div class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                Order Types
+                                            </div>
+                                            <Link
+                                                v-for="type in orderTypes"
+                                                :key="'desktop-orders-' + type.value"
+                                                :href="route('orders.index', { type: type.value })"
+                                                class="block px-4 py-2 text-sm capitalize transition hover:bg-slate-50"
+                                                :class="
+                                                    route().current('orders.index') && !isQuoteContext && currentType === type.value
+                                                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                        : 'text-slate-700'
+                                                "
+                                            >
+                                                {{ type.label }}
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="relative">
+                                    <button
+                                        @click="toggleQuotesMenu"
+                                        class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 transition"
+                                        :class="
+                                            route().current('orders.index') && isQuoteContext
+                                                ? 'bg-indigo-100 text-indigo-700'
+                                                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                                        "
+                                    >
+                                        Quotes
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div
+                                        v-if="showQuotesMenu"
+                                        @click="showQuotesMenu = false"
+                                        class="absolute left-0 top-full mt-1 w-56 origin-top-left rounded-lg border border-slate-200 bg-white shadow-lg"
+                                    >
+                                        <div class="py-1">
+                                            <Link
+                                                :href="route('orders.index', { quote: 1 })"
+                                                class="block px-4 py-2 text-sm transition hover:bg-slate-50"
+                                                :class="
+                                                    route().current('orders.index') && isQuoteContext && !currentQuoteType
+                                                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                        : 'text-slate-700'
+                                                "
+                                            >
+                                                Quotes List
+                                            </Link>
+                                            <div class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                Quote Types
+                                            </div>
+                                            <Link
+                                                v-for="type in orderTypes"
+                                                :key="'desktop-quotes-' + type.value"
+                                                :href="route('orders.index', { quote: 1, type: type.value })"
+                                                class="block px-4 py-2 text-sm capitalize transition hover:bg-slate-50"
+                                                :class="
+                                                    route().current('orders.index') &&
+                                                    isQuoteContext &&
+                                                    currentQuoteType === type.value
+                                                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                        : 'text-slate-700'
+                                                "
+                                            >
+                                                {{ type.label }}
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
                             </template>
                             <Link
                                 v-if="user?.is_designer"
@@ -149,7 +252,7 @@ const logout = () => {
                             <!-- Reports Dropdown -->
                             <div v-if="user?.is_admin || user?.is_manager || user?.is_sales || user?.is_designer" class="relative">
                                 <button
-                                    @click="showReportsMenu = !showReportsMenu"
+                                    @click="toggleReportsMenu"
                                     class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 transition"
                                     :class="
                                         route().current('commissions.*') || route().current('commission-rules.*')
@@ -321,18 +424,7 @@ const logout = () => {
                                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                                 "
                             >
-                                All orders
-                            </Link>
-                            <Link
-                                :href="route('orders.index', { quote: 1 })"
-                                class="block rounded-lg px-4 py-2 text-base font-medium"
-                                :class="
-                                    route().current('orders.index') && isQuoteContext
-                                        ? 'bg-indigo-50 text-indigo-700'
-                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                                "
-                            >
-                                Quotes
+                                All Orders
                             </Link>
                             <Link
                                 v-for="type in orderTypes"
@@ -347,7 +439,44 @@ const logout = () => {
                             >
                                 {{ type.label }} orders
                             </Link>
-                            <div class="pt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Create</div>
+                        </div>
+                        <div
+                            v-if="user?.is_admin || user?.is_manager || user?.is_designer"
+                            class="space-y-1 border-t border-slate-200 pt-4"
+                        >
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Quotes</p>
+                            <Link
+                                :href="route('orders.index', { quote: 1 })"
+                                class="block rounded-lg px-4 py-2 text-base font-medium"
+                                :class="
+                                    route().current('orders.index') && isQuoteContext && !currentQuoteType
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                Quotes List
+                            </Link>
+                            <Link
+                                v-for="type in orderTypes"
+                                :key="'mobile-quotes-' + type.value"
+                                :href="route('orders.index', { quote: 1, type: type.value })"
+                                class="block rounded-lg px-4 py-2 text-base font-medium capitalize"
+                                :class="
+                                    route().current('orders.index') &&
+                                    isQuoteContext &&
+                                    currentQuoteType === type.value
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                {{ type.label }} quotes
+                            </Link>
+                        </div>
+                        <div
+                            v-if="user?.is_admin || user?.is_manager || user?.is_designer"
+                            class="space-y-1 border-t border-slate-200 pt-4"
+                        >
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Create</div>
                             <Link
                                 v-for="type in orderTypes"
                                 :key="'mobile-create-' + type.value"

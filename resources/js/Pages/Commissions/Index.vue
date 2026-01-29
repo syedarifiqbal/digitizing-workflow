@@ -2,6 +2,8 @@
 import { ref, computed } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import DataTable from "@/Components/DataTable.vue";
+import PaginationControls from "@/Components/PaginationControls.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 
 const { formatDate } = useDateFormat();
@@ -22,6 +24,39 @@ const isPaid = ref(props.filters.is_paid);
 const startDate = ref(props.filters.start_date);
 const endDate = ref(props.filters.end_date);
 const selectedCommissions = ref([]);
+const commissionColumns = [
+    { key: "select", label: "", headerClass: "w-12" },
+    { key: "user", label: "User" },
+    { key: "order", label: "Order" },
+    { key: "type", label: "Type" },
+    {
+        key: "amount",
+        label: "Amount",
+        headerClass: "text-right",
+        cellClass: "text-right",
+    },
+    { key: "earned", label: "Earned" },
+    { key: "status", label: "Status" },
+    {
+        key: "actions",
+        label: "Actions",
+        headerClass: "text-right",
+        cellClass: "text-right",
+    },
+];
+const commissionRows = computed(() => {
+    const rows = props.commissions?.data;
+    if (Array.isArray(rows)) {
+        return rows;
+    }
+    if (rows && Array.isArray(rows.data)) {
+        return rows.data;
+    }
+    return [];
+});
+const paginationMeta = computed(() => props.commissions?.meta ?? {});
+const paginationLinks = computed(() => props.commissions?.links ?? []);
+const formatCurrency = (value) => Number(value ?? 0).toFixed(2);
 
 const applyFilters = () => {
     router.get(
@@ -106,22 +141,33 @@ const bulkMarkAsPaid = () => {
     );
 };
 
-const toggleAll = (event) => {
-    if (event.target.checked) {
-        selectedCommissions.value = props.commissions.data.data
+const toggleAll = (checked) => {
+    if (checked) {
+        selectedCommissions.value = commissionRows.value
             .filter((c) => !c.is_paid)
             .map((c) => c.id);
-    } else {
-        selectedCommissions.value = [];
+        return;
     }
+
+    selectedCommissions.value = [];
 };
 
 const allSelected = computed(() => {
-    const unpaid = props.commissions.data.data.filter((c) => !c.is_paid);
+    const unpaid = commissionRows.value.filter((c) => !c.is_paid);
     return (
         unpaid.length > 0 && selectedCommissions.value.length === unpaid.length
     );
 });
+
+const toggleRowSelection = (id, checked) => {
+    const next = new Set(selectedCommissions.value);
+    if (checked) {
+        next.add(id);
+    } else {
+        next.delete(id);
+    }
+    selectedCommissions.value = Array.from(next);
+};
 </script>
 
 <template>
@@ -151,7 +197,8 @@ const allSelected = computed(() => {
                             Total Earned
                         </div>
                         <div class="mt-1 text-2xl font-semibold text-gray-900">
-                            {{ currency }} {{ totals.total_earned.toFixed(2) }}
+                            {{ currency }}
+                            {{ formatCurrency(totals.total_earned) }}
                         </div>
                     </div>
                     <div
@@ -163,7 +210,8 @@ const allSelected = computed(() => {
                             Total Paid
                         </div>
                         <div class="mt-1 text-2xl font-semibold text-green-600">
-                            {{ currency }} {{ totals.total_paid.toFixed(2) }}
+                            {{ currency }}
+                            {{ formatCurrency(totals.total_paid) }}
                         </div>
                     </div>
                     <div
@@ -177,7 +225,8 @@ const allSelected = computed(() => {
                         <div
                             class="mt-1 text-2xl font-semibold text-yellow-600"
                         >
-                            {{ currency }} {{ totals.total_unpaid.toFixed(2) }}
+                            {{ currency }}
+                            {{ formatCurrency(totals.total_unpaid) }}
                         </div>
                     </div>
                 </div>
@@ -319,251 +368,159 @@ const allSelected = computed(() => {
                 </div>
 
                 <!-- Commissions Table -->
-                <div
-                    class="bg-white shadow-sm rounded-lg border border-gray-200"
-                >
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left">
-                                        <input
-                                            type="checkbox"
-                                            :checked="allSelected"
-                                            @change="toggleAll"
-                                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
-                                    >
-                                        User
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
-                                    >
-                                        Order
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
-                                    >
-                                        Type
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide"
-                                    >
-                                        Amount
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
-                                    >
-                                        Earned
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
-                                    >
-                                        Status
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide"
-                                    >
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <tr v-if="commissions.data.length === 0">
-                                    <td
-                                        colspan="8"
-                                        class="px-4 py-8 text-center text-sm text-gray-500"
-                                    >
-                                        No commissions found.
-                                    </td>
-                                </tr>
-                                <tr
-                                    v-for="commission in commissions.data.data"
-                                    :key="commission.id"
-                                    class="hover:bg-gray-50"
-                                >
-                                    <td class="px-4 py-3">
-                                        <input
-                                            v-if="!commission.is_paid"
-                                            type="checkbox"
-                                            :value="commission.id"
-                                            v-model="selectedCommissions"
-                                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <div
-                                            class="text-sm font-medium text-gray-900"
-                                        >
-                                            {{
-                                                commission.user?.name ??
-                                                "Unknown"
-                                            }}
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <Link
-                                            v-if="commission.order"
-                                            :href="
-                                                route(
-                                                    'orders.show',
-                                                    commission.order.id
-                                                )
-                                            "
-                                            class="text-sm text-indigo-600 hover:text-indigo-900"
-                                        >
-                                            {{ commission.order.order_number }}
-                                        </Link>
-                                        <div
-                                            v-if="commission.order"
-                                            class="text-xs text-gray-500 truncate max-w-xs"
-                                        >
-                                            {{ commission.order.title }}
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <span
-                                            class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                                            :class="{
-                                                'bg-blue-50 text-blue-700 ring-blue-600/20':
-                                                    commission.role_type ===
-                                                    'sales',
-                                                'bg-purple-50 text-purple-700 ring-purple-600/20':
-                                                    commission.role_type ===
-                                                    'designer',
-                                            }"
-                                        >
-                                            {{ commission.role_label }}
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-3 text-right">
-                                        <div
-                                            class="text-sm font-semibold text-gray-900"
-                                        >
-                                            {{ commission.currency }}
-                                            {{
-                                                commission.total_amount.toFixed(
-                                                    2
-                                                )
-                                            }}
-                                        </div>
-                                        <div
-                                            v-if="commission.extra_amount > 0"
-                                            class="text-xs text-gray-500"
-                                        >
-                                            Base: {{ commission.currency }}
-                                            {{
-                                                commission.base_amount.toFixed(
-                                                    2
-                                                )
-                                            }}
-                                        </div>
-                                        <div
-                                            v-if="commission.extra_amount > 0"
-                                            class="text-xs text-indigo-600"
-                                        >
-                                            + Tip: {{ commission.currency }}
-                                            {{
-                                                commission.extra_amount.toFixed(
-                                                    2
-                                                )
-                                            }}
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <div class="text-sm text-gray-900">
-                                            {{
-                                                formatDate(commission.earned_at)
-                                            }}
-                                        </div>
-                                        <div class="text-xs text-gray-500">
-                                            on {{ commission.earned_on_status }}
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <span
-                                            class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-                                            :class="{
-                                                'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20':
-                                                    commission.is_paid,
-                                                'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20':
-                                                    !commission.is_paid,
-                                            }"
-                                        >
-                                            {{
-                                                commission.is_paid
-                                                    ? "Paid"
-                                                    : "Unpaid"
-                                            }}
-                                        </span>
-                                        <div
-                                            v-if="
-                                                commission.is_paid &&
-                                                commission.paid_at
-                                            "
-                                            class="text-xs text-gray-500 mt-1"
-                                        >
-                                            {{ formatDate(commission.paid_at) }}
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 text-right">
-                                        <button
-                                            v-if="!commission.is_paid"
-                                            @click="markAsPaid(commission.id)"
-                                            type="button"
-                                            class="text-xs text-green-600 hover:text-green-900 font-medium"
-                                        >
-                                            Mark Paid
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
 
-                    <!-- Pagination -->
-                    <div
-                        v-if="commissions.data.length > 0"
-                        class="border-t border-gray-200 px-4 py-3 sm:px-6"
-                    >
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm text-gray-700">
-                                Showing
-                                <span class="font-medium">{{
-                                    commissions.meta.from
-                                }}</span>
-                                to
-                                <span class="font-medium">{{
-                                    commissions.meta.to
-                                }}</span>
-                                of
-                                <span class="font-medium">{{
-                                    commissions.meta.total
-                                }}</span>
-                                results
-                            </div>
-                            <div class="flex gap-2">
-                                <Link
-                                    v-for="link in commissions.links"
-                                    :key="link.label"
-                                    :href="link.url"
-                                    v-html="link.label"
-                                    :class="[
-                                        'px-3 py-1 text-sm rounded border',
-                                        link.active
-                                            ? 'bg-indigo-600 text-white border-indigo-600'
-                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
-                                        !link.url
-                                            ? 'opacity-50 cursor-not-allowed'
-                                            : '',
-                                    ]"
-                                    :disabled="!link.url"
+                <div
+                    class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70"
+                >
+                    <div class="p-6">
+                        <DataTable
+                            :columns="commissionColumns"
+                            :rows="commissionRows"
+                            row-key="id"
+                            empty-text="No commissions found."
+                        >
+                            <template #head-select>
+                                <input
+                                    type="checkbox"
+                                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    :checked="allSelected"
+                                    @change="toggleAll($event.target.checked)"
                                 />
-                            </div>
-                        </div>
+                            </template>
+
+                            <template #cell-select="{ row }">
+                                <div class="flex justify-center">
+                                    <input
+                                        v-if="!row.is_paid"
+                                        type="checkbox"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        :checked="
+                                            selectedCommissions.includes(row.id)
+                                        "
+                                        @change="
+                                            toggleRowSelection(
+                                                row.id,
+                                                $event.target.checked
+                                            )
+                                        "
+                                    />
+                                    <span v-else class="text-xs text-gray-400"
+                                        >—</span
+                                    >
+                                </div>
+                            </template>
+
+                            <template #cell-user="{ row }">
+                                <div class="font-medium text-gray-900">
+                                    {{ row.user?.name ?? "Unassigned" }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ row.user?.email ?? "—" }}
+                                </div>
+                            </template>
+
+                            <template #cell-order="{ row }">
+                                <div class="font-medium text-gray-900">
+                                    <Link
+                                        v-if="row.order"
+                                        :href="
+                                            route('orders.show', {
+                                                order: row.order.id,
+                                            })
+                                        "
+                                        class="text-indigo-600 hover:text-indigo-800"
+                                    >
+                                        {{ row.order?.order_number }}
+                                    </Link>
+                                    <span v-else>—</span>
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ row.order?.title ?? "" }}
+                                </div>
+                            </template>
+
+                            <template #cell-type="{ row }">
+                                <span
+                                    class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                                    :class="{
+                                        'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20':
+                                            row.role_type === 'sales',
+                                        'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-600/20':
+                                            row.role_type === 'designer',
+                                    }"
+                                >
+                                    {{ row.role_label }}
+                                </span>
+                            </template>
+
+                            <template #cell-amount="{ row }">
+                                <div
+                                    class="text-sm font-semibold text-gray-900"
+                                >
+                                    {{ row.currency }} {{ row.total_amount }}
+                                </div>
+                                <div
+                                    v-if="row.extra_amount > 0"
+                                    class="text-xs text-gray-500"
+                                >
+                                    Base: {{ row.currency }}
+                                    {{ row.base_amount }}
+                                </div>
+                                <div
+                                    v-if="row.extra_amount > 0"
+                                    class="text-xs text-indigo-600"
+                                >
+                                    + Tip: {{ row.currency }}
+                                    {{ row.extra_amount }}
+                                </div>
+                            </template>
+
+                            <template #cell-earned="{ row }">
+                                <div class="text-sm text-gray-900">
+                                    {{ formatDate(row.earned_at) }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    on {{ row.earned_on_status }}
+                                </div>
+                            </template>
+
+                            <template #cell-status="{ row }">
+                                <span
+                                    class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                                    :class="{
+                                        'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20':
+                                            row.is_paid,
+                                        'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20':
+                                            !row.is_paid,
+                                    }"
+                                >
+                                    {{ row.is_paid ? "Paid" : "Unpaid" }}
+                                </span>
+                                <div
+                                    v-if="row.is_paid && row.paid_at"
+                                    class="text-xs text-gray-500 mt-1"
+                                >
+                                    {{ formatDate(row.paid_at) }}
+                                </div>
+                            </template>
+
+                            <template #cell-actions="{ row }">
+                                <button
+                                    v-if="!row.is_paid"
+                                    @click="markAsPaid(row.id)"
+                                    type="button"
+                                    class="text-xs text-green-600 hover:text-green-900 font-medium"
+                                >
+                                    Mark Paid
+                                </button>
+                            </template>
+                        </DataTable>
+                        <PaginationControls
+                            v-if="commissionRows.length > 0"
+                            :meta="paginationMeta"
+                            :links="paginationLinks"
+                            label="commissions"
+                        />
                     </div>
                 </div>
             </div>

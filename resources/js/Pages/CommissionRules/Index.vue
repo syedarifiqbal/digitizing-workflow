@@ -36,6 +36,7 @@ const availableUsersFiltered = computed(() => {
         (u) => !props.existingUserIds.includes(u.id)
     );
 });
+const canAddRule = computed(() => availableUsersFiltered.value.length > 0);
 
 const showFixed = computed(
     () => form.type === "fixed" || form.type === "hybrid"
@@ -177,13 +178,24 @@ const formatAmount = (rule) => {
                     </p>
                 </div>
                 <button
-                    v-if="availableUsersFiltered.length"
                     type="button"
-                    class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
-                    @click="openCreateModal"
+                    class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg transition"
+                    :class="
+                        canAddRule
+                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 shadow-indigo-500/30 hover:brightness-110'
+                            : 'cursor-not-allowed bg-slate-300 shadow-slate-200'
+                    "
+                    :disabled="!canAddRule"
+                    @click="canAddRule && openCreateModal()"
                 >
                     Add Rule
                 </button>
+                <p
+                    v-if="!canAddRule"
+                    class="text-xs text-slate-500"
+                >
+                    All eligible {{ roleLabel.toLowerCase() }} users already have a rule.
+                </p>
             </div>
         </template>
 
@@ -209,13 +221,21 @@ const formatAmount = (rule) => {
                         No {{ roleLabel.toLowerCase() }} rules configured yet.
                     </p>
                     <button
-                        v-if="availableUsersFiltered.length"
                         type="button"
-                        class="mt-4 inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-                        @click="openCreateModal"
+                        class="mt-4 inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-white"
+                        :class="
+                            canAddRule
+                                ? 'bg-indigo-600 hover:bg-indigo-700'
+                                : 'cursor-not-allowed bg-slate-300'
+                        "
+                        :disabled="!canAddRule"
+                        @click="canAddRule && openCreateModal()"
                     >
                         Add First Rule
                     </button>
+                    <p v-if="!canAddRule" class="mt-2 text-xs text-slate-500">
+                        Invite additional {{ userLabel.toLowerCase() }}s to create more rules.
+                    </p>
                 </div>
 
                 <table v-else class="min-w-full divide-y divide-slate-200">
