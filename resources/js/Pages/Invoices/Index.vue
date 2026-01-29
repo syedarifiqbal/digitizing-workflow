@@ -45,6 +45,7 @@ const invoiceColumns = [
         headerClass: "text-right",
         cellClass: "text-right",
     },
+    { key: "actions", label: "", headerClass: "text-right" },
 ];
 
 const rows = computed(() => props.invoices?.data?.data ?? []);
@@ -262,9 +263,12 @@ watch(
                                 empty-text="No invoices found."
                             >
                                 <template #cell-number="{ row }">
-                                    <div class="font-semibold text-slate-900">
+                                    <Link
+                                        :href="route('invoices.show', row.id)"
+                                        class="font-semibold text-indigo-600 hover:text-indigo-800"
+                                    >
                                         {{ row.number }}
-                                    </div>
+                                    </Link>
                                 </template>
 
                                 <template #cell-client_name="{ row }">
@@ -314,6 +318,32 @@ watch(
                                                 row.total_amount ?? 0
                                             ).toFixed(2)
                                         }}
+                                    </div>
+                                </template>
+
+                                <template #cell-actions="{ row }">
+                                    <div
+                                        class="text-right text-sm font-medium space-x-1"
+                                    >
+                                        <Link
+                                            :href="
+                                                route('invoices.show', row.id)
+                                            "
+                                            class="inline-flex items-center rounded-full px-3 py-1 text-slate-500 hover:text-slate-900"
+                                            title="View"
+                                        >
+                                            View
+                                        </Link>
+                                        <Link
+                                            v-if="row.can_edit"
+                                            :href="
+                                                route('invoices.edit', row.id)
+                                            "
+                                            class="inline-flex items-center rounded-full px-3 py-1 text-slate-500 hover:text-indigo-600"
+                                            title="Edit"
+                                        >
+                                            Edit
+                                        </Link>
                                     </div>
                                 </template>
                             </DataTable>

@@ -176,7 +176,7 @@ watch(
             }
         });
     },
-    { deep: true },
+    { deep: true, immediate: true },
 );
 
 watch(
@@ -260,12 +260,10 @@ const goToInvoiceCreation = () => {
         return;
     }
 
-    router.get(
-        route("invoices.create", {
-            client_id: filters.client_id,
-            orders: selectedIds.value,
-        })
-    );
+    router.get(route("invoices.create"), {
+        client_id: filters.client_id,
+        orders: selectedIds.value,
+    });
 };
 
 const orderColumns = [

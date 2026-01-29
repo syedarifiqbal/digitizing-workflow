@@ -104,7 +104,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/commissions/{commission}/update-tip', [CommissionController::class, 'updateExtraAmount'])->name('commissions.update-tip');
 
         Route::get('/invoices/eligible-orders', [InvoiceController::class, 'eligibleOrders'])->name('invoices.eligible-orders');
-        Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store']);
+        Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update']);
 
         // My Earnings (Sales & Designer)
         Route::get('/my-earnings', [CommissionController::class, 'myCommissions'])->name('commissions.my');

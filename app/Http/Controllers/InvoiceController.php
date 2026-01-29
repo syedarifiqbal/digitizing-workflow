@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
 use App\Http\Requests\StoreInvoiceRequest;
+use App\Http\Requests\UpdateInvoiceRequest;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -94,6 +95,7 @@ class InvoiceController extends Controller
                     'total_amount' => $invoice->total_amount,
                     'currency' => $invoice->currency,
                     'is_overdue' => $invoice->status === InvoiceStatus::OVERDUE,
+                    'can_edit' => $request->user()->can('update', $invoice) && $invoice->status === InvoiceStatus::DRAFT,
                 ]),
                 'links' => $invoices->linkCollection(),
                 'meta' => [
@@ -174,7 +176,9 @@ class InvoiceController extends Controller
             ->unique('id')
             ->values();
 
-        return Inertia::render('Invoices/Create', [
+        return Inertia::render('Invoices/Form', [
+            'mode' => 'create',
+            'invoice' => null,
             'clients' => $clients,
             'defaults' => [
                 'payment_terms' => $tenant?->getSetting('default_payment_terms', 'Net 30'),
@@ -182,9 +186,11 @@ class InvoiceController extends Controller
                 'currency' => $tenant?->getSetting('currency', 'USD'),
             ],
             'initialClientId' => $selectedClientId ? (string) $selectedClientId : '',
-            'initialOrders' => $initialOrders,
+            'initialOrders' => $initialOrders->all(),
             'prefilledOrderIds' => $prefilledOrderIdsArray,
-            'prefilledOrders' => $prefilledOrdersTransformed,
+            'prefilledOrders' => $prefilledOrdersTransformed->all(),
+            'initialOrderNotes' => (object) [],
+            'initialCustomItems' => [],
         ]);
     }
 
@@ -306,25 +312,273 @@ class InvoiceController extends Controller
         return redirect()->route('invoices.index')->with('success', 'Invoice created.');
     }
 
+    public function show(Request $request, Invoice $invoice): Response
+    {
+        $this->authorize('view', $invoice);
+
+        $invoice->load(['client', 'items.order']);
+        $companyDetails = $request->user()->tenant->getSetting('company_details', []);
+
+        return Inertia::render('Invoices/Show', [
+            'invoice' => [
+                'id' => $invoice->id,
+                'number' => $invoice->invoice_number ?? sprintf('#%05d', $invoice->id),
+                'status' => $invoice->status?->value,
+                'status_label' => $invoice->status?->label(),
+                'issue_date' => $invoice->issue_date?->toDateString(),
+                'due_date' => $invoice->due_date?->toDateString(),
+                'subtotal' => (float) $invoice->subtotal,
+                'tax_rate' => (float) $invoice->tax_rate,
+                'tax_amount' => (float) $invoice->tax_amount,
+                'discount_amount' => (float) $invoice->discount_amount,
+                'total_amount' => (float) $invoice->total_amount,
+                'currency' => $invoice->currency,
+                'payment_terms' => $invoice->payment_terms,
+                'notes' => $invoice->notes,
+                'client' => [
+                    'name' => $invoice->client?->name ?? '',
+                    'company' => $invoice->client?->company,
+                ],
+                'items' => $invoice->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'description' => $item->description,
+                    'quantity' => (float) $item->quantity,
+                    'unit_price' => (float) $item->unit_price,
+                    'amount' => (float) $item->amount,
+                    'note' => $item->note,
+                    'order_number' => $item->order?->order_number,
+                ]),
+            ],
+            'companyDetails' => $companyDetails,
+            'canEdit' => $request->user()->can('update', $invoice) && $invoice->status === InvoiceStatus::DRAFT,
+        ]);
+    }
+
+    public function edit(Request $request, Invoice $invoice): Response
+    {
+        $this->authorize('update', $invoice);
+        abort_if($invoice->status !== InvoiceStatus::DRAFT, 403);
+
+        $invoice->load(['items' => fn ($query) => $query->orderBy('id')]);
+        $user = $request->user();
+        $tenant = $user->tenant;
+        $tenantId = $tenant->id;
+
+        $clientsCollection = Client::orderBy('name')->get(['id', 'name']);
+        $clients = $clientsCollection->map(fn (Client $client) => [
+            'id' => (string) $client->id,
+            'name' => $client->name,
+        ]);
+
+        $orderItems = $invoice->items->whereNotNull('order_id');
+        $selectedOrderIds = $orderItems->pluck('order_id')->map(fn ($id) => (int) $id)->values();
+        $selectedOrderIdsArray = $selectedOrderIds->all();
+        $orderNotes = $orderItems->mapWithKeys(fn ($item) => [$item->order_id => $item->note])->toArray();
+        $customItems = $invoice->items
+            ->whereNull('order_id')
+            ->map(fn ($item) => [
+                'description' => $item->description,
+                'quantity' => (float) $item->quantity,
+                'unit_price' => (float) $item->unit_price,
+            ])
+            ->values()
+            ->all();
+
+        $initialOrders = $this->eligibleOrdersQuery($tenantId, $invoice->client_id, $invoice->id)
+            ->limit(50)
+            ->get()
+            ->map(fn (Order $order) => $this->transformOrderForSelection($order))
+            ->values()
+            ->all();
+
+        return Inertia::render('Invoices/Form', [
+            'mode' => 'edit',
+            'invoice' => [
+                'id' => $invoice->id,
+                'client_id' => (string) $invoice->client_id,
+                'client_name' => $invoice->client?->name,
+                'issue_date' => $invoice->issue_date?->toDateString(),
+                'due_date' => $invoice->due_date?->toDateString(),
+                'payment_terms' => $invoice->payment_terms,
+                'tax_rate' => (float) $invoice->tax_rate,
+                'discount_amount' => (float) $invoice->discount_amount,
+                'currency' => $invoice->currency,
+                'notes' => $invoice->notes,
+                'selected_order_ids' => $selectedOrderIdsArray,
+            ],
+            'clients' => $clients,
+            'defaults' => [
+                'payment_terms' => $tenant?->getSetting('default_payment_terms', 'Net 30'),
+                'tax_rate' => (float) ($tenant?->getSetting('default_tax_rate', 0)),
+                'currency' => $tenant?->getSetting('currency', 'USD'),
+            ],
+            'initialClientId' => (string) $invoice->client_id,
+            'initialOrders' => $initialOrders,
+            'prefilledOrderIds' => $selectedOrderIdsArray,
+            'prefilledOrders' => $initialOrders,
+            'initialOrderNotes' => (object) $orderNotes,
+            'initialCustomItems' => $customItems,
+        ]);
+    }
+
+    public function update(UpdateInvoiceRequest $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+        abort_if($invoice->status !== InvoiceStatus::DRAFT, 403);
+
+        $data = $request->validated();
+        $clientId = $invoice->client_id;
+        if ((int) ($data['client_id'] ?? $clientId) !== $clientId) {
+            throw ValidationException::withMessages([
+                'client_id' => 'Client cannot be changed for this invoice.',
+            ]);
+        }
+        $tenantId = $request->user()->tenant_id;
+
+        $orderIds = collect($data['order_ids'] ?? [])->map(fn ($id) => (int) $id)->filter();
+        $orderNotes = collect($data['order_notes'] ?? []);
+        $ordersById = collect();
+
+        if ($orderIds->isNotEmpty()) {
+            $orders = $this->eligibleOrdersQuery($tenantId, $clientId, $invoice->id)
+                ->whereIn('id', $orderIds)
+                ->get()
+                ->keyBy('id');
+
+            if ($orders->count() !== $orderIds->count()) {
+                throw ValidationException::withMessages([
+                    'order_ids' => 'One or more selected orders are invalid or unavailable.',
+                ]);
+            }
+
+            $ordersById = $orders;
+        }
+
+        $orderItems = $orderIds->map(function (int $orderId) use ($ordersById, $orderNotes) {
+            $order = $ordersById->get($orderId);
+
+            return [
+                'order_id' => $orderId,
+                'description' => trim(($order->order_number ?? 'Order #' . $orderId) . ' - ' . ($order->title ?? '')),
+                'quantity' => 1,
+                'unit_price' => (float) ($order->price ?? 0),
+                'amount' => round((float) ($order->price ?? 0), 2),
+                'note' => trim($orderNotes->get($orderId) ?? '') ?: null,
+            ];
+        });
+
+        $customItems = collect($data['custom_items'] ?? [])
+            ->filter(fn ($item) => filled($item['description'] ?? null))
+            ->map(function ($item) {
+                $quantity = (float) ($item['quantity'] ?? 0);
+                $unitPrice = (float) ($item['unit_price'] ?? 0);
+
+                return [
+                    'order_id' => null,
+                    'description' => $item['description'],
+                    'quantity' => $quantity > 0 ? $quantity : 1,
+                    'unit_price' => $unitPrice,
+                    'amount' => round(($quantity > 0 ? $quantity : 1) * $unitPrice, 2),
+                    'note' => null,
+                ];
+            });
+
+        $items = $orderItems->concat($customItems)->values();
+
+        if ($items->isEmpty()) {
+            throw ValidationException::withMessages([
+                'order_ids' => 'Add at least one order or custom line item.',
+            ]);
+        }
+
+        $subtotal = $items->sum('amount');
+        $taxRate = isset($data['tax_rate']) ? (float) $data['tax_rate'] : (float) ($request->user()->tenant?->getSetting('default_tax_rate', 0));
+        $taxAmount = round($subtotal * ($taxRate / 100), 2);
+        $discount = min($subtotal, (float) ($data['discount_amount'] ?? 0));
+        $total = max($subtotal + $taxAmount - $discount, 0);
+
+        $existingOrderIds = $invoice->items()->whereNotNull('order_id')->pluck('order_id');
+
+        DB::transaction(function () use ($invoice, $items, $data, $taxRate, $taxAmount, $discount, $total, $orderIds, $ordersById, $existingOrderIds, $subtotal) {
+            $invoice->items()->delete();
+
+            $invoice->update([
+                'issue_date' => ! empty($data['issue_date']) ? $data['issue_date'] : now()->toDateString(),
+                'due_date' => ! empty($data['due_date']) ? $data['due_date'] : null,
+                'subtotal' => $subtotal,
+                'tax_rate' => $taxRate,
+                'tax_amount' => $taxAmount,
+                'discount_amount' => $discount,
+                'total_amount' => $total,
+                'currency' => $data['currency'],
+                'notes' => $data['notes'] ?? null,
+                'payment_terms' => $data['payment_terms'] ?? null,
+            ]);
+
+            foreach ($items as $item) {
+                $invoice->items()->create([
+                    'tenant_id' => $invoice->tenant_id,
+                    'order_id' => $item['order_id'],
+                    'description' => $item['description'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'amount' => $item['amount'],
+                    'note' => $item['note'] ?? null,
+                ]);
+
+                if ($item['order_id'] && $ordersById->has($item['order_id'])) {
+                    $order = $ordersById->get($item['order_id']);
+                    $order->update([
+                        'is_invoiced' => true,
+                        'invoiced_at' => now(),
+                    ]);
+                }
+            }
+
+            $removedOrderIds = $existingOrderIds->diff($orderIds);
+            if ($removedOrderIds->isNotEmpty()) {
+                Order::whereIn('id', $removedOrderIds)->update([
+                    'is_invoiced' => false,
+                    'invoiced_at' => null,
+                ]);
+            }
+        });
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice updated.');
+    }
+
     public function eligibleOrders(Request $request)
     {
-        $this->authorize('create', Invoice::class);
-
         $data = $request->validate([
             'client_id' => ['required', 'exists:clients,id'],
             'selected' => ['array'],
             'selected.*' => ['integer'],
+            'invoice_id' => ['nullable', 'integer', 'exists:invoices,id'],
         ]);
 
         $tenantId = $request->user()->tenant_id;
         $clientId = (int) $data['client_id'];
         $selected = collect($data['selected'] ?? [])->map(fn ($id) => (int) $id)->filter()->unique();
+        $invoiceId = $data['invoice_id'] ?? null;
 
-        $query = $this->eligibleOrdersQuery($tenantId, $clientId)->limit(50);
+        if ($invoiceId) {
+            $invoice = Invoice::where('tenant_id', $tenantId)->findOrFail($invoiceId);
+            $this->authorize('update', $invoice);
+            if ($invoice->client_id !== $clientId) {
+                throw ValidationException::withMessages([
+                    'client_id' => 'Client mismatch for the invoice.',
+                ]);
+            }
+        }
+        else {
+            $this->authorize('create', Invoice::class);
+        }
+
+        $query = $this->eligibleOrdersQuery($tenantId, $clientId, $invoiceId)->limit(50);
         $orders = $query->get();
 
         if ($selected->isNotEmpty()) {
-            $selectedOrders = $this->eligibleOrdersQuery($tenantId, $clientId)
+            $selectedOrders = $this->eligibleOrdersQuery($tenantId, $clientId, $invoiceId)
                 ->whereIn('id', $selected)
                 ->get();
             $orders = $orders->merge($selectedOrders)->unique('id');
@@ -339,7 +593,7 @@ class InvoiceController extends Controller
         ]);
     }
 
-    private function eligibleOrdersQuery(int $tenantId, int $clientId)
+    private function eligibleOrdersQuery(int $tenantId, int $clientId, ?int $invoiceId = null)
     {
         return Order::query()
             ->select([
@@ -354,10 +608,23 @@ class InvoiceController extends Controller
             ])
             ->forTenant($tenantId)
             ->where('client_id', $clientId)
-            ->whereIn('status', [OrderStatus::DELIVERED->value, OrderStatus::CLOSED->value])
-            ->where('is_invoiced', false)
-            ->where(function ($query) {
-                $query->where('is_quote', false)->orWhereNull('is_quote');
+            ->where(function ($query) use ($invoiceId) {
+                $query->where(function ($inner) {
+                    $inner->whereIn('status', [OrderStatus::DELIVERED->value, OrderStatus::CLOSED->value])
+                        ->where('is_invoiced', false)
+                        ->where(function ($q) {
+                            $q->where('is_quote', false)->orWhereNull('is_quote');
+                        });
+                });
+
+                if ($invoiceId) {
+                    $query->orWhereIn('id', function ($sub) use ($invoiceId) {
+                        $sub->select('order_id')
+                            ->from('invoice_items')
+                            ->where('invoice_id', $invoiceId)
+                            ->whereNotNull('order_id');
+                    });
+                }
             })
             ->orderByDesc('delivered_at')
             ->orderByDesc('id');

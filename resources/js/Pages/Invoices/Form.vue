@@ -6,6 +6,14 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import DatePicker from "@/Components/DatePicker.vue";
 
 const props = defineProps({
+    mode: {
+        type: String,
+        default: "create",
+    },
+    invoice: {
+        type: [Object, null],
+        default: null,
+    },
     clients: {
         type: Array,
         default: () => [],
@@ -34,27 +42,50 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    initialOrderNotes: {
+        type: Object,
+        default: () => ({}),
+    },
+    initialCustomItems: {
+        type: Array,
+        default: () => [],
+    },
 });
 
-const initialClient = props.initialClientId || props.clients[0]?.id || "";
+const isEditMode = computed(() => props.mode === "edit");
+const initialClient =
+    props.invoice?.client_id ||
+    props.initialClientId ||
+    props.clients[0]?.id ||
+    "";
 
 const form = useForm({
     client_id: initialClient,
-    issue_date: "",
-    due_date: "",
-    payment_terms: props.defaults.payment_terms ?? "",
-    tax_rate: props.defaults.tax_rate ?? 0,
-    discount_amount: 0,
-    currency: props.defaults.currency ?? "USD",
-    notes: "",
+    issue_date: props.invoice?.issue_date ?? "",
+    due_date: props.invoice?.due_date ?? "",
+    payment_terms: props.invoice?.payment_terms ?? props.defaults.payment_terms ?? "",
+    tax_rate: props.invoice?.tax_rate ?? props.defaults.tax_rate ?? 0,
+    discount_amount: props.invoice?.discount_amount ?? 0,
+    currency: props.invoice?.currency ?? props.defaults.currency ?? "USD",
+    notes: props.invoice?.notes ?? "",
     order_ids: [],
     order_notes: {},
-    custom_items: [],
+    custom_items:
+        props.initialCustomItems?.length > 0
+            ? props.initialCustomItems.map((item) => ({
+                  description: item.description ?? "",
+                  quantity: item.quantity ?? 1,
+                  unit_price: item.unit_price ?? 0,
+              }))
+            : [],
 });
 
 const availableOrders = ref(props.initialOrders ?? []);
-const selectedOrderIds = ref(props.prefilledOrderIds?.slice() ?? []);
-const orderNotes = reactive({});
+const selectedOrderIds = ref(
+    props.prefilledOrderIds?.slice() ??
+        (props.invoice?.selected_order_ids ?? [])
+);
+const orderNotes = reactive({ ...props.initialOrderNotes });
 const orderLookup = reactive({});
 const loadingOrders = ref(false);
 const fetchError = ref("");
@@ -68,7 +99,7 @@ const cacheOrders = (orders = []) => {
 cacheOrders(availableOrders.value);
 cacheOrders(props.prefilledOrders ?? []);
 
-props.prefilledOrderIds?.forEach((id) => {
+selectedOrderIds.value.forEach((id) => {
     if (!orderNotes[id]) {
         orderNotes[id] = "";
     }
@@ -110,10 +141,13 @@ const fetchOrders = async (clientId) => {
     fetchError.value = "";
 
     try {
-        const response = await axios.get(route("invoices.eligible-orders", {
-            client_id: clientId,
-            selected: selectedOrderIds.value,
-        }));
+        const response = await axios.get(
+            route("invoices.eligible-orders", {
+                client_id: clientId,
+                selected: selectedOrderIds.value,
+                invoice_id: isEditMode.value ? props.invoice?.id : null,
+            })
+        );
         availableOrders.value = response.data.orders ?? [];
         cacheOrders(response.data.orders ?? []);
     } catch (error) {
@@ -143,6 +177,9 @@ const toggleOrderSelection = (orderId, checked) => {
     if (checked) {
         if (!selectedOrderIds.value.includes(orderId)) {
             selectedOrderIds.value.push(orderId);
+            if (!orderNotes[orderId]) {
+                orderNotes[orderId] = "";
+            }
         }
     } else {
         selectedOrderIds.value = selectedOrderIds.value.filter((id) => id !== orderId);
@@ -183,19 +220,34 @@ const submit = () => {
                 item.unit_price > 0,
         );
 
-    form
-        .transform((data) => ({
+    if (isEditMode.value && props.invoice) {
+        form.transform((data) => ({
             ...data,
             order_ids: [...selectedOrderIds.value],
             order_notes: cleanedNotes,
             custom_items: cleanedCustomItems,
-        }))
-        .post(route("invoices.store"), {
+        })).put(
+            route("invoices.update", props.invoice.id),
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    form.transform((data) => data);
+                },
+            },
+        );
+    } else {
+        form.transform((data) => ({
+            ...data,
+            order_ids: [...selectedOrderIds.value],
+            order_notes: cleanedNotes,
+            custom_items: cleanedCustomItems,
+        })).post(route("invoices.store"), {
             preserveScroll: true,
             onFinish: () => {
                 form.transform((data) => data);
             },
         });
+    }
 };
 </script>
 
@@ -204,9 +256,16 @@ const submit = () => {
         <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-2xl font-semibold text-slate-900">New Invoice</h2>
+                    <h2 class="text-2xl font-semibold text-slate-900">
+                        {{ isEditMode ? "Edit Invoice" : "New Invoice" }}
+                    </h2>
                     <p class="text-sm text-slate-500">
-                        Select a client, pick delivered orders, and we’ll calculate totals automatically.
+                        <template v-if="isEditMode">
+                            Update draft invoices before sending them to your client.
+                        </template>
+                        <template v-else>
+                            Select a client, pick delivered orders, and we’ll calculate totals automatically.
+                        </template>
                     </p>
                 </div>
                 <Link
@@ -234,6 +293,7 @@ const submit = () => {
                                     <select
                                         v-model="form.client_id"
                                         id="client_id"
+                                        :disabled="isEditMode"
                                         class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option value="" disabled>Select client</option>
@@ -247,6 +307,9 @@ const submit = () => {
                                     </select>
                                     <p v-if="form.errors.client_id" class="mt-1 text-xs text-red-600">
                                         {{ form.errors.client_id }}
+                                    </p>
+                                    <p v-if="isEditMode" class="mt-1 text-xs text-slate-500">
+                                        Client cannot be changed after invoice creation.
                                     </p>
                                 </div>
                                 <div>
@@ -581,7 +644,13 @@ const submit = () => {
                                     :disabled="form.processing"
                                     class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110 disabled:opacity-60"
                                 >
-                                    {{ form.processing ? "Saving..." : "Create Invoice" }}
+                                    {{
+                                        form.processing
+                                            ? "Saving..."
+                                            : isEditMode
+                                            ? "Save Changes"
+                                            : "Create Invoice"
+                                    }}
                                 </button>
                             </div>
                         </div>
