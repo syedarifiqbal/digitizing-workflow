@@ -48,6 +48,8 @@ class Order extends Model
         'priority',
         'due_at',
         'price',
+        'is_invoiced',
+        'invoiced_at',
         'currency',
         'source',
         'submitted_at',
@@ -67,6 +69,8 @@ class Order extends Model
             'priority' => OrderPriority::class,
             'type' => OrderType::class,
             'is_quote' => 'boolean',
+            'is_invoiced' => 'boolean',
+            'invoiced_at' => 'datetime',
             'quantity' => 'integer',
             'num_colors' => 'integer',
         ];
@@ -130,6 +134,11 @@ class Order extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(OrderComment::class)->latest();
+    }
+
+    public function invoiceItems(): HasMany
+    {
+        return $this->hasMany(InvoiceItem::class);
     }
 
     public function scopeForTenant($query, int $tenantId)
