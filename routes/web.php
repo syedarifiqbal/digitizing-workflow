@@ -18,6 +18,7 @@ use App\Http\Controllers\DesignerController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\SalesController;
 use App\Http\Controllers\CommissionRuleController;
 use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\TenantSettingsController;
@@ -118,6 +119,9 @@ Route::middleware('auth')->group(function () {
 
         // Designer Portal
         Route::get('/my-work', [DesignerController::class, 'dashboard'])->name('designer.dashboard');
+
+        // Sales Portal
+        Route::get('/my-orders', [SalesController::class, 'orders'])->name('sales.orders');
 
         // Client Portal
         Route::get('/client/dashboard', [ClientPortalController::class, 'dashboard'])->name('client.dashboard');

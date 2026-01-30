@@ -94,7 +94,8 @@ const toggleReportsMenu = () => {
                                 Dashboard
                             </Link>
 
-                            <template v-if="user?.is_admin || user?.is_manager || user?.is_designer">
+                            <!-- Orders dropdown - Admin/Manager only -->
+                            <template v-if="user?.is_admin || user?.is_manager">
                                 <div class="relative">
                                     <button
                                         @click="toggleOrdersMenu"
@@ -201,6 +202,8 @@ const toggleReportsMenu = () => {
                                     </div>
                                 </div>
                             </template>
+
+                            <!-- Invoices - Admin/Manager only -->
                             <Link
                                 v-if="user?.is_admin || user?.is_manager"
                                 :href="route('invoices.index')"
@@ -213,6 +216,8 @@ const toggleReportsMenu = () => {
                             >
                                 Invoices
                             </Link>
+
+                            <!-- Designer: My Work -->
                             <Link
                                 v-if="user?.is_designer"
                                 :href="route('designer.dashboard')"
@@ -225,6 +230,22 @@ const toggleReportsMenu = () => {
                             >
                                 My Work
                             </Link>
+
+                            <!-- Sales: My Orders -->
+                            <Link
+                                v-if="user?.is_sales"
+                                :href="route('sales.orders')"
+                                class="inline-flex items-center rounded-full px-3 py-1.5 transition"
+                                :class="
+                                    route().current('sales.orders')
+                                        ? 'bg-indigo-100 text-indigo-700'
+                                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                My Orders
+                            </Link>
+
+                            <!-- Client: My Orders -->
                             <Link
                                 v-if="user?.is_client"
                                 :href="route('client.orders.index')"
@@ -237,6 +258,8 @@ const toggleReportsMenu = () => {
                             >
                                 My Orders
                             </Link>
+
+                            <!-- Clients - Admin/Manager only -->
                             <Link
                                 v-if="user?.is_admin || user?.is_manager"
                                 :href="route('clients.index')"
@@ -249,6 +272,8 @@ const toggleReportsMenu = () => {
                             >
                                 Clients
                             </Link>
+
+                            <!-- Users - Admin only -->
                             <Link
                                 v-if="user?.is_admin"
                                 :href="route('users.index')"
@@ -425,7 +450,9 @@ const toggleReportsMenu = () => {
                         >
                             Dashboard
                         </Link>
-                        <div v-if="user?.is_admin || user?.is_manager || user?.is_designer" class="space-y-1 border-t border-slate-200 pt-4">
+
+                        <!-- Orders Section - Admin/Manager only -->
+                        <div v-if="user?.is_admin || user?.is_manager" class="space-y-1 border-t border-slate-200 pt-4">
                             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Orders</p>
                             <Link
                                 :href="route('orders.index')"
@@ -452,10 +479,9 @@ const toggleReportsMenu = () => {
                                 {{ type.label }} orders
                             </Link>
                         </div>
-                        <div
-                            v-if="user?.is_admin || user?.is_manager || user?.is_designer"
-                            class="space-y-1 border-t border-slate-200 pt-4"
-                        >
+
+                        <!-- Quotes Section - Admin/Manager only -->
+                        <div v-if="user?.is_admin || user?.is_manager" class="space-y-1 border-t border-slate-200 pt-4">
                             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Quotes</p>
                             <Link
                                 :href="route('orders.index', { quote: 1 })"
@@ -474,9 +500,7 @@ const toggleReportsMenu = () => {
                                 :href="route('orders.index', { quote: 1, type: type.value })"
                                 class="block rounded-lg px-4 py-2 text-base font-medium capitalize"
                                 :class="
-                                    route().current('orders.index') &&
-                                    isQuoteContext &&
-                                    currentQuoteType === type.value
+                                    route().current('orders.index') && isQuoteContext && currentQuoteType === type.value
                                         ? 'bg-indigo-50 text-indigo-700'
                                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                                 "
@@ -484,10 +508,9 @@ const toggleReportsMenu = () => {
                                 {{ type.label }} quotes
                             </Link>
                         </div>
-                        <div
-                            v-if="user?.is_admin || user?.is_manager || user?.is_designer"
-                            class="space-y-1 border-t border-slate-200 pt-4"
-                        >
+
+                        <!-- Create Section - Admin/Manager only -->
+                        <div v-if="user?.is_admin || user?.is_manager" class="space-y-1 border-t border-slate-200 pt-4">
                             <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Create</div>
                             <Link
                                 v-for="type in orderTypes"
@@ -498,6 +521,8 @@ const toggleReportsMenu = () => {
                                 New {{ type.label }} {{ isQuoteContext ? "quote" : "order" }}
                             </Link>
                         </div>
+
+                        <!-- Invoices - Admin/Manager only -->
                         <Link
                             v-if="user?.is_admin || user?.is_manager"
                             :href="route('invoices.index')"
@@ -510,6 +535,8 @@ const toggleReportsMenu = () => {
                         >
                             Invoices
                         </Link>
+
+                        <!-- Designer: My Work -->
                         <Link
                             v-if="user?.is_designer"
                             :href="route('designer.dashboard')"
@@ -522,6 +549,22 @@ const toggleReportsMenu = () => {
                         >
                             My Work
                         </Link>
+
+                        <!-- Sales: My Orders -->
+                        <Link
+                            v-if="user?.is_sales"
+                            :href="route('sales.orders')"
+                            class="block rounded-lg px-4 py-2 text-base font-medium"
+                            :class="
+                                route().current('sales.orders')
+                                    ? 'bg-indigo-50 text-indigo-700'
+                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            "
+                        >
+                            My Orders
+                        </Link>
+
+                        <!-- Client Section -->
                         <div v-if="user?.is_client" class="space-y-1">
                             <Link
                                 :href="route('client.orders.index')"
@@ -541,6 +584,8 @@ const toggleReportsMenu = () => {
                                 Create Order
                             </Link>
                         </div>
+
+                        <!-- Clients - Admin/Manager only -->
                         <Link
                             v-if="user?.is_admin || user?.is_manager"
                             :href="route('clients.index')"
@@ -553,6 +598,8 @@ const toggleReportsMenu = () => {
                         >
                             Clients
                         </Link>
+
+                        <!-- Users - Admin only -->
                         <Link
                             v-if="user?.is_admin"
                             :href="route('users.index')"
