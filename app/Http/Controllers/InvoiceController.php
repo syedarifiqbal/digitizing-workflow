@@ -8,16 +8,31 @@ use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\InvoicePayment;
 use App\Models\Order;
+use App\Notifications\InvoiceOverdueNotification;
+use App\Notifications\InvoicePaymentRecordedNotification;
+use App\Notifications\InvoiceSentNotification;
+use App\Services\InvoicePdfService;
+use App\Services\InvoiceWorkflowService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
+use Illuminate\Notifications\Notification as BaseNotification;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class InvoiceController extends Controller
 {
+    public function __construct(
+        private readonly InvoiceWorkflowService $workflow,
+        private readonly InvoicePdfService $pdfService
+    )
+    {
+    }
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Invoice::class);
@@ -316,8 +331,10 @@ class InvoiceController extends Controller
     {
         $this->authorize('view', $invoice);
 
-        $invoice->load(['client', 'items.order']);
+        $invoice->load(['client', 'items.order', 'payments.recordedBy']);
         $companyDetails = $request->user()->tenant->getSetting('company_details', []);
+        $paidAmount = (float) $invoice->payments->sum('amount');
+        $balance = max((float) $invoice->total_amount - $paidAmount, 0);
 
         return Inertia::render('Invoices/Show', [
             'invoice' => [
@@ -332,6 +349,8 @@ class InvoiceController extends Controller
                 'tax_amount' => (float) $invoice->tax_amount,
                 'discount_amount' => (float) $invoice->discount_amount,
                 'total_amount' => (float) $invoice->total_amount,
+                'paid_amount' => $paidAmount,
+                'balance_due' => $balance,
                 'currency' => $invoice->currency,
                 'payment_terms' => $invoice->payment_terms,
                 'notes' => $invoice->notes,
@@ -348,6 +367,19 @@ class InvoiceController extends Controller
                     'note' => $item->note,
                     'order_number' => $item->order?->order_number,
                 ]),
+                'payments' => $invoice->payments
+                    ->sortByDesc('payment_date')
+                    ->values()
+                    ->map(fn (InvoicePayment $payment) => [
+                        'id' => $payment->id,
+                        'amount' => (float) $payment->amount,
+                        'payment_method' => $payment->payment_method,
+                        'payment_date' => $payment->payment_date?->toDateString(),
+                        'reference' => $payment->reference,
+                        'notes' => $payment->notes,
+                        'recorded_by' => $payment->recordedBy?->name,
+                    ])
+                    ->all(),
             ],
             'companyDetails' => $companyDetails,
             'canEdit' => $request->user()->can('update', $invoice) && $invoice->status === InvoiceStatus::DRAFT,
@@ -545,6 +577,178 @@ class InvoiceController extends Controller
         });
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice updated.');
+    }
+
+    public function send(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+        abort_if($invoice->status !== InvoiceStatus::DRAFT, 403);
+
+        $data = $request->validate([
+            'message' => ['nullable', 'string'],
+            'attach_pdf' => ['nullable', 'boolean'],
+        ]);
+
+        $attachPdf = (bool) ($data['attach_pdf'] ?? false);
+        $pdfData = null;
+        $pdfName = null;
+
+        if ($attachPdf) {
+            try {
+                if ($this->pdfService) {
+                    $pdf = $this->pdfService->make($invoice);
+                    $pdfData = $pdf->output();
+                    $pdfName = ($invoice->invoice_number ?? 'invoice-' . $invoice->id) . '.pdf';
+                } else {
+                    return back()->withErrors([
+                        'pdf' => 'PDF generation service is not configured. Install barryvdh/laravel-dompdf to enable attachments.',
+                    ]);
+                }
+            } catch (\RuntimeException $e) {
+                return back()->withErrors(['pdf' => $e->getMessage()]);
+            }
+        }
+
+        $invoice = $this->workflow->transitionTo($invoice, InvoiceStatus::SENT);
+        $invoice->load('client');
+        $this->notifyClient(
+            $invoice,
+            new InvoiceSentNotification($invoice, $data['message'] ?? null, $pdfData, $pdfName)
+        );
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice marked as sent.');
+    }
+
+    public function cancel(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+        abort_if(! in_array($invoice->status, [InvoiceStatus::DRAFT, InvoiceStatus::SENT], true), 403);
+
+        $this->workflow->transitionTo($invoice, InvoiceStatus::CANCELLED);
+        $this->releaseOrders($invoice);
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice cancelled.');
+    }
+
+    public function void(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+        abort_if(! in_array($invoice->status, [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE, InvoiceStatus::PAID], true), 403);
+
+        $this->workflow->transitionTo($invoice, InvoiceStatus::VOID);
+        $this->releaseOrders($invoice);
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice voided.');
+    }
+
+    public function markPaid(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+        abort_if(! in_array($invoice->status, [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE], true), 403);
+
+        $this->workflow->transitionTo($invoice, InvoiceStatus::PAID);
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice marked as paid.');
+    }
+
+    public function recordPayment(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+        abort_if(! in_array($invoice->status, [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE], true), 403);
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'payment_method' => ['required', 'string', 'max:100'],
+            'payment_date' => ['nullable', 'date'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $payment = $invoice->payments()->create([
+            'tenant_id' => $invoice->tenant_id,
+            'amount' => $data['amount'],
+            'payment_method' => $data['payment_method'],
+            'payment_date' => $data['payment_date'] ?? now()->toDateString(),
+            'reference' => $data['reference'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'recorded_by' => $request->user()->id,
+        ]);
+
+        $invoice->load('payments', 'client');
+        $this->syncPaymentStatus($invoice);
+        $invoice->refresh()->load('payments', 'client');
+        $balance = max((float) $invoice->total_amount - (float) $invoice->payments->sum('amount'), 0);
+
+        $this->notifyClient(
+            $invoice,
+            new InvoicePaymentRecordedNotification(
+                $invoice,
+                (float) $payment->amount,
+                $balance
+            )
+        );
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Payment recorded.');
+    }
+
+    public function downloadPdf(Request $request, Invoice $invoice)
+    {
+        $this->authorize('view', $invoice);
+
+        if (! $this->pdfService) {
+            abort(501, 'PDF generation is not configured. Please install barryvdh/laravel-dompdf.');
+        }
+
+        try {
+            $pdf = $this->pdfService->make($invoice);
+        } catch (RuntimeException $e) {
+            abort(500, $e->getMessage());
+        }
+
+        $filename = ($invoice->invoice_number ?? 'invoice-' . $invoice->id) . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    private function syncPaymentStatus(Invoice $invoice): void
+    {
+        $paidAmount = (float) $invoice->payments->sum('amount');
+        $balance = max((float) $invoice->total_amount - $paidAmount, 0);
+
+        if ($balance <= 0) {
+            if ($invoice->status !== InvoiceStatus::PAID) {
+                $this->workflow->transitionTo($invoice, InvoiceStatus::PAID);
+            }
+        } elseif ($paidAmount > 0) {
+            if ($invoice->status !== InvoiceStatus::PARTIALLY_PAID) {
+                $this->workflow->transitionTo($invoice, InvoiceStatus::PARTIALLY_PAID);
+            }
+        } elseif ($invoice->status === InvoiceStatus::PARTIALLY_PAID) {
+            $this->workflow->transitionTo($invoice, InvoiceStatus::SENT);
+        }
+    }
+
+    private function releaseOrders(Invoice $invoice): void
+    {
+        $orderIds = $invoice->items()->whereNotNull('order_id')->pluck('order_id');
+
+        if ($orderIds->isNotEmpty()) {
+            Order::whereIn('id', $orderIds)->update([
+                'is_invoiced' => false,
+                'invoiced_at' => null,
+            ]);
+        }
+    }
+
+    protected function notifyClient(Invoice $invoice, BaseNotification $notification): void
+    {
+        $email = $invoice->client?->email;
+
+        if (! $email) {
+            return;
+        }
+
+        NotificationFacade::route('mail', $email)->notify($notification);
     }
 
     public function eligibleOrders(Request $request)

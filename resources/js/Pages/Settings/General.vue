@@ -50,10 +50,43 @@ const form = useForm({
         email: props.settings.company_details?.email ?? "",
     },
     bank_details: props.settings.bank_details ?? "",
+    company_logo: null,
+    remove_logo: false,
 });
 
+const resetTransform = () => {
+    form.transform((data) => data);
+};
+
 const submit = () => {
-    form.put(route("settings.update"));
+    const needsMultipart = form.company_logo instanceof File;
+
+    if (needsMultipart) {
+        form.transform((data) => ({
+            ...data,
+            _method: "PUT",
+        }));
+
+        form.post(route("settings.update"), {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                form.reset("company_logo");
+                form.remove_logo = false;
+            },
+            onFinish: resetTransform,
+        });
+
+        return;
+    }
+
+    form.put(route("settings.update"), {
+        preserveScroll: true,
+        onSuccess: () => {
+            form.company_logo = null;
+            form.remove_logo = false;
+        },
+    });
 };
 
 const page = usePage();
@@ -116,6 +149,13 @@ const componentProps = computed(() => {
             form,
             apiKeyLastFour: apiKeyLastFour.value,
             apiKeyMessage: apiKeyMessage.value,
+        };
+    }
+
+    if (activeTab.value === "invoicing") {
+        return {
+            form,
+            companyLogoUrl: props.settings.company_logo_url ?? null,
         };
     }
 

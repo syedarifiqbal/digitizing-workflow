@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,6 +17,8 @@ class TenantSettingsController extends Controller
         $tenant = $request->user()->tenant;
 
         $settings = array_merge($this->defaultSettings(), $tenant->settings ?? []);
+        $logoPath = $settings['company_logo_path'] ?? null;
+        $settings['company_logo_url'] = $logoPath ? Storage::disk('public')->url($logoPath) : null;
 
         return Inertia::render('Settings/General', [
             'tenant' => [
@@ -59,11 +62,25 @@ class TenantSettingsController extends Controller
             'company_details.phone' => ['nullable', 'string', 'max:100'],
             'company_details.email' => ['nullable', 'email', 'max:255'],
             'bank_details' => ['nullable', 'string'],
+            'company_logo' => ['nullable', 'image', 'max:2048'],
+            'remove_logo' => ['nullable', 'boolean'],
         ]);
 
         $tenant = $request->user()->tenant;
+        $currentSettings = $tenant->settings ?? $this->defaultSettings();
 
-        $settings = array_merge($tenant->settings ?? $this->defaultSettings(), [
+        $logoPath = $currentSettings['company_logo_path'] ?? null;
+
+        if ($request->boolean('remove_logo') && $logoPath) {
+            Storage::disk('public')->delete($logoPath);
+            $logoPath = null;
+        }
+
+        if ($request->hasFile('company_logo')) {
+            $logoPath = $request->file('company_logo')->store('tenant-logos/' . $tenant->id, 'public');
+        }
+
+        $settings = array_merge($currentSettings, [
             'email_verification_required' => $validated['email_verification_required'],
             'date_format' => $validated['date_format'],
             'sales_commission_earned_on' => $validated['sales_commission_earned_on'],
@@ -91,6 +108,7 @@ class TenantSettingsController extends Controller
                 'email' => '',
             ],
             'bank_details' => $validated['bank_details'] ?? '',
+            'company_logo_path' => $logoPath,
         ]);
 
         $tenant->update([
@@ -133,6 +151,7 @@ class TenantSettingsController extends Controller
                 'email' => '',
             ],
             'bank_details' => '',
+            'company_logo_path' => null,
         ];
     }
 }

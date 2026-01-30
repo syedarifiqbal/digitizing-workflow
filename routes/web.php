@@ -104,6 +104,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/commissions/{commission}/update-tip', [CommissionController::class, 'updateExtraAmount'])->name('commissions.update-tip');
 
         Route::get('/invoices/eligible-orders', [InvoiceController::class, 'eligibleOrders'])->name('invoices.eligible-orders');
+        Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+        Route::post('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
+        Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
+        Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
+        Route::post('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
+        Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('invoices.payments.store');
         Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update']);
 
         // My Earnings (Sales & Designer)

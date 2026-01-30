@@ -1,5 +1,6 @@
 <script setup>
-import { Link } from "@inertiajs/vue3";
+import { computed, ref } from "vue";
+import { Link, router, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 
 const props = defineProps({
@@ -33,6 +34,120 @@ const statusBadgeClass = (status) => {
             return "bg-slate-100 text-slate-600";
     }
 };
+
+const isDraft = computed(() => props.invoice.status === "draft");
+const canRecordPayment = computed(() =>
+    ["sent", "partially_paid", "overdue"].includes(props.invoice.status)
+);
+const canMarkPaid = computed(() =>
+    ["sent", "partially_paid", "overdue"].includes(props.invoice.status)
+);
+const canCancel = computed(() =>
+    ["draft", "sent"].includes(props.invoice.status)
+);
+const canVoid = computed(() =>
+    ["sent", "partially_paid", "overdue", "paid"].includes(
+        props.invoice.status
+    )
+);
+const paidAmount = computed(() => Number(props.invoice.paid_amount ?? 0));
+const balanceDue = computed(() => Number(props.invoice.balance_due ?? 0));
+
+const actionModal = ref(null);
+const actionRouteMap = {
+    cancel: "invoices.cancel",
+    void: "invoices.void",
+    markPaid: "invoices.mark-paid",
+};
+
+const openActionModal = (type) => {
+    actionModal.value = type;
+};
+
+const closeActionModal = () => {
+    actionModal.value = null;
+};
+
+const performAction = () => {
+    if (!actionModal.value) return;
+    const routeName = actionRouteMap[actionModal.value];
+    router.post(route(routeName, props.invoice.id), {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            closeActionModal();
+        },
+    });
+};
+
+const actionMessages = {
+    cancel: {
+        title: "Cancel invoice",
+        body: "This will cancel the invoice and release all associated orders.",
+        confirm: "Cancel invoice",
+    },
+    void: {
+        title: "Void invoice",
+        body: "Voiding will keep a record but prevent further payments.",
+        confirm: "Void invoice",
+    },
+    markPaid: {
+        title: "Mark as paid",
+        body: "Confirm that this invoice has been fully paid?",
+        confirm: "Mark paid",
+    },
+};
+
+const showPaymentModal = ref(false);
+const showSendModal = ref(false);
+const openPaymentModal = () => {
+    paymentForm.reset();
+    paymentForm.payment_date = new Date().toISOString().slice(0, 10);
+    showPaymentModal.value = true;
+};
+const closePaymentModal = () => {
+    showPaymentModal.value = false;
+};
+
+const openSendModal = () => {
+    sendForm.reset();
+    sendForm.attach_pdf = true;
+    showSendModal.value = true;
+};
+const closeSendModal = () => {
+    showSendModal.value = false;
+};
+
+const paymentForm = useForm({
+    amount: "",
+    payment_method: "",
+    payment_date: new Date().toISOString().slice(0, 10),
+    reference: "",
+    notes: "",
+});
+
+const sendForm = useForm({
+    message: "",
+    attach_pdf: true,
+});
+
+const submitPayment = () => {
+    paymentForm.post(route("invoices.payments.store", props.invoice.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            paymentForm.reset();
+            closePaymentModal();
+        },
+    });
+};
+
+const submitSend = () => {
+    sendForm.post(route("invoices.send", props.invoice.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeSendModal();
+        },
+    });
+};
 </script>
 
 <template>
@@ -52,6 +167,14 @@ const statusBadgeClass = (status) => {
                     >
                         {{ invoice.status_label }}
                     </span>
+                    <a
+                        :href="route('invoices.pdf', invoice.id)"
+                        class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        Download PDF
+                    </a>
                     <Link
                         :href="route('invoices.index')"
                         class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -67,10 +190,78 @@ const statusBadgeClass = (status) => {
                     </Link>
                 </div>
             </div>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <button
+                    v-if="isDraft"
+                    type="button"
+                    class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
+                    @click="openSendModal"
+                >
+                    Send Invoice
+                </button>
+                <button
+                    v-if="canRecordPayment"
+                    type="button"
+                    class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    @click="openPaymentModal"
+                >
+                    Record Payment
+                </button>
+                <button
+                    v-if="canMarkPaid"
+                    type="button"
+                    class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    @click="openActionModal('markPaid')"
+                >
+                    Mark as Paid
+                </button>
+                <button
+                    v-if="canCancel"
+                    type="button"
+                    class="inline-flex items-center rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                    @click="openActionModal('cancel')"
+                >
+                    Cancel Invoice
+                </button>
+                <button
+                    v-if="canVoid"
+                    type="button"
+                    class="inline-flex items-center rounded-md border border-amber-200 bg-white px-3 py-2 text-sm font-medium text-amber-600 hover:bg-amber-50"
+                    @click="openActionModal('void')"
+                >
+                    Void Invoice
+                </button>
+            </div>
         </template>
 
         <div class="py-8">
             <div class="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
+                <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+                    <div class="grid gap-6 p-6 md:grid-cols-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
+                            <p class="mt-2 text-2xl font-semibold text-slate-900">
+                                {{ invoice.currency }} {{ Number(invoice.total_amount ?? 0).toFixed(2) }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Paid</p>
+                            <p class="mt-2 text-2xl font-semibold text-green-600">
+                                {{ invoice.currency }} {{ paidAmount.toFixed(2) }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Balance</p>
+                            <p
+                                class="mt-2 text-2xl font-semibold"
+                                :class="balanceDue <= 0 ? 'text-green-600' : 'text-red-600'"
+                            >
+                                {{ invoice.currency }} {{ balanceDue.toFixed(2) }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
                     <div class="grid gap-6 p-6 md:grid-cols-2">
                         <div>
@@ -196,6 +387,221 @@ const statusBadgeClass = (status) => {
                     <div class="px-6 py-4 text-sm text-slate-700 whitespace-pre-line">
                         {{ invoice.notes }}
                     </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-900">Payments</h3>
+                            <p class="text-xs text-slate-500">History of payments recorded for this invoice.</p>
+                        </div>
+                        <button
+                            v-if="canRecordPayment"
+                            type="button"
+                            class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                            @click="openPaymentModal"
+                        >
+                            Record Payment
+                        </button>
+                    </div>
+                    <div v-if="!invoice.payments?.length" class="px-6 py-5 text-sm text-slate-500">
+                        No payments recorded yet.
+                    </div>
+                    <div v-else class="divide-y divide-slate-100">
+                        <div
+                            v-for="payment in invoice.payments"
+                            :key="payment.id"
+                            class="px-6 py-4 flex flex-col gap-1"
+                        >
+                            <div class="flex items-center justify-between text-sm">
+                                <p class="font-semibold text-slate-900">
+                                    {{ invoice.currency }} {{ Number(payment.amount ?? 0).toFixed(2) }}
+                                </p>
+                                <p class="text-xs text-slate-500">
+                                    {{ payment.payment_date ?? '—' }}
+                                </p>
+                            </div>
+                            <p class="text-xs text-slate-500">
+                                {{ payment.payment_method }}
+                                <span v-if="payment.reference"> • Ref: {{ payment.reference }}</span>
+                            </p>
+                            <p v-if="payment.notes" class="text-xs text-slate-400">
+                                {{ payment.notes }}
+                            </p>
+                            <p v-if="payment.recorded_by" class="text-xs text-slate-400">
+                                Recorded by {{ payment.recorded_by }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div
+            v-if="actionModal"
+            class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+        >
+            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl space-y-4">
+                <h3 class="text-lg font-semibold text-slate-900">
+                    {{ actionMessages[actionModal]?.title }}
+                </h3>
+                <p class="text-sm text-slate-600">
+                    {{ actionMessages[actionModal]?.body }}
+                </p>
+                <div class="flex justify-end gap-3">
+                    <button
+                        type="button"
+                        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        @click="closeActionModal"
+                    >
+                        Keep Invoice
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
+                        @click="performAction"
+                    >
+                        {{ actionMessages[actionModal]?.confirm }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div
+            v-if="showSendModal"
+            class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+        >
+            <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-slate-900">Send Invoice</h3>
+                    <button class="text-slate-400 hover:text-slate-600" @click="closeSendModal">&times;</button>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-700">Message</label>
+                    <textarea
+                        v-model="sendForm.message"
+                        rows="3"
+                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        placeholder="Optional message to include in the email"
+                    ></textarea>
+                    <p v-if="sendForm.errors.message" class="mt-1 text-xs text-red-600">
+                        {{ sendForm.errors.message }}
+                    </p>
+                </div>
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                        v-model="sendForm.attach_pdf"
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    Attach PDF invoice
+                </label>
+                <p v-if="sendForm.errors.pdf" class="text-xs text-red-600">
+                    {{ sendForm.errors.pdf }}
+                </p>
+                <div class="flex justify-end gap-3">
+                    <button
+                        type="button"
+                        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        @click="closeSendModal"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
+                        :disabled="sendForm.processing"
+                        @click="submitSend"
+                    >
+                        {{ sendForm.processing ? "Sending..." : "Send Invoice" }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div
+            v-if="showPaymentModal"
+            class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+        >
+            <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-slate-900">Record Payment</h3>
+                    <button class="text-slate-400 hover:text-slate-600" @click="closePaymentModal">&times;</button>
+                </div>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700">Amount</label>
+                        <input
+                            v-model.number="paymentForm.amount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                        <p v-if="paymentForm.errors.amount" class="mt-1 text-xs text-red-600">
+                            {{ paymentForm.errors.amount }}
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700">Payment Date</label>
+                        <input
+                            v-model="paymentForm.payment_date"
+                            type="date"
+                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                        <p v-if="paymentForm.errors.payment_date" class="mt-1 text-xs text-red-600">
+                            {{ paymentForm.errors.payment_date }}
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-700">Payment Method</label>
+                    <input
+                        v-model="paymentForm.payment_method"
+                        type="text"
+                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        placeholder="Wire transfer, cash, etc."
+                    />
+                    <p v-if="paymentForm.errors.payment_method" class="mt-1 text-xs text-red-600">
+                        {{ paymentForm.errors.payment_method }}
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700">Reference</label>
+                        <input
+                            v-model="paymentForm.reference"
+                            type="text"
+                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            placeholder="Optional reference"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700">Notes</label>
+                        <input
+                            v-model="paymentForm.notes"
+                            type="text"
+                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            placeholder="Optional note"
+                        />
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button
+                        type="button"
+                        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        @click="closePaymentModal"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
+                        :disabled="paymentForm.processing"
+                        @click="submitPayment"
+                    >
+                        {{ paymentForm.processing ? "Saving..." : "Save Payment" }}
+                    </button>
                 </div>
             </div>
         </div>

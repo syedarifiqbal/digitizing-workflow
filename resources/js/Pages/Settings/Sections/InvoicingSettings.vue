@@ -1,10 +1,55 @@
 <script setup>
+import { ref, watch } from "vue";
+
 const props = defineProps({
     form: {
         type: Object,
         required: true,
     },
+    companyLogoUrl: {
+        type: String,
+        default: null,
+    },
 });
+
+const logoPreview = ref(props.companyLogoUrl);
+const logoInput = ref(null);
+
+const handleLogoChange = (event) => {
+    const file = event.target?.files?.[0];
+
+    if (!file) {
+        return;
+    }
+
+    props.form.company_logo = file;
+    props.form.remove_logo = false;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        logoPreview.value = e.target?.result ?? null;
+    };
+    reader.readAsDataURL(file);
+};
+
+const removeLogo = () => {
+    props.form.company_logo = null;
+    props.form.remove_logo = true;
+    logoPreview.value = null;
+
+    if (logoInput.value) {
+        logoInput.value.value = "";
+    }
+};
+
+watch(
+    () => props.companyLogoUrl,
+    (value) => {
+        if (!props.form.company_logo && !props.form.remove_logo) {
+            logoPreview.value = value;
+        }
+    },
+);
 </script>
 
 <template>
@@ -75,6 +120,45 @@ const props = defineProps({
                 <p class="mt-0.5 text-xs text-gray-500">Shown on invoices, PDFs, and emails.</p>
             </div>
             <div class="px-5 py-4 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700">Company Logo</label>
+                    <div class="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center">
+                        <div
+                            class="h-24 w-24 rounded-lg border border-dashed border-gray-300 bg-white flex items-center justify-center overflow-hidden"
+                        >
+                            <img v-if="logoPreview" :src="logoPreview" alt="Logo preview" class="max-h-full max-w-full object-contain" />
+                            <span v-else class="text-[11px] uppercase tracking-wide text-gray-400">Logo</span>
+                        </div>
+                        <div class="space-y-2 text-xs text-gray-500">
+                            <p>Upload a square PNG, SVG, or JPG (max 2MB) to brand invoices and PDF exports.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <label
+                                    class="inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                >
+                                    <input
+                                        ref="logoInput"
+                                        type="file"
+                                        class="sr-only"
+                                        accept="image/png,image/jpeg,image/svg+xml"
+                                        @change="handleLogoChange"
+                                    />
+                                    Choose Logo
+                                </label>
+                                <button
+                                    v-if="logoPreview"
+                                    type="button"
+                                    class="inline-flex items-center rounded-md border border-transparent px-3 py-1.5 text-xs font-medium text-rose-600 hover:text-rose-700"
+                                    @click="removeLogo"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                            <p v-if="form.errors.company_logo" class="text-xs text-red-600">
+                                {{ form.errors.company_logo }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <label class="block text-xs font-medium text-gray-700" for="invoice_company_name">
