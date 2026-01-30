@@ -276,8 +276,187 @@ class DashboardController extends Controller
 
     private function getDesignerStats(User $user): array
     {
-        // Placeholder - will be implemented later
-        return [];
+        $tenantId = $user->tenant_id;
+        $userId = $user->id;
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $startOfLastMonth = $now->copy()->subMonth()->startOfMonth();
+        $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
+
+        // Order stats for this designer
+        $orderStats = $this->getDesignerOrderStats($tenantId, $userId, $startOfMonth);
+
+        // Earnings stats
+        $earningsStats = $this->getDesignerEarningsStats($tenantId, $userId, $startOfMonth);
+
+        // Performance stats
+        $performanceStats = $this->getDesignerPerformanceStats($tenantId, $userId, $startOfMonth, $startOfLastMonth, $endOfLastMonth);
+
+        // Orders needing action (assigned or revision requested)
+        $actionRequired = Order::where('tenant_id', $tenantId)
+            ->where('designer_id', $userId)
+            ->whereIn('status', [OrderStatus::ASSIGNED, OrderStatus::REVISION_REQUESTED])
+            ->with(['revisions' => fn ($q) => $q->where('status', 'open')->latest()->limit(1)])
+            ->orderByRaw("FIELD(status, 'revision_requested', 'assigned')")
+            ->orderBy('priority', 'desc') // Rush first
+            ->orderBy('created_at', 'asc')
+            ->limit(5)
+            ->get()
+            ->map(function ($order) {
+                $latestRevision = $order->revisions->first();
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'title' => $order->title,
+                    'status' => $order->status->value,
+                    'priority' => $order->priority->value ?? 'normal',
+                    'created_at' => $order->created_at->toIso8601String(),
+                    'revision_notes' => $latestRevision?->notes,
+                ];
+            });
+
+        // Current work (in progress, submitted, in review)
+        $currentWork = Order::where('tenant_id', $tenantId)
+            ->where('designer_id', $userId)
+            ->whereIn('status', [OrderStatus::IN_PROGRESS, OrderStatus::SUBMITTED, OrderStatus::IN_REVIEW])
+            ->orderBy('priority', 'desc')
+            ->orderBy('due_at', 'asc')
+            ->limit(5)
+            ->get()
+            ->map(fn ($order) => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'title' => $order->title,
+                'status' => $order->status->value,
+                'priority' => $order->priority->value ?? 'normal',
+                'due_at' => $order->due_at?->toIso8601String(),
+            ]);
+
+        // Recent completions with earnings
+        $recentCompletions = Order::where('tenant_id', $tenantId)
+            ->where('designer_id', $userId)
+            ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
+            ->whereNotNull('delivered_at')
+            ->orderByDesc('delivered_at')
+            ->limit(5)
+            ->get()
+            ->map(function ($order) use ($tenantId, $userId) {
+                $earnings = Commission::where('tenant_id', $tenantId)
+                    ->where('order_id', $order->id)
+                    ->where('user_id', $userId)
+                    ->where('role_type', RoleType::DESIGNER)
+                    ->sum(DB::raw('base_amount + extra_amount'));
+
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'title' => $order->title,
+                    'delivered_at' => $order->delivered_at->toIso8601String(),
+                    'earnings' => $earnings ?? 0,
+                ];
+            });
+
+        return [
+            'orders' => $orderStats,
+            'earnings' => $earningsStats,
+            'performance' => $performanceStats,
+            'action_required' => $actionRequired,
+            'current_work' => $currentWork,
+            'recent_completions' => $recentCompletions,
+        ];
+    }
+
+    private function getDesignerOrderStats(int $tenantId, int $userId, Carbon $startOfMonth): array
+    {
+        $baseQuery = Order::where('tenant_id', $tenantId)->where('designer_id', $userId);
+
+        // Count active orders (assigned through in_review)
+        $activeStatuses = [
+            OrderStatus::ASSIGNED,
+            OrderStatus::IN_PROGRESS,
+            OrderStatus::SUBMITTED,
+            OrderStatus::IN_REVIEW,
+            OrderStatus::REVISION_REQUESTED,
+        ];
+
+        $assigned = (clone $baseQuery)->whereIn('status', $activeStatuses)->count();
+        $rush = (clone $baseQuery)->whereIn('status', $activeStatuses)->where('priority', 'rush')->count();
+
+        return [
+            'assigned' => $assigned,
+            'rush' => $rush,
+            'in_progress' => (clone $baseQuery)->where('status', OrderStatus::IN_PROGRESS)->count(),
+            'revision_requested' => (clone $baseQuery)->where('status', OrderStatus::REVISION_REQUESTED)->count(),
+            'completed_this_month' => (clone $baseQuery)
+                ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
+                ->where('delivered_at', '>=', $startOfMonth)
+                ->count(),
+        ];
+    }
+
+    private function getDesignerEarningsStats(int $tenantId, int $userId, Carbon $startOfMonth): array
+    {
+        $baseQuery = Commission::where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('role_type', RoleType::DESIGNER);
+
+        $thisMonth = (clone $baseQuery)
+            ->where('created_at', '>=', $startOfMonth)
+            ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
+
+        $unpaid = (clone $baseQuery)
+            ->where('is_paid', false)
+            ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
+
+        $paidThisMonth = (clone $baseQuery)
+            ->where('is_paid', true)
+            ->where('paid_at', '>=', $startOfMonth)
+            ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
+
+        // Calculate average per order this month
+        $ordersThisMonth = (clone $baseQuery)->where('created_at', '>=', $startOfMonth)->count();
+        $averagePerOrder = $ordersThisMonth > 0 ? $thisMonth / $ordersThisMonth : 0;
+
+        return [
+            'this_month' => $thisMonth,
+            'unpaid' => $unpaid,
+            'paid_this_month' => $paidThisMonth,
+            'average_per_order' => $averagePerOrder,
+        ];
+    }
+
+    private function getDesignerPerformanceStats(int $tenantId, int $userId, Carbon $startOfMonth, Carbon $startOfLastMonth, Carbon $endOfLastMonth): array
+    {
+        $completedStatuses = [OrderStatus::DELIVERED, OrderStatus::CLOSED];
+
+        $ordersThisMonth = Order::where('tenant_id', $tenantId)
+            ->where('designer_id', $userId)
+            ->whereIn('status', $completedStatuses)
+            ->where('delivered_at', '>=', $startOfMonth)
+            ->count();
+
+        $ordersLastMonth = Order::where('tenant_id', $tenantId)
+            ->where('designer_id', $userId)
+            ->whereIn('status', $completedStatuses)
+            ->whereBetween('delivered_at', [$startOfLastMonth, $endOfLastMonth])
+            ->count();
+
+        $totalCompleted = Order::where('tenant_id', $tenantId)
+            ->where('designer_id', $userId)
+            ->whereIn('status', $completedStatuses)
+            ->count();
+
+        $totalEarnings = Commission::where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('role_type', RoleType::DESIGNER)
+            ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
+
+        return [
+            'orders_this_month' => $ordersThisMonth,
+            'orders_last_month' => $ordersLastMonth,
+            'total_completed' => $totalCompleted,
+            'total_earnings' => $totalEarnings,
+        ];
     }
 
     private function getSalesStats(User $user): array
