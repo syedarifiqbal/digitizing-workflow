@@ -12,3 +12,8 @@ Schedule::command('demo:reset')
     ->everyTwoHours()
     ->withoutOverlapping()
     ->timezone('UTC');
+
+Schedule::command('invoices:mark-overdue')
+    ->dailyAt('00:05')
+    ->withoutOverlapping()
+    ->timezone('UTC');
