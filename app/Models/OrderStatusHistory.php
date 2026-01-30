@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Enums\OrderStatus;
+use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderStatusHistory extends Model
 {
+    use BelongsToTenant;
     protected $table = 'order_status_history';
 
     protected $fillable = [
@@ -25,11 +27,6 @@ class OrderStatusHistory extends Model
         'to_status' => OrderStatus::class,
         'changed_at' => 'datetime',
     ];
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
-    }
 
     public function order(): BelongsTo
     {

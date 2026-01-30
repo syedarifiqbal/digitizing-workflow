@@ -1,8 +1,8 @@
 <script setup>
-import { ref } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
-import { useDateFormat } from '@/Composables/useDateFormat';
+import { ref } from "vue";
+import { Link, router } from "@inertiajs/vue3";
+import AppLayout from "@/Layouts/AppLayout.vue";
+import { useDateFormat } from "@/Composables/useDateFormat";
 
 const { formatDate } = useDateFormat();
 
@@ -22,27 +22,31 @@ const startDate = ref(props.filters.start_date);
 const endDate = ref(props.filters.end_date);
 
 const applyFilters = () => {
-    router.get(route('commissions.my'), {
-        is_paid: isPaid.value,
-        type: orderType.value,
-        start_date: startDate.value,
-        end_date: endDate.value,
-    }, {
-        preserveState: true,
-        preserveScroll: true,
-    });
+    router.get(
+        route("commissions.my"),
+        {
+            is_paid: isPaid.value,
+            type: orderType.value,
+            start_date: startDate.value,
+            end_date: endDate.value,
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+        }
+    );
 };
 
 const clearFilters = () => {
-    isPaid.value = '';
-    orderType.value = 'all';
-    startDate.value = '';
-    endDate.value = '';
+    isPaid.value = "";
+    orderType.value = "all";
+    startDate.value = "";
+    endDate.value = "";
     applyFilters();
 };
 
 const exportCsv = () => {
-    window.location.href = route('commissions.my.export', {
+    window.location.href = route("commissions.my.export", {
         is_paid: isPaid.value,
         type: orderType.value,
         start_date: startDate.value,
@@ -56,34 +60,73 @@ const exportCsv = () => {
         <template #header>
             <div class="flex flex-col gap-1">
                 <h2 class="text-lg font-semibold text-gray-900">My Earnings</h2>
-                <p class="text-sm text-gray-500">Track your {{ roleLabel.toLowerCase() }} earnings and payment history.</p>
+                <p class="text-sm text-gray-500">
+                    Track your {{ roleLabel.toLowerCase() }} earnings and
+                    payment history.
+                </p>
             </div>
         </template>
 
         <div class="py-8">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-
                 <!-- Summary Cards -->
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
-                    <div class="bg-white rounded-lg border border-gray-200 px-5 py-4">
-                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Earned</div>
-                        <div class="mt-1 text-2xl font-semibold text-gray-900">{{ currency }} {{ totals.total_earned.toFixed(2) }}</div>
+                    <div
+                        class="bg-white rounded-lg border border-gray-200 px-5 py-4"
+                    >
+                        <div
+                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                        >
+                            Total Earned
+                        </div>
+                        <div class="mt-1 text-2xl font-semibold text-gray-900">
+                            {{ currency }}
+                            {{
+                                parseFloat(totals?.total_earned || 0).toFixed(2)
+                            }}
+                        </div>
                     </div>
-                    <div class="bg-white rounded-lg border border-gray-200 px-5 py-4">
-                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Paid</div>
-                        <div class="mt-1 text-2xl font-semibold text-green-600">{{ currency }} {{ totals.total_paid.toFixed(2) }}</div>
+                    <div
+                        class="bg-white rounded-lg border border-gray-200 px-5 py-4"
+                    >
+                        <div
+                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                        >
+                            Total Paid
+                        </div>
+                        <div class="mt-1 text-2xl font-semibold text-green-600">
+                            {{ currency }}
+                            {{ parseFloat(totals?.total_paid || 0).toFixed(2) }}
+                        </div>
                     </div>
-                    <div class="bg-white rounded-lg border border-gray-200 px-5 py-4">
-                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Pending Payment</div>
-                        <div class="mt-1 text-2xl font-semibold text-yellow-600">{{ currency }} {{ totals.total_unpaid.toFixed(2) }}</div>
+                    <div
+                        class="bg-white rounded-lg border border-gray-200 px-5 py-4"
+                    >
+                        <div
+                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                        >
+                            Pending Payment
+                        </div>
+                        <div
+                            class="mt-1 text-2xl font-semibold text-yellow-600"
+                        >
+                            {{ currency }}
+                            {{
+                                parseFloat(totals?.total_unpaid || 0).toFixed(2)
+                            }}
+                        </div>
                     </div>
                 </div>
 
                 <!-- Filters and Actions -->
-                <div class="bg-white shadow-sm rounded-lg border border-gray-200 mb-6">
+                <div
+                    class="bg-white shadow-sm rounded-lg border border-gray-200 mb-6"
+                >
                     <div class="px-5 py-4 border-b border-gray-100">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
+                            <h3 class="text-sm font-semibold text-gray-900">
+                                Filters
+                            </h3>
                             <button
                                 @click="exportCsv"
                                 type="button"
@@ -94,9 +137,14 @@ const exportCsv = () => {
                         </div>
                     </div>
                     <div class="px-5 py-4">
-                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div
+                            class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+                        >
                             <div>
-                                <label class="block text-xs font-medium text-gray-700">Order Type</label>
+                                <label
+                                    class="block text-xs font-medium text-gray-700"
+                                    >Order Type</label
+                                >
                                 <select
                                     v-model="orderType"
                                     class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -113,7 +161,10 @@ const exportCsv = () => {
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-700">Payment Status</label>
+                                <label
+                                    class="block text-xs font-medium text-gray-700"
+                                    >Payment Status</label
+                                >
                                 <select
                                     v-model="isPaid"
                                     class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -125,7 +176,10 @@ const exportCsv = () => {
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-700">Start Date</label>
+                                <label
+                                    class="block text-xs font-medium text-gray-700"
+                                    >Start Date</label
+                                >
                                 <input
                                     v-model="startDate"
                                     type="date"
@@ -134,7 +188,10 @@ const exportCsv = () => {
                                 />
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-700">End Date</label>
+                                <label
+                                    class="block text-xs font-medium text-gray-700"
+                                    >End Date</label
+                                >
                                 <input
                                     v-model="endDate"
                                     type="date"
@@ -156,64 +213,158 @@ const exportCsv = () => {
                 </div>
 
                 <!-- Earnings Table -->
-                <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                <div
+                    class="bg-white shadow-sm rounded-lg border border-gray-200"
+                >
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Order</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Amount</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Earned</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Notes</th>
+                                    <th
+                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                    >
+                                        Order
+                                    </th>
+                                    <th
+                                        class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                    >
+                                        Amount
+                                    </th>
+                                    <th
+                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                    >
+                                        Earned
+                                    </th>
+                                    <th
+                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                    >
+                                        Status
+                                    </th>
+                                    <th
+                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                    >
+                                        Notes
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-if="commissions.data.length === 0">
-                                    <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">
+                                <tr v-if="!commissions?.data?.length">
+                                    <td
+                                        colspan="5"
+                                        class="px-4 py-8 text-center text-sm text-gray-500"
+                                    >
                                         No earnings found.
                                     </td>
                                 </tr>
-                                <tr v-for="commission in commissions.data" :key="commission.id" class="hover:bg-gray-50">
+                                <tr
+                                    v-for="commission in commissions?.data
+                                        ?.data || []"
+                                    :key="commission.id"
+                                    class="hover:bg-gray-50"
+                                >
                                     <td class="px-4 py-3">
                                         <Link
                                             v-if="commission.order"
-                                            :href="route('orders.show', commission.order.id)"
+                                            :href="
+                                                route(
+                                                    'orders.show',
+                                                    commission.order.id
+                                                )
+                                            "
                                             class="text-sm font-medium text-indigo-600 hover:text-indigo-900"
                                         >
                                             {{ commission.order.order_number }}
                                         </Link>
-                                        <div v-if="commission.order" class="text-xs text-gray-500 truncate max-w-xs">
+                                        <div
+                                            v-if="commission.order"
+                                            class="text-xs text-gray-500 truncate max-w-xs"
+                                        >
                                             {{ commission.order.title }}
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 text-right">
-                                        <div class="text-sm font-semibold text-gray-900">{{ commission.currency }} {{ commission.total_amount.toFixed(2) }}</div>
-                                        <div v-if="commission.extra_amount > 0" class="text-xs text-gray-500">
-                                            Base: {{ commission.currency }} {{ commission.base_amount.toFixed(2) }}
+                                        <div
+                                            class="text-sm font-semibold text-gray-900"
+                                        >
+                                            {{ commission.currency }}
+                                            {{
+                                                parseFloat(
+                                                    commission.total_amount || 0
+                                                ).toFixed(2)
+                                            }}
                                         </div>
-                                        <div v-if="commission.extra_amount > 0" class="text-xs text-indigo-600 font-medium">
-                                            + Tip: {{ commission.currency }} {{ commission.extra_amount.toFixed(2) }}
+                                        <div
+                                            v-if="
+                                                parseFloat(
+                                                    commission.extra_amount || 0
+                                                ) > 0
+                                            "
+                                            class="text-xs text-gray-500"
+                                        >
+                                            Base: {{ commission.currency }}
+                                            {{
+                                                parseFloat(
+                                                    commission.base_amount || 0
+                                                ).toFixed(2)
+                                            }}
+                                        </div>
+                                        <div
+                                            v-if="
+                                                parseFloat(
+                                                    commission.extra_amount || 0
+                                                ) > 0
+                                            "
+                                            class="text-xs text-indigo-600 font-medium"
+                                        >
+                                            + Tip: {{ commission.currency }}
+                                            {{
+                                                parseFloat(
+                                                    commission.extra_amount || 0
+                                                ).toFixed(2)
+                                            }}
                                         </div>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <div class="text-sm text-gray-900">{{ formatDate(commission.earned_at) }}</div>
-                                        <div class="text-xs text-gray-500">on {{ commission.earned_on_status }}</div>
+                                        <div class="text-sm text-gray-900">
+                                            {{
+                                                formatDate(commission.earned_at)
+                                            }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            on {{ commission.earned_on_status }}
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                                        <span
+                                            class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
                                             :class="{
-                                                'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20': commission.is_paid,
-                                                'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20': !commission.is_paid
-                                            }">
-                                            {{ commission.is_paid ? 'Paid' : 'Pending' }}
+                                                'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20':
+                                                    commission.is_paid,
+                                                'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20':
+                                                    !commission.is_paid,
+                                            }"
+                                        >
+                                            {{
+                                                commission.is_paid
+                                                    ? "Paid"
+                                                    : "Pending"
+                                            }}
                                         </span>
-                                        <div v-if="commission.is_paid && commission.paid_at" class="text-xs text-gray-500 mt-1">
+                                        <div
+                                            v-if="
+                                                commission.is_paid &&
+                                                commission.paid_at
+                                            "
+                                            class="text-xs text-gray-500 mt-1"
+                                        >
                                             {{ formatDate(commission.paid_at) }}
                                         </div>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <div v-if="commission.notes" class="text-xs text-gray-600 max-w-xs">
+                                        <div
+                                            v-if="commission.notes"
+                                            class="text-xs text-gray-600 max-w-xs"
+                                        >
                                             {{ commission.notes }}
                                         </div>
                                     </td>
@@ -223,21 +374,40 @@ const exportCsv = () => {
                     </div>
 
                     <!-- Pagination -->
-                    <div v-if="commissions.data.length > 0" class="border-t border-gray-200 px-4 py-3 sm:px-6">
+                    <div
+                        v-if="commissions?.data?.length > 0"
+                        class="border-t border-gray-200 px-4 py-3 sm:px-6"
+                    >
                         <div class="flex items-center justify-between">
                             <div class="text-sm text-gray-700">
-                                Showing <span class="font-medium">{{ commissions.meta.from }}</span> to <span class="font-medium">{{ commissions.meta.to }}</span> of <span class="font-medium">{{ commissions.meta.total }}</span> results
+                                Showing
+                                <span class="font-medium">{{
+                                    commissions.meta?.from || 0
+                                }}</span>
+                                to
+                                <span class="font-medium">{{
+                                    commissions.meta?.to || 0
+                                }}</span>
+                                of
+                                <span class="font-medium">{{
+                                    commissions.meta?.total || 0
+                                }}</span>
+                                results
                             </div>
                             <div class="flex gap-2">
                                 <Link
-                                    v-for="link in commissions.links"
+                                    v-for="link in commissions?.links || []"
                                     :key="link.label"
                                     :href="link.url"
                                     v-html="link.label"
                                     :class="[
                                         'px-3 py-1 text-sm rounded border',
-                                        link.active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
-                                        !link.url ? 'opacity-50 cursor-not-allowed' : ''
+                                        link.active
+                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
+                                        !link.url
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : '',
                                     ]"
                                     :disabled="!link.url"
                                 />

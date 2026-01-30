@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
+use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ class Order extends Model
 {
     use HasFactory;
     use SoftDeletes;
+    use BelongsToTenant;
 
     protected $fillable = [
         'tenant_id',
@@ -139,10 +141,5 @@ class Order extends Model
     public function invoiceItems(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
-    }
-
-    public function scopeForTenant($query, int $tenantId)
-    {
-        return $query->where('tenant_id', $tenantId);
     }
 }

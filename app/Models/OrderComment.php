@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderComment extends Model
 {
+    use BelongsToTenant;
     protected $fillable = [
         'tenant_id',
         'order_id',
@@ -30,10 +32,5 @@ class OrderComment extends Model
     public function scopeClientVisible($query)
     {
         return $query->where('visibility', 'client');
-    }
-
-    public function scopeForTenant($query, int $tenantId)
-    {
-        return $query->where('tenant_id', $tenantId);
     }
 }

@@ -861,9 +861,7 @@ const priorityBadgeClass = (priority) => {
                                                 class="mt-1 text-xs text-gray-500"
                                             >
                                                 Requested by
-                                                {{
-                                                    revision.requested_by
-                                                }}
+                                                {{ revision.requested_by }}
                                                 &bull;
                                                 {{
                                                     formatDate(
@@ -1334,11 +1332,16 @@ const priorityBadgeClass = (priority) => {
                                                 <div
                                                     class="text-sm font-semibold text-gray-900"
                                                 >
-                                                    <!-- {{ commission.currency }} {{ commission.total_amount.toFixed(2) }} -->
+                                                    {{ commission.currency }}
+                                                    {{
+                                                        parseFloat(
+                                                            commission.total_amount || 0
+                                                        ).toFixed(2)
+                                                    }}
                                                 </div>
                                                 <div
                                                     v-if="
-                                                        commission.extra_amount >
+                                                        parseFloat(commission.extra_amount || 0) >
                                                         0
                                                     "
                                                     class="text-xs text-gray-500"
@@ -1346,14 +1349,14 @@ const priorityBadgeClass = (priority) => {
                                                     Base:
                                                     {{ commission.currency }}
                                                     {{
-                                                        commission.base_amount.toFixed(
-                                                            2
-                                                        )
+                                                        parseFloat(
+                                                            commission.base_amount || 0
+                                                        ).toFixed(2)
                                                     }}
                                                 </div>
                                                 <div
                                                     v-if="
-                                                        commission.extra_amount >
+                                                        parseFloat(commission.extra_amount || 0) >
                                                         0
                                                     "
                                                     class="text-xs text-indigo-600 font-medium"
@@ -1361,9 +1364,9 @@ const priorityBadgeClass = (priority) => {
                                                     + Tip:
                                                     {{ commission.currency }}
                                                     {{
-                                                        commission.extra_amount.toFixed(
-                                                            2
-                                                        )
+                                                        parseFloat(
+                                                            commission.extra_amount || 0
+                                                        ).toFixed(2)
                                                     }}
                                                 </div>
                                             </div>
@@ -1900,7 +1903,9 @@ const priorityBadgeClass = (priority) => {
                             <p class="mt-1 text-xs text-gray-500">
                                 Current base: {{ currency }}
                                 {{
-                                    selectedCommission?.base_amount?.toFixed(2)
+                                    parseFloat(
+                                        selectedCommission?.base_amount || 0
+                                    ).toFixed(2)
                                 }}
                             </p>
                         </div>
