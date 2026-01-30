@@ -140,7 +140,7 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
-            'is_active' => $data['status'] ?? $user->is_active,
+            'is_active' => $data['is_active'] ?? $user->is_active,
             'client_id' => $data['client_id'] ?? null,
         ]);
 
@@ -190,7 +190,7 @@ class UserController extends Controller
                 Rule::unique('users')->ignore($user?->id),
             ],
             'phone' => ['nullable', 'string', 'max:50'],
-            'status' => ['required', Rule::in(['1', '2'])],
+            'is_active' => ['required', Rule::in(['1', '2'])],
             'role' => ['required', Rule::in($this->roles)],
             'client_id' => [
                 'nullable',

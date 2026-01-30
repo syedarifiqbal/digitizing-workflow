@@ -785,14 +785,25 @@ class OrderController extends Controller
             ->where('tenant_id', $order->tenant_id)
             ->first();
 
+        $notificationSent = false;
         if ($clientUser) {
             $clientUser->notify($notification);
+            $notificationSent = true;
+            \Log::info("Order {$order->order_number} delivery notification sent to user: {$clientUser->email}");
         } elseif ($order->client?->email) {
             \Illuminate\Support\Facades\Notification::route('mail', $order->client->email)
                 ->notify($notification);
+            $notificationSent = true;
+            \Log::info("Order {$order->order_number} delivery notification sent to client email: {$order->client->email}");
+        } else {
+            \Log::warning("Order {$order->order_number} delivered but no email recipient found. Client ID: {$order->client_id}");
         }
 
-        return back()->with('success', 'Order delivered and client notified.');
+        $successMessage = $notificationSent
+            ? 'Order delivered and client notified.'
+            : 'Order delivered. No client email available for notification.';
+
+        return back()->with('success', $successMessage);
     }
 
     public function submitWork(Request $request, Order $order, SubmitWorkAction $action): RedirectResponse

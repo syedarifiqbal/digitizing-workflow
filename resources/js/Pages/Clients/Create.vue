@@ -8,7 +8,7 @@ const form = useForm({
     phone: "",
     company: "",
     notes: "",
-    status: "active",
+    is_active: true,
 });
 
 const submit = () => {
@@ -147,18 +147,18 @@ const baseInputClasses =
                                 >Status</label
                             >
                             <select
-                                v-model="form.status"
-                                id="status"
+                                v-model="form.is_active"
+                                id="is_active"
                                 :class="baseInputClasses"
                             >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option :value="true">Active</option>
+                                <option :value="false">Inactive</option>
                             </select>
                             <p
-                                v-if="form.errors.status"
+                                v-if="form.errors.is_active"
                                 class="mt-1 text-sm text-red-600"
                             >
-                                {{ form.errors.status }}
+                                {{ form.errors.is_active }}
                             </p>
                         </div>
 
