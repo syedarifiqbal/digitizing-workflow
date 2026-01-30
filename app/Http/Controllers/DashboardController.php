@@ -461,7 +461,223 @@ class DashboardController extends Controller
 
     private function getSalesStats(User $user): array
     {
-        // Placeholder - will be implemented later
-        return [];
+        $tenantId = $user->tenant_id;
+        $userId = $user->id;
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $startOfLastMonth = $now->copy()->subMonth()->startOfMonth();
+        $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
+
+        // Order stats for this sales user
+        $orderStats = $this->getSalesOrderStats($tenantId, $userId, $startOfMonth);
+
+        // Earnings stats
+        $earningsStats = $this->getSalesEarningsStats($tenantId, $userId, $startOfMonth);
+
+        // Client stats
+        $clientStats = $this->getSalesClientStats($tenantId, $userId, $startOfMonth);
+
+        // Performance stats
+        $performanceStats = $this->getSalesPerformanceStats($tenantId, $userId, $startOfMonth, $startOfLastMonth, $endOfLastMonth);
+
+        // Recent orders
+        $recentOrders = Order::where('tenant_id', $tenantId)
+            ->where('sales_user_id', $userId)
+            ->with('client:id,name')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get()
+            ->map(fn ($order) => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'title' => $order->title,
+                'status' => $order->status->value,
+                'priority' => $order->priority->value ?? 'normal',
+                'client_name' => $order->client?->name ?? 'N/A',
+                'created_at' => $order->created_at->toIso8601String(),
+            ]);
+
+        // Top clients by order value
+        $topClients = $this->getSalesTopClients($tenantId, $userId);
+
+        // Recent commissions
+        $recentCommissions = $this->getSalesRecentCommissions($tenantId, $userId);
+
+        return [
+            'orders' => $orderStats,
+            'earnings' => $earningsStats,
+            'clients' => $clientStats,
+            'performance' => $performanceStats,
+            'recent_orders' => $recentOrders,
+            'top_clients' => $topClients,
+            'recent_commissions' => $recentCommissions,
+        ];
+    }
+
+    private function getSalesOrderStats(int $tenantId, int $userId, Carbon $startOfMonth): array
+    {
+        $baseQuery = Order::where('tenant_id', $tenantId)->where('sales_user_id', $userId);
+
+        // Count by status
+        $byStatus = Order::where('tenant_id', $tenantId)
+            ->where('sales_user_id', $userId)
+            ->select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        // Active statuses (not delivered, closed, or cancelled)
+        $activeStatuses = [
+            OrderStatus::RECEIVED,
+            OrderStatus::ASSIGNED,
+            OrderStatus::IN_PROGRESS,
+            OrderStatus::SUBMITTED,
+            OrderStatus::IN_REVIEW,
+            OrderStatus::REVISION_REQUESTED,
+            OrderStatus::APPROVED,
+        ];
+
+        return [
+            'total' => (clone $baseQuery)->count(),
+            'this_month' => (clone $baseQuery)->where('created_at', '>=', $startOfMonth)->count(),
+            'active' => (clone $baseQuery)->whereIn('status', $activeStatuses)->count(),
+            'delivered_this_month' => (clone $baseQuery)
+                ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
+                ->where('delivered_at', '>=', $startOfMonth)
+                ->count(),
+            'by_status' => $byStatus,
+        ];
+    }
+
+    private function getSalesEarningsStats(int $tenantId, int $userId, Carbon $startOfMonth): array
+    {
+        $baseQuery = Commission::where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('role_type', RoleType::SALES);
+
+        $thisMonth = (clone $baseQuery)
+            ->where('created_at', '>=', $startOfMonth)
+            ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
+
+        $unpaid = (clone $baseQuery)
+            ->where('is_paid', false)
+            ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
+
+        $paidThisMonth = (clone $baseQuery)
+            ->where('is_paid', true)
+            ->where('paid_at', '>=', $startOfMonth)
+            ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
+
+        // Order value this month (from delivered orders)
+        $orderValueThisMonth = Order::where('tenant_id', $tenantId)
+            ->where('sales_user_id', $userId)
+            ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
+            ->where('delivered_at', '>=', $startOfMonth)
+            ->sum('price') ?? 0;
+
+        return [
+            'this_month' => $thisMonth,
+            'unpaid' => $unpaid,
+            'paid_this_month' => $paidThisMonth,
+            'order_value_this_month' => $orderValueThisMonth,
+        ];
+    }
+
+    private function getSalesClientStats(int $tenantId, int $userId, Carbon $startOfMonth): array
+    {
+        // Get unique clients from orders assigned to this sales user
+        $totalClients = Order::where('tenant_id', $tenantId)
+            ->where('sales_user_id', $userId)
+            ->distinct('client_id')
+            ->count('client_id');
+
+        // New clients this month (first order from client was this month)
+        $newClientsThisMonth = DB::table('orders')
+            ->select('client_id')
+            ->where('tenant_id', $tenantId)
+            ->where('sales_user_id', $userId)
+            ->groupBy('client_id')
+            ->havingRaw('MIN(created_at) >= ?', [$startOfMonth])
+            ->count();
+
+        return [
+            'total' => $totalClients,
+            'new_this_month' => $newClientsThisMonth,
+        ];
+    }
+
+    private function getSalesPerformanceStats(int $tenantId, int $userId, Carbon $startOfMonth, Carbon $startOfLastMonth, Carbon $endOfLastMonth): array
+    {
+        $baseQuery = Order::where('tenant_id', $tenantId)->where('sales_user_id', $userId);
+
+        $ordersThisMonth = (clone $baseQuery)
+            ->where('created_at', '>=', $startOfMonth)
+            ->count();
+
+        $ordersLastMonth = (clone $baseQuery)
+            ->whereBetween('created_at', [$startOfLastMonth, $endOfLastMonth])
+            ->count();
+
+        $totalOrders = (clone $baseQuery)->count();
+
+        $totalCommission = Commission::where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('role_type', RoleType::SALES)
+            ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
+
+        $totalSalesValue = Order::where('tenant_id', $tenantId)
+            ->where('sales_user_id', $userId)
+            ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
+            ->sum('price') ?? 0;
+
+        return [
+            'orders_this_month' => $ordersThisMonth,
+            'orders_last_month' => $ordersLastMonth,
+            'total_orders' => $totalOrders,
+            'total_commission' => $totalCommission,
+            'total_sales_value' => $totalSalesValue,
+        ];
+    }
+
+    private function getSalesTopClients(int $tenantId, int $userId): array
+    {
+        return Order::where('tenant_id', $tenantId)
+            ->where('sales_user_id', $userId)
+            ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
+            ->select('client_id', DB::raw('COUNT(*) as orders_count'), DB::raw('SUM(price) as total_value'))
+            ->groupBy('client_id')
+            ->orderByDesc('total_value')
+            ->limit(5)
+            ->with('client:id,name')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => $row->client_id,
+                'name' => $row->client?->name ?? 'Unknown',
+                'orders_count' => $row->orders_count,
+                'total_value' => $row->total_value ?? 0,
+            ])
+            ->toArray();
+    }
+
+    private function getSalesRecentCommissions(int $tenantId, int $userId): array
+    {
+        return Commission::where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('role_type', RoleType::SALES)
+            ->with(['order:id,order_number,client_id,price', 'order.client:id,name'])
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get()
+            ->map(fn ($commission) => [
+                'id' => $commission->id,
+                'order_id' => $commission->order_id,
+                'order_number' => $commission->order?->order_number ?? 'N/A',
+                'client_name' => $commission->order?->client?->name ?? 'N/A',
+                'order_value' => $commission->order?->price ?? 0,
+                'amount' => $commission->base_amount + $commission->extra_amount,
+                'is_paid' => $commission->is_paid,
+                'created_at' => $commission->created_at->toIso8601String(),
+            ])
+            ->toArray();
     }
 }
