@@ -7,6 +7,7 @@ import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
+import Button from "../../Components/Button.vue";
 
 const { formatDate } = useDateFormat();
 
@@ -208,12 +209,13 @@ const userColumns = [
                         </div>
 
                         <div class="flex items-end">
-                            <button
+                            <Button
+                                as="button"
+                                variant="primary"
                                 type="submit"
-                                class="inline-flex w-full justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
+                                class="w-full"
+                                >Apply filters</Button
                             >
-                                Apply filters
-                            </button>
                         </div>
                     </form>
                 </div>

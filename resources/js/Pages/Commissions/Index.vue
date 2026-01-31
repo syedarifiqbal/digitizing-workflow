@@ -5,6 +5,7 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
+import Button from "../../Components/Button.vue";
 
 const { formatDate } = useDateFormat();
 
@@ -250,13 +251,14 @@ const toggleRowSelection = (id, checked) => {
                                     Mark {{ selectedCommissions.length }} as
                                     Paid
                                 </button>
-                                <button
+
+                                <Button
+                                    variant="primary"
+                                    as="button"
                                     @click="exportCsv"
-                                    type="button"
-                                    class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
                                 >
                                     Export CSV
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </div>

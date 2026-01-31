@@ -7,166 +7,67 @@ import {
     ClockIcon,
     CheckCircleIcon,
     ExclamationTriangleIcon,
-    ArrowTrendingUpIcon,
     DocumentTextIcon,
     BanknotesIcon,
 } from '@heroicons/vue/24/outline';
-import { useDateFormat } from '@/Composables/useDateFormat';
+import { useDashboard } from '@/Composables/useDashboard';
+import Button from '@/Components/Button.vue';
+import StatCard from '@/Components/Dashboard/StatCard.vue';
+import MiniStatCard from '@/Components/Dashboard/MiniStatCard.vue';
+import DashboardSection from '@/Components/Dashboard/DashboardSection.vue';
 
 const props = defineProps({
     stats: Object,
 });
 
-const { formatDate } = useDateFormat();
-
-// Helper to format currency
-const formatCurrency = (amount, currency = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount || 0);
-};
-
-// Status color mapping
-const statusColors = {
-    received: 'bg-gray-100 text-gray-800',
-    assigned: 'bg-blue-100 text-blue-800',
-    in_progress: 'bg-yellow-100 text-yellow-800',
-    submitted: 'bg-purple-100 text-purple-800',
-    in_review: 'bg-indigo-100 text-indigo-800',
-    revision_requested: 'bg-orange-100 text-orange-800',
-    approved: 'bg-emerald-100 text-emerald-800',
-    delivered: 'bg-green-100 text-green-800',
-    closed: 'bg-slate-100 text-slate-800',
-    cancelled: 'bg-red-100 text-red-800',
-};
-
-const getStatusColor = (status) => statusColors[status] || 'bg-gray-100 text-gray-800';
+const { formatCurrency, getStatusColor, formatDate } = useDashboard();
 </script>
 
 <template>
     <div class="space-y-6">
         <!-- Top Stats Cards -->
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <!-- Total Orders -->
-            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg shadow-slate-200/50 border border-slate-200">
-                <dt>
-                    <div class="absolute rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-3">
-                        <ClipboardDocumentListIcon class="h-6 w-6 text-white" />
-                    </div>
-                    <p class="ml-16 truncate text-sm font-medium text-slate-500">Total Orders</p>
-                </dt>
-                <dd class="ml-16 flex items-baseline">
-                    <p class="text-2xl font-bold text-slate-900">{{ stats?.orders?.total ?? 0 }}</p>
-                    <p v-if="stats?.orders?.today > 0" class="ml-2 flex items-baseline text-sm font-medium text-green-600">
-                        +{{ stats.orders.today }} today
-                    </p>
-                </dd>
-            </div>
-
-            <!-- Revenue This Month -->
-            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg shadow-slate-200/50 border border-slate-200">
-                <dt>
-                    <div class="absolute rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 p-3">
-                        <CurrencyDollarIcon class="h-6 w-6 text-white" />
-                    </div>
-                    <p class="ml-16 truncate text-sm font-medium text-slate-500">Revenue (This Month)</p>
-                </dt>
-                <dd class="ml-16 flex items-baseline">
-                    <p class="text-2xl font-bold text-slate-900">{{ formatCurrency(stats?.revenue?.this_month) }}</p>
-                </dd>
-            </div>
-
-            <!-- Active Clients -->
-            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg shadow-slate-200/50 border border-slate-200">
-                <dt>
-                    <div class="absolute rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 p-3">
-                        <UserGroupIcon class="h-6 w-6 text-white" />
-                    </div>
-                    <p class="ml-16 truncate text-sm font-medium text-slate-500">Active Clients</p>
-                </dt>
-                <dd class="ml-16 flex items-baseline">
-                    <p class="text-2xl font-bold text-slate-900">{{ stats?.clients?.active ?? 0 }}</p>
-                    <p class="ml-2 text-sm text-slate-500">/ {{ stats?.clients?.total ?? 0 }} total</p>
-                </dd>
-            </div>
-
-            <!-- Pending Actions -->
-            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg shadow-slate-200/50 border border-slate-200">
-                <dt>
-                    <div class="absolute rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-3">
-                        <ExclamationTriangleIcon class="h-6 w-6 text-white" />
-                    </div>
-                    <p class="ml-16 truncate text-sm font-medium text-slate-500">Needs Attention</p>
-                </dt>
-                <dd class="ml-16 flex items-baseline">
-                    <p class="text-2xl font-bold text-slate-900">{{ stats?.orders?.needs_attention ?? 0 }}</p>
-                </dd>
-            </div>
+            <StatCard
+                label="Total Orders"
+                :value="stats?.orders?.total ?? 0"
+                :icon="ClipboardDocumentListIcon"
+                gradient="from-indigo-500 to-purple-600"
+                :secondary-text="stats?.orders?.today > 0 ? `+${stats.orders.today} today` : ''"
+            />
+            <StatCard
+                label="Revenue (This Month)"
+                :value="formatCurrency(stats?.revenue?.this_month)"
+                :icon="CurrencyDollarIcon"
+                gradient="from-emerald-500 to-teal-600"
+            />
+            <StatCard
+                label="Active Clients"
+                :value="stats?.clients?.active ?? 0"
+                :icon="UserGroupIcon"
+                gradient="from-blue-500 to-cyan-600"
+                :secondary-text="`/ ${stats?.clients?.total ?? 0} total`"
+                secondary-class="text-slate-500"
+            />
+            <StatCard
+                label="Needs Attention"
+                :value="stats?.orders?.needs_attention ?? 0"
+                :icon="ExclamationTriangleIcon"
+                gradient="from-amber-500 to-orange-600"
+            />
         </div>
 
         <!-- Secondary Stats Row -->
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <!-- Orders In Progress -->
-            <div class="rounded-2xl bg-white p-5 shadow-md shadow-slate-200/50 border border-slate-200">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <ClockIcon class="h-8 w-8 text-yellow-500" />
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-slate-500">In Progress</p>
-                        <p class="text-xl font-bold text-slate-900">{{ stats?.orders?.in_progress ?? 0 }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Awaiting Review -->
-            <div class="rounded-2xl bg-white p-5 shadow-md shadow-slate-200/50 border border-slate-200">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <DocumentTextIcon class="h-8 w-8 text-indigo-500" />
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-slate-500">Awaiting Review</p>
-                        <p class="text-xl font-bold text-slate-900">{{ stats?.orders?.awaiting_review ?? 0 }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Delivered This Month -->
-            <div class="rounded-2xl bg-white p-5 shadow-md shadow-slate-200/50 border border-slate-200">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <CheckCircleIcon class="h-8 w-8 text-green-500" />
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-slate-500">Delivered (Month)</p>
-                        <p class="text-xl font-bold text-slate-900">{{ stats?.orders?.delivered_this_month ?? 0 }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Unpaid Invoices -->
-            <div class="rounded-2xl bg-white p-5 shadow-md shadow-slate-200/50 border border-slate-200">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <BanknotesIcon class="h-8 w-8 text-red-500" />
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-slate-500">Unpaid Invoices</p>
-                        <p class="text-xl font-bold text-slate-900">{{ formatCurrency(stats?.invoices?.unpaid_amount) }}</p>
-                    </div>
-                </div>
-            </div>
+            <MiniStatCard label="In Progress" :value="stats?.orders?.in_progress ?? 0" :icon="ClockIcon" icon-color="text-yellow-500" />
+            <MiniStatCard label="Awaiting Review" :value="stats?.orders?.awaiting_review ?? 0" :icon="DocumentTextIcon" icon-color="text-indigo-500" />
+            <MiniStatCard label="Delivered (Month)" :value="stats?.orders?.delivered_this_month ?? 0" :icon="CheckCircleIcon" icon-color="text-green-500" />
+            <MiniStatCard label="Unpaid Invoices" :value="formatCurrency(stats?.invoices?.unpaid_amount)" :icon="BanknotesIcon" icon-color="text-red-500" />
         </div>
 
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <!-- Orders by Status -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4">
-                    <h3 class="text-base font-semibold text-slate-900">Orders by Status</h3>
-                </div>
+            <DashboardSection title="Orders by Status">
                 <div class="p-6">
                     <div class="space-y-3">
                         <div v-for="(count, status) in stats?.orders?.by_status" :key="status" class="flex items-center justify-between">
@@ -182,13 +83,10 @@ const getStatusColor = (status) => statusColors[status] || 'bg-gray-100 text-gra
                         </div>
                     </div>
                 </div>
-            </div>
+            </DashboardSection>
 
             <!-- Revenue Overview -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4">
-                    <h3 class="text-base font-semibold text-slate-900">Revenue Overview</h3>
-                </div>
+            <DashboardSection title="Revenue Overview">
                 <div class="p-6">
                     <dl class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -213,19 +111,12 @@ const getStatusColor = (status) => statusColors[status] || 'bg-gray-100 text-gra
                         </div>
                     </dl>
                 </div>
-            </div>
+            </DashboardSection>
         </div>
 
         <!-- Recent Orders & Top Performers -->
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <!-- Recent Orders -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-                    <h3 class="text-base font-semibold text-slate-900">Recent Orders</h3>
-                    <Link :href="route('orders.index')" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                        View all
-                    </Link>
-                </div>
+            <DashboardSection title="Recent Orders" :view-all-href="route('orders.index')">
                 <div class="divide-y divide-slate-100">
                     <div v-for="order in stats?.recent_orders" :key="order.id" class="px-6 py-4">
                         <div class="flex items-center justify-between">
@@ -247,13 +138,10 @@ const getStatusColor = (status) => statusColors[status] || 'bg-gray-100 text-gra
                         No recent orders
                     </div>
                 </div>
-            </div>
+            </DashboardSection>
 
             <!-- Top Designers -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4">
-                    <h3 class="text-base font-semibold text-slate-900">Top Designers (This Month)</h3>
-                </div>
+            <DashboardSection title="Top Designers (This Month)">
                 <div class="divide-y divide-slate-100">
                     <div v-for="(designer, index) in stats?.top_designers" :key="designer.id" class="px-6 py-4">
                         <div class="flex items-center justify-between">
@@ -276,19 +164,12 @@ const getStatusColor = (status) => statusColors[status] || 'bg-gray-100 text-gra
                         No designer activity this month
                     </div>
                 </div>
-            </div>
+            </DashboardSection>
         </div>
 
         <!-- Commission & Invoice Summary -->
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <!-- Commission Summary -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-                    <h3 class="text-base font-semibold text-slate-900">Commission Summary</h3>
-                    <Link :href="route('commissions.index')" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                        View all
-                    </Link>
-                </div>
+            <DashboardSection title="Commission Summary" :view-all-href="route('commissions.index')">
                 <div class="p-6">
                     <dl class="grid grid-cols-2 gap-4">
                         <div class="rounded-lg bg-slate-50 p-4">
@@ -309,16 +190,9 @@ const getStatusColor = (status) => statusColors[status] || 'bg-gray-100 text-gra
                         </div>
                     </dl>
                 </div>
-            </div>
+            </DashboardSection>
 
-            <!-- Invoice Summary -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-                    <h3 class="text-base font-semibold text-slate-900">Invoice Summary</h3>
-                    <Link :href="route('invoices.index')" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                        View all
-                    </Link>
-                </div>
+            <DashboardSection title="Invoice Summary" :view-all-href="route('invoices.index')">
                 <div class="p-6">
                     <dl class="grid grid-cols-2 gap-4">
                         <div class="rounded-lg bg-slate-50 p-4">
@@ -339,30 +213,27 @@ const getStatusColor = (status) => statusColors[status] || 'bg-gray-100 text-gra
                         </div>
                     </dl>
                 </div>
-            </div>
+            </DashboardSection>
         </div>
 
         <!-- Quick Actions -->
-        <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-            <div class="border-b border-slate-100 px-6 py-4">
-                <h3 class="text-base font-semibold text-slate-900">Quick Actions</h3>
-            </div>
+        <DashboardSection title="Quick Actions">
             <div class="p-6">
                 <div class="flex flex-wrap gap-3">
-                    <Link :href="route('orders.create')" class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110">
+                    <Button :href="route('orders.create')" variant="primary">
                         New Order
-                    </Link>
-                    <Link :href="route('clients.create')" class="inline-flex items-center rounded-xl bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                    </Button>
+                    <Button :href="route('clients.create')">
                         Add Client
-                    </Link>
-                    <Link :href="route('invoices.create')" class="inline-flex items-center rounded-xl bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                    </Button>
+                    <Button :href="route('invoices.create')">
                         Create Invoice
-                    </Link>
-                    <Link :href="route('users.create')" class="inline-flex items-center rounded-xl bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                    </Button>
+                    <Button :href="route('users.create')">
                         Invite User
-                    </Link>
+                    </Button>
                 </div>
             </div>
-        </div>
+        </DashboardSection>
     </div>
 </template>

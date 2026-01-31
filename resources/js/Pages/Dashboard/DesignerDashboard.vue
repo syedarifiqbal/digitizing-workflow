@@ -6,115 +6,57 @@ import {
     ClockIcon,
     CheckCircleIcon,
     ExclamationTriangleIcon,
-    ArrowPathIcon,
-    PaperAirplaneIcon,
     PlayIcon,
     BanknotesIcon,
     ChartBarIcon,
 } from '@heroicons/vue/24/outline';
-import { useDateFormat } from '@/Composables/useDateFormat';
+import { useDashboard } from '@/Composables/useDashboard';
+import StatCard from '@/Components/Dashboard/StatCard.vue';
+import MiniStatCard from '@/Components/Dashboard/MiniStatCard.vue';
+import DashboardSection from '@/Components/Dashboard/DashboardSection.vue';
 
 const props = defineProps({
     stats: Object,
 });
 
-const { formatDate } = useDateFormat();
-
-// Helper to format currency
-const formatCurrency = (amount, currency = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount || 0);
-};
-
-// Status color mapping
-const statusColors = {
-    assigned: 'bg-blue-100 text-blue-800',
-    in_progress: 'bg-yellow-100 text-yellow-800',
-    submitted: 'bg-purple-100 text-purple-800',
-    in_review: 'bg-indigo-100 text-indigo-800',
-    revision_requested: 'bg-orange-100 text-orange-800',
-    approved: 'bg-emerald-100 text-emerald-800',
-    delivered: 'bg-green-100 text-green-800',
-    closed: 'bg-slate-100 text-slate-800',
-};
-
-const getStatusColor = (status) => statusColors[status] || 'bg-gray-100 text-gray-800';
-
-// Priority styling
-const getPriorityClass = (priority) => {
-    return priority === 'rush'
-        ? 'bg-red-100 text-red-800'
-        : 'bg-slate-100 text-slate-600';
-};
+const { formatCurrency, getStatusColor, getPriorityClass, formatDate } = useDashboard();
 </script>
 
 <template>
     <div class="space-y-6">
         <!-- Top Stats Cards -->
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <!-- Assigned Orders -->
-            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg shadow-slate-200/50 border border-slate-200">
-                <dt>
-                    <div class="absolute rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 p-3">
-                        <ClipboardDocumentListIcon class="h-6 w-6 text-white" />
-                    </div>
-                    <p class="ml-16 truncate text-sm font-medium text-slate-500">Assigned to Me</p>
-                </dt>
-                <dd class="ml-16 flex items-baseline">
-                    <p class="text-2xl font-bold text-slate-900">{{ stats?.orders?.assigned ?? 0 }}</p>
-                    <p v-if="stats?.orders?.rush > 0" class="ml-2 flex items-baseline text-sm font-medium text-red-600">
-                        {{ stats.orders.rush }} rush
-                    </p>
-                </dd>
-            </div>
-
-            <!-- In Progress -->
-            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg shadow-slate-200/50 border border-slate-200">
-                <dt>
-                    <div class="absolute rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 p-3">
-                        <PlayIcon class="h-6 w-6 text-white" />
-                    </div>
-                    <p class="ml-16 truncate text-sm font-medium text-slate-500">In Progress</p>
-                </dt>
-                <dd class="ml-16 flex items-baseline">
-                    <p class="text-2xl font-bold text-slate-900">{{ stats?.orders?.in_progress ?? 0 }}</p>
-                </dd>
-            </div>
-
-            <!-- Needs Revision -->
-            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg shadow-slate-200/50 border border-slate-200">
-                <dt>
-                    <div class="absolute rounded-xl bg-gradient-to-br from-orange-500 to-red-500 p-3">
-                        <ExclamationTriangleIcon class="h-6 w-6 text-white" />
-                    </div>
-                    <p class="ml-16 truncate text-sm font-medium text-slate-500">Needs Revision</p>
-                </dt>
-                <dd class="ml-16 flex items-baseline">
-                    <p class="text-2xl font-bold" :class="stats?.orders?.revision_requested > 0 ? 'text-orange-600' : 'text-slate-900'">
-                        {{ stats?.orders?.revision_requested ?? 0 }}
-                    </p>
-                </dd>
-            </div>
-
-            <!-- Completed This Month -->
-            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg shadow-slate-200/50 border border-slate-200">
-                <dt>
-                    <div class="absolute rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-3">
-                        <CheckCircleIcon class="h-6 w-6 text-white" />
-                    </div>
-                    <p class="ml-16 truncate text-sm font-medium text-slate-500">Completed (Month)</p>
-                </dt>
-                <dd class="ml-16 flex items-baseline">
-                    <p class="text-2xl font-bold text-slate-900">{{ stats?.orders?.completed_this_month ?? 0 }}</p>
-                </dd>
-            </div>
+            <StatCard
+                label="Assigned to Me"
+                :value="stats?.orders?.assigned ?? 0"
+                :icon="ClipboardDocumentListIcon"
+                gradient="from-blue-500 to-cyan-600"
+                :secondary-text="stats?.orders?.rush > 0 ? `${stats.orders.rush} rush` : ''"
+                secondary-class="text-red-600"
+            />
+            <StatCard
+                label="In Progress"
+                :value="stats?.orders?.in_progress ?? 0"
+                :icon="PlayIcon"
+                gradient="from-yellow-500 to-orange-500"
+            />
+            <StatCard
+                label="Needs Revision"
+                :value="stats?.orders?.revision_requested ?? 0"
+                :icon="ExclamationTriangleIcon"
+                gradient="from-orange-500 to-red-500"
+            />
+            <StatCard
+                label="Completed (Month)"
+                :value="stats?.orders?.completed_this_month ?? 0"
+                :icon="CheckCircleIcon"
+                gradient="from-emerald-500 to-green-600"
+            />
         </div>
 
         <!-- Earnings Row -->
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <!-- Earnings This Month -->
+            <!-- Earnings This Month - gradient card -->
             <div class="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 shadow-lg text-white">
                 <div class="flex items-center justify-between">
                     <div>
@@ -125,59 +67,19 @@ const getPriorityClass = (priority) => {
                 </div>
             </div>
 
-            <!-- Unpaid Earnings -->
-            <div class="rounded-2xl bg-white p-5 shadow-md shadow-slate-200/50 border border-slate-200">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <BanknotesIcon class="h-8 w-8 text-amber-500" />
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-slate-500">Unpaid</p>
-                        <p class="text-xl font-bold text-slate-900">{{ formatCurrency(stats?.earnings?.unpaid) }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Paid This Month -->
-            <div class="rounded-2xl bg-white p-5 shadow-md shadow-slate-200/50 border border-slate-200">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <CheckCircleIcon class="h-8 w-8 text-green-500" />
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-slate-500">Paid This Month</p>
-                        <p class="text-xl font-bold text-green-600">{{ formatCurrency(stats?.earnings?.paid_this_month) }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Average Per Order -->
-            <div class="rounded-2xl bg-white p-5 shadow-md shadow-slate-200/50 border border-slate-200">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <ChartBarIcon class="h-8 w-8 text-indigo-500" />
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-slate-500">Avg. Per Order</p>
-                        <p class="text-xl font-bold text-slate-900">{{ formatCurrency(stats?.earnings?.average_per_order) }}</p>
-                    </div>
-                </div>
-            </div>
+            <MiniStatCard label="Unpaid" :value="formatCurrency(stats?.earnings?.unpaid)" :icon="BanknotesIcon" icon-color="text-amber-500" />
+            <MiniStatCard label="Paid This Month" :value="formatCurrency(stats?.earnings?.paid_this_month)" :icon="CheckCircleIcon" icon-color="text-green-500" value-class="text-green-600" />
+            <MiniStatCard label="Avg. Per Order" :value="formatCurrency(stats?.earnings?.average_per_order)" :icon="ChartBarIcon" icon-color="text-indigo-500" />
         </div>
 
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <!-- Orders Needing Action -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-                    <div class="flex items-center">
-                        <ExclamationTriangleIcon class="h-5 w-5 text-orange-500 mr-2" />
-                        <h3 class="text-base font-semibold text-slate-900">Needs Your Action</h3>
-                    </div>
-                    <span v-if="stats?.action_required?.length > 0" class="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800">
-                        {{ stats.action_required.length }}
-                    </span>
-                </div>
+            <DashboardSection
+                title="Needs Your Action"
+                :header-icon="ExclamationTriangleIcon"
+                :badge="stats?.action_required?.length > 0 ? stats.action_required.length : null"
+            >
                 <div class="divide-y divide-slate-100">
                     <div v-for="order in stats?.action_required" :key="order.id" class="px-6 py-4 hover:bg-slate-50 transition-colors">
                         <div class="flex items-center justify-between">
@@ -208,16 +110,10 @@ const getPriorityClass = (priority) => {
                         <p class="mt-2 text-sm text-slate-500">All caught up! No orders need your action.</p>
                     </div>
                 </div>
-            </div>
+            </DashboardSection>
 
             <!-- Current Work -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-                    <h3 class="text-base font-semibold text-slate-900">My Current Work</h3>
-                    <Link :href="route('designer.dashboard')" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                        View all
-                    </Link>
-                </div>
+            <DashboardSection title="My Current Work" :view-all-href="route('designer.dashboard')">
                 <div class="divide-y divide-slate-100">
                     <div v-for="order in stats?.current_work" :key="order.id" class="px-6 py-4 hover:bg-slate-50 transition-colors">
                         <div class="flex items-center justify-between">
@@ -244,16 +140,12 @@ const getPriorityClass = (priority) => {
                         No orders currently assigned
                     </div>
                 </div>
-            </div>
+            </DashboardSection>
         </div>
 
         <!-- Performance & Recent Completions -->
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <!-- Performance Stats -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4">
-                    <h3 class="text-base font-semibold text-slate-900">My Performance</h3>
-                </div>
+            <DashboardSection title="My Performance">
                 <div class="p-6">
                     <dl class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -274,13 +166,9 @@ const getPriorityClass = (priority) => {
                         </div>
                     </dl>
                 </div>
-            </div>
+            </DashboardSection>
 
-            <!-- Recent Completions -->
-            <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-                <div class="border-b border-slate-100 px-6 py-4">
-                    <h3 class="text-base font-semibold text-slate-900">Recent Completions</h3>
-                </div>
+            <DashboardSection title="Recent Completions">
                 <div class="divide-y divide-slate-100">
                     <div v-for="order in stats?.recent_completions" :key="order.id" class="px-6 py-4">
                         <div class="flex items-center justify-between">
@@ -300,14 +188,11 @@ const getPriorityClass = (priority) => {
                         No completed orders yet
                     </div>
                 </div>
-            </div>
+            </DashboardSection>
         </div>
 
         <!-- Quick Actions -->
-        <div class="rounded-2xl bg-white shadow-lg shadow-slate-200/50 border border-slate-200">
-            <div class="border-b border-slate-100 px-6 py-4">
-                <h3 class="text-base font-semibold text-slate-900">Quick Actions</h3>
-            </div>
+        <DashboardSection title="Quick Actions">
             <div class="p-6">
                 <div class="flex flex-wrap gap-3">
                     <Link :href="route('designer.dashboard')" class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110">
@@ -320,6 +205,6 @@ const getPriorityClass = (priority) => {
                     </Link>
                 </div>
             </div>
-        </div>
+        </DashboardSection>
     </div>
 </template>
