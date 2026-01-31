@@ -16,7 +16,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
 
   // styling
-  variant: { type: String, default: 'plain' }, // plain | primary
+  variant: { type: String, default: 'plain' }, // plain | primary | danger
   primary: { type: Boolean, default: false },
 
   extraClass: { type: String, default: '' },
@@ -27,6 +27,8 @@ const variantClasses = {
     'inline-flex items-center rounded-xl bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50',
   primary:
     'inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110',
+  danger:
+    'inline-flex items-center rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 transition',
 };
 
 const disabledClasses = 'disabled:opacity-50 disabled:cursor-not-allowed';

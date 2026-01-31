@@ -1,6 +1,6 @@
 <script setup>
 import { reactive, ref, computed } from "vue";
-import { router } from "@inertiajs/vue3";
+import { Head, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
@@ -176,6 +176,7 @@ const formatAmount = (rule) => {
 
 <template>
     <AppLayout>
+        <Head :title="`${ showModal? editingRule? 'Edit ':'New ': '' }${roleLabel} Commissions Rules`" />
         <template #header>
             <div
                 class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"

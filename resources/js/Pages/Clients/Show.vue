@@ -1,5 +1,5 @@
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { ref } from 'vue';
@@ -32,6 +32,8 @@ const confirmDelete = () => {
 
 <template>
     <AppLayout>
+        <Head :title="`Client - ${client.name}`" />
+
         <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>

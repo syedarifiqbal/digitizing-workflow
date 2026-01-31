@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed } from "vue";
-import { Link, router } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
 import RowActions from "@/Components/RowActions.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
-import Button from "../../Components/Button.vue";
+import Button from "@/Components/Button.vue";
 
 const { formatDate } = useDateFormat();
 
@@ -174,6 +174,7 @@ const toggleRowSelection = (id, checked) => {
 
 <template>
     <AppLayout>
+        <Head :title="`All Commissions`" />
         <template #header>
             <div class="flex flex-col gap-1">
                 <h2 class="text-lg font-semibold text-gray-900">

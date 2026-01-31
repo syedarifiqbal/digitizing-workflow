@@ -1,10 +1,11 @@
 <script setup>
 import { computed, ref } from "vue";
-import { Link, router, useForm } from "@inertiajs/vue3";
+import { router, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Button from "@/Components/Button.vue";
 import Modal from "@/Components/Modal.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
+import { Head } from '@inertiajs/vue3';
 
 const props = defineProps({
     invoice: {
@@ -155,6 +156,7 @@ const submitSend = () => {
 
 <template>
     <AppLayout>
+        <Head :title="`Invoice ${invoice.number}`" />
         <template #header>
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>

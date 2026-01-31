@@ -1,6 +1,7 @@
 <script setup>
-import { useForm, Link } from "@inertiajs/vue3";
+import { useForm, Link, Head } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "@/Components/Button.vue";
 
 const form = useForm({
     name: "",
@@ -21,6 +22,8 @@ const baseInputClasses =
 
 <template>
     <AppLayout>
+        <Head :title="`New Client`" />
+
         <template #header>
             <div>
                 <h2 class="text-2xl font-semibold text-slate-900">
@@ -163,19 +166,17 @@ const baseInputClasses =
                         </div>
 
                         <div class="flex items-center justify-end gap-3">
-                            <Link
-                                :href="route('clients.index')"
-                                class="text-sm font-medium text-slate-500 hover:text-slate-900"
-                            >
+                            <Button :href="route('clients.index')">
                                 Cancel
-                            </Link>
-                            <button
-                                type="submit"
+                            </Button>
+                            <Button
+                                as="button"
+                                html-type="submit"
+                                variant="primary"
                                 :disabled="form.processing"
-                                class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110 disabled:opacity-60"
                             >
                                 Save
-                            </button>
+                            </Button>
                         </div>
                     </form>
                 </div>

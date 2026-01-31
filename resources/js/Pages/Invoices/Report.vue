@@ -1,7 +1,8 @@
 <script setup>
-import { Link, router } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, reactive, watch } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "@/Components/Button.vue";
 import DatePicker from "@/Components/DatePicker.vue";
 import { useDashboard } from "@/Composables/useDashboard";
 
@@ -77,6 +78,7 @@ const agingTotal = computed(() => Object.values(agingBuckets.value).reduce((a, b
 
 <template>
     <AppLayout>
+        <Head :title="`Invoice Reports`"/>
         <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -84,18 +86,15 @@ const agingTotal = computed(() => Object.values(agingBuckets.value).reduce((a, b
                     <p class="text-sm text-slate-500">Summary, aging, and export tools for your invoices.</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <a
-                        :href="exportUrl"
-                        class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-                    >
+                    <Button as="a" :href="exportUrl">
                         Export CSV
-                    </a>
-                    <Link
+                    </Button>
+                    <Button
                         :href="route('invoices.index')"
-                        class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
+                        variant="primary"
                     >
                         All Invoices
-                    </Link>
+                    </Button>
                 </div>
             </div>
         </template>

@@ -1,13 +1,13 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
-import { Link, router } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
 import RowActions from "@/Components/RowActions.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
-import Button from "../../Components/Button.vue";
+import Button from "@/Components/Button.vue";
 
 const { formatDate } = useDateFormat();
 
@@ -123,6 +123,7 @@ const userColumns = [
 
 <template>
     <AppLayout>
+        <Head :title="`Users`" />
         <template #header>
             <div
                 class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -133,12 +134,12 @@ const userColumns = [
                         Invite teammates, assign roles, and manage access.
                     </p>
                 </div>
-                <Link
+                <Button
                     :href="route('users.create')"
-                    class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
+                    variant="primary"
                 >
                     Invite User
-                </Link>
+                </Button>
             </div>
         </template>
 

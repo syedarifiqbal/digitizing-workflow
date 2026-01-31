@@ -8,6 +8,7 @@ import WorkflowSettings from "@/Pages/Settings/Sections/WorkflowSettings.vue";
 import CommissionsSettings from "@/Pages/Settings/Sections/CommissionsSettings.vue";
 import NotificationSettings from "@/Pages/Settings/Sections/NotificationSettings.vue";
 import ApiSettings from "@/Pages/Settings/Sections/ApiSettings.vue";
+import Button from "@/Components/Button.vue";
 
 const props = defineProps({
     tenant: {
@@ -227,13 +228,15 @@ const componentProps = computed(() => {
                                         Review your changes before saving. Updates apply across your workspace
                                         immediately.
                                     </p>
-                                    <button
+                                    <Button
+                                        html-type="submit"
                                         type="submit"
+                                        variant="primary"
                                         :disabled="form.processing"
-                                        class="w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                                        class="w-full inline-flex justify-center items-center"
                                     >
                                         {{ form.processing ? "Saving..." : "Save Settings" }}
-                                    </button>
+                                    </Button>
                                     <p v-if="form.recentlySuccessful" class="mt-2 text-center text-xs text-green-600">
                                         Settings saved.
                                     </p>

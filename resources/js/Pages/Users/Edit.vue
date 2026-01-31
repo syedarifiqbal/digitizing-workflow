@@ -1,6 +1,6 @@
 <script setup>
 import { computed, watch } from "vue";
-import { Link, useForm } from "@inertiajs/vue3";
+import { Head, Link, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 
 const props = defineProps({
@@ -36,6 +36,7 @@ const submit = () => {
 
 <template>
     <AppLayout>
+        <Head :title="`Edit User - ${user.name}`" />
         <template #header>
             <div>
                 <h2 class="text-xl font-semibold text-gray-800">Edit User</h2>

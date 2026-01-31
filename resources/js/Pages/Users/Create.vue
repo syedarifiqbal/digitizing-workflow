@@ -1,7 +1,8 @@
 <script setup>
 import { computed, watch } from "vue";
-import { Link, useForm } from "@inertiajs/vue3";
+import { Head, Link, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "@/Components/Button.vue";
 
 const props = defineProps({
     roles: Array,
@@ -13,7 +14,7 @@ const form = useForm({
     email: "",
     phone: "",
     role: props.roles?.[0] ?? "Admin",
-    status: "active",
+    is_active: true,
     client_id: "",
 });
 
@@ -38,6 +39,7 @@ const baseInputClasses =
 
 <template>
     <AppLayout>
+        <Head :title="`New User`" />
         <template #header>
             <div>
                 <h2 class="text-2xl font-semibold text-slate-900">
@@ -151,18 +153,18 @@ const baseInputClasses =
                                 >Status</label
                             >
                             <select
-                                v-model="form.status"
+                                v-model="form.is_active"
                                 id="status"
                                 :class="baseInputClasses"
                             >
-                                <option value="1">Active</option>
-                                <option value="2">Inactive</option>
+                                <option :value="true">Active</option>
+                                <option :value="false">Inactive</option>
                             </select>
                             <p
                                 v-if="form.errors.status"
                                 class="mt-1 text-sm text-red-600"
                             >
-                                {{ form.errors.status }}
+                                {{ form.errors.is_active }}
                             </p>
                         </div>
 
@@ -197,19 +199,17 @@ const baseInputClasses =
                         </div>
 
                         <div class="flex items-center justify-end gap-3">
-                            <Link
-                                :href="route('users.index')"
-                                class="text-sm text-slate-500 hover:text-slate-900"
-                            >
+                            <Button :href="route('users.index')">
                                 Cancel
-                            </Link>
-                            <button
-                                type="submit"
+                            </Button>
+                            <Button
+                                as="button"
+                                html-type="submit"
+                                variant="primary"
                                 :disabled="form.processing"
-                                class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110 disabled:opacity-60"
                             >
                                 Send invite
-                            </button>
+                            </Button>
                         </div>
                     </form>
                 </div>

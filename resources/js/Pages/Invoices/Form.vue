@@ -1,8 +1,9 @@
 <script setup>
 import axios from "axios";
 import { computed, reactive, ref, watch } from "vue";
-import { Link, useForm } from "@inertiajs/vue3";
+import { Head, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "@/Components/Button.vue";
 import DatePicker from "@/Components/DatePicker.vue";
 
 const props = defineProps({
@@ -253,6 +254,8 @@ const submit = () => {
 
 <template>
     <AppLayout>
+        <Head :title="`${isEditMode? 'Edit': 'Create'} Invoice`" />
+
         <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -268,12 +271,9 @@ const submit = () => {
                         </template>
                     </p>
                 </div>
-                <Link
-                    :href="route('invoices.index')"
-                    class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
+                <Button :href="route('invoices.index')">
                     Back to Invoices
-                </Link>
+                </Button>
             </div>
         </template>
 
@@ -633,16 +633,14 @@ const submit = () => {
                                 You can send the invoice or record payments after saving this draft.
                             </p>
                             <div class="flex items-center gap-3">
-                                <Link
-                                    :href="route('invoices.index')"
-                                    class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                >
+                                <Button :href="route('invoices.index')">
                                     Cancel
-                                </Link>
-                                <button
-                                    type="submit"
+                                </Button>
+                                <Button
+                                    as="button"
+                                    html-type="submit"
+                                    variant="primary"
                                     :disabled="form.processing"
-                                    class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110 disabled:opacity-60"
                                 >
                                     {{
                                         form.processing
@@ -651,7 +649,7 @@ const submit = () => {
                                             ? "Save Changes"
                                             : "Create Invoice"
                                     }}
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </div>

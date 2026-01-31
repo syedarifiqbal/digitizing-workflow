@@ -1,13 +1,13 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
-import { Link, router } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
 import RowActions from "@/Components/RowActions.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
-import Button from "../../Components/Button.vue";
+import Button from "@/Components/Button.vue";
 
 const { formatDate } = useDateFormat();
 
@@ -281,6 +281,8 @@ const orderColumns = [
 
 <template>
     <AppLayout>
+        <Head :title="`${labelFor(filters.type)} ${isQuoteView ? 'Quotes' : 'Orders'}`" />
+
         <template #header>
             <div
                 class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -322,7 +324,7 @@ const orderColumns = [
                         </template>
                     </p>
                 </div>
-                <Link
+                <Button
                     v-if="!isAllView"
                     :href="
                         route('orders.create', {
@@ -330,11 +332,11 @@ const orderColumns = [
                             quote: isQuoteView ? 1 : 0,
                         })
                     "
-                    class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
+                    variant="primary"
                 >
                     New {{ labelFor(filters.type) }}
                     {{ isQuoteView ? "Quote" : "Order" }}
-                </Link>
+                </Button>
             </div>
         </template>
 

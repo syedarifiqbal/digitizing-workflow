@@ -1,11 +1,12 @@
 <script setup>
-import { computed } from 'vue';
-import { usePage } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
-import AdminDashboard from '@/Pages/Dashboard/AdminDashboard.vue';
-import ManagerDashboard from '@/Pages/Dashboard/ManagerDashboard.vue';
-import DesignerDashboard from '@/Pages/Dashboard/DesignerDashboard.vue';
-import SalesDashboard from '@/Pages/Dashboard/SalesDashboard.vue';
+import { computed } from "vue";
+import { Head, usePage } from "@inertiajs/vue3";
+import AppLayout from "@/Layouts/AppLayout.vue";
+import AdminDashboard from "@/Pages/Dashboard/AdminDashboard.vue";
+import ManagerDashboard from "@/Pages/Dashboard/ManagerDashboard.vue";
+import DesignerDashboard from "@/Pages/Dashboard/DesignerDashboard.vue";
+import SalesDashboard from "@/Pages/Dashboard/SalesDashboard.vue";
+import { roleTitle } from "../Utils/Helper.js";
 
 const props = defineProps({
     role: {
@@ -46,6 +47,8 @@ const roleGreeting = computed(() => {
 
 <template>
     <AppLayout>
+        <Head :title="`${roleTitle(props.role)} Dashboard`" />
+
         <template #header>
             <div>
                 <h2 class="text-2xl font-semibold text-slate-900">
