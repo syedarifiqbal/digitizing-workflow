@@ -1,12 +1,17 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
-import { EyeIcon, PencilSquareIcon, TrashIcon } from "@heroicons/vue/24/outline";
+import {
+    EyeIcon,
+    PencilSquareIcon,
+    TrashIcon,
+} from "@heroicons/vue/24/outline";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
+import Button from "../../Components/Button.vue";
 
 const { formatDate } = useDateFormat();
 
@@ -164,7 +169,7 @@ watch(
             }
         });
     },
-    { deep: true },
+    { deep: true }
 );
 
 watch(
@@ -176,7 +181,7 @@ watch(
             }
         });
     },
-    { deep: true, immediate: true },
+    { deep: true, immediate: true }
 );
 
 watch(
@@ -184,7 +189,7 @@ watch(
     () => {
         selectedIds.value = [];
         Object.keys(selectionMeta).forEach((key) => delete selectionMeta[key]);
-    },
+    }
 );
 
 watch(
@@ -192,7 +197,7 @@ watch(
     () => {
         selectedIds.value = [];
         Object.keys(selectionMeta).forEach((key) => delete selectionMeta[key]);
-    },
+    }
 );
 
 const submitFilters = () => {
@@ -584,12 +589,12 @@ const orderColumns = [
                                 </Link>
                             </template>
                             <div class="flex flex-wrap gap-3">
-                                <button
+                                <Button
+                                    as="button"
+                                    variant="primary"
                                     type="submit"
-                                    class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
+                                    >Apply filters</Button
                                 >
-                                    Apply filters
-                                </button>
                             </div>
                         </div>
                     </form>
@@ -611,67 +616,67 @@ const orderColumns = [
 
                 <div
                     v-if="showOrderCards && !isQuoteView"
-                    class="rounded-2xl border border-slate-200 bg-white shadow md:col-span-2"
+                    class="rounded-2xl border border-slate-200 bg-white shadow"
                 >
-                    <div class="grid gap-6 md:grid-cols-2">
-                        <div
-                            class="rounded-2xl border border-slate-100 bg-gradient-to-r from-sky-100 to-cyan-100 p-4 text-slate-900"
-                        >
-                            <p
-                                class="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                            >
-                                Quick Quotes
-                            </p>
-                            <ul class="mt-3 space-y-2 text-sm">
-                                <li
-                                    v-for="type in coreTypes"
-                                    :key="'grid-quote-' + type"
-                                    class="flex items-center justify-between"
-                                >
-                                    <Link
-                                        :href="
-                                            route('orders.create', {
-                                                type,
-                                                quote: 1,
-                                            })
-                                        "
-                                        class="font-medium text-slate-700 underline decoration-dotted decoration-slate-400 hover:text-indigo-600"
-                                    >
-                                        New {{ labelFor(type) }} Quote
-                                    </Link>
-                                    <span class="text-slate-500">{{
-                                        quoteCount(type)
-                                    }}</span>
-                                </li>
-                            </ul>
-                        </div>
-                        <div
-                            class="rounded-2xl border border-slate-100 bg-gradient-to-r from-indigo-100 to-purple-100 p-4 text-slate-900"
-                        >
-                            <p
-                                class="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                            >
-                                Quick Orders
-                            </p>
-                            <ul class="mt-3 space-y-2 text-sm">
-                                <li
-                                    v-for="type in coreTypes"
-                                    :key="'grid-order-' + type"
-                                    class="flex items-center justify-between"
-                                >
-                                    <Link
-                                        :href="route('orders.create', { type })"
-                                        class="font-medium text-slate-700 underline decoration-dotted decoration-slate-400 hover:text-indigo-600"
-                                    >
-                                        New {{ labelFor(type) }} Order
-                                    </Link>
-                                    <span class="text-slate-500">{{
-                                        countValue(type)
-                                    }}</span>
-                                </li>
-                            </ul>
-                        </div>
+                    <div
+                        class="rounded-t-2xl bg-gradient-to-r from-sky-100 to-cyan-100 px-4 py-3 text-sm font-semibold text-slate-800"
+                    >
+                        Quick Quotes
                     </div>
+                    <ul
+                        class="divide-y divide-slate-100 text-sm text-slate-600"
+                    >
+                        <li
+                            v-for="type in coreTypes"
+                            :key="'grid-quote-' + type"
+                            class="flex items-center justify-between px-4 py-3 transition hover:bg-slate-50"
+                        >
+                            <Link
+                                :href="
+                                    route('orders.create', {
+                                        type,
+                                        quote: 1,
+                                    })
+                                "
+                                class="font-medium text-slate-700 transition hover:text-indigo-600"
+                            >
+                                New {{ labelFor(type) }} Quote
+                            </Link>
+                            <span class="text-slate-500">{{
+                                quoteCount(type)
+                            }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div
+                    v-if="showOrderCards && !isQuoteView"
+                    class="rounded-2xl border border-slate-200 bg-white shadow"
+                >
+                    <div
+                        class="rounded-t-2xl bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-3 text-sm font-semibold text-slate-800"
+                    >
+                        Quick Orders
+                    </div>
+                    <ul
+                        class="divide-y divide-slate-100 text-sm text-slate-600"
+                    >
+                        <li
+                            v-for="type in coreTypes"
+                            :key="'grid-order-' + type"
+                            class="flex items-center justify-between px-4 py-3 transition hover:bg-slate-50"
+                        >
+                            <Link
+                                :href="route('orders.create', { type })"
+                                class="font-medium text-slate-700 transition hover:text-indigo-600"
+                            >
+                                New {{ labelFor(type) }} Order
+                            </Link>
+                            <span class="text-slate-500">{{
+                                countValue(type)
+                            }}</span>
+                        </li>
+                    </ul>
                 </div>
 
                 <div
@@ -686,26 +691,26 @@ const orderColumns = [
                     <ul
                         class="divide-y divide-slate-100 text-sm text-slate-600"
                     >
-                        <li>
+                        <li class="transition hover:bg-slate-50">
                             <Link
                                 :href="route('clients.index')"
-                                class="block px-4 py-3 transition hover:bg-slate-50"
+                                class="flex items-center justify-between px-4 py-3 font-medium text-slate-700 transition hover:text-indigo-600"
                             >
                                 Clients
                             </Link>
                         </li>
-                        <li>
+                        <li class="transition hover:bg-slate-50">
                             <Link
                                 :href="route('users.index')"
-                                class="block px-4 py-3 transition hover:bg-slate-50"
+                                class="flex items-center justify-between px-4 py-3 font-medium text-slate-700 transition hover:text-indigo-600"
                             >
                                 Team Members
                             </Link>
                         </li>
-                        <li>
+                        <li class="transition hover:bg-slate-50">
                             <Link
                                 :href="route('settings.edit')"
-                                class="block px-4 py-3 transition hover:bg-slate-50"
+                                class="flex items-center justify-between px-4 py-3 font-medium text-slate-700 transition hover:text-indigo-600"
                             >
                                 Tenant Settings
                             </Link>
@@ -809,7 +814,11 @@ const orderColumns = [
                         <template #cell-order="{ row }">
                             <div class="font-medium text-slate-900">
                                 {{ row.order_number }}
-                                <span v-if="row.po_number" class="ml-1 text-xs font-normal text-slate-400">({{ row.po_number }})</span>
+                                <span
+                                    v-if="row.po_number"
+                                    class="ml-1 text-xs font-normal text-slate-400"
+                                    >({{ row.po_number }})</span
+                                >
                             </div>
                             <p class="text-sm text-slate-500">
                                 {{ row.title }}

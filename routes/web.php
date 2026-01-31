@@ -130,5 +130,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/client/orders', [ClientPortalController::class, 'storeOrder'])->name('client.orders.store');
         Route::get('/client/orders/{order}', [ClientPortalController::class, 'showOrder'])->name('client.orders.show');
         Route::post('/client/orders/{order}/comments', [ClientPortalController::class, 'storeComment'])->name('client.orders.comments.store');
+
+        // Client Invoices
+        Route::get('/client/invoices', [ClientPortalController::class, 'invoices'])->name('client.invoices.index');
+        Route::get('/client/invoices/{invoice}', [ClientPortalController::class, 'showInvoice'])->name('client.invoices.show');
+        Route::get('/client/invoices/{invoice}/pdf', [ClientPortalController::class, 'downloadInvoicePdf'])->name('client.invoices.pdf');
     });
 });

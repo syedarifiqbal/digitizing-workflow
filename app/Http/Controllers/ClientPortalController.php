@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
+use App\Models\Invoice;
 use App\Models\Order;
+use App\Services\InvoicePdfService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class ClientPortalController extends Controller
 {
@@ -90,10 +94,28 @@ class ClientPortalController extends Controller
                 ->count(),
         ];
 
+        // Invoice statistics
+        $invoiceStats = [
+            'unpaid_count' => Invoice::where('tenant_id', $user->tenant_id)
+                ->where('client_id', $client->id)
+                ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
+                ->count(),
+            'total_due' => Invoice::where('tenant_id', $user->tenant_id)
+                ->where('client_id', $client->id)
+                ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
+                ->sum('total_amount'),
+            'overdue_count' => Invoice::where('tenant_id', $user->tenant_id)
+                ->where('client_id', $client->id)
+                ->where('status', InvoiceStatus::OVERDUE)
+                ->count(),
+        ];
+
         return Inertia::render('Client/Dashboard', [
             'recentOrders' => $recentOrders,
             'ordersNeedingAttention' => $ordersNeedingAttention,
             'stats' => $stats,
+            'invoiceStats' => $invoiceStats,
+            'currency' => $user->tenant->getSetting('currency', 'USD'),
         ]);
     }
 
@@ -365,5 +387,157 @@ class ClientPortalController extends Controller
         ]);
 
         return back()->with('success', 'Comment added successfully.');
+    }
+
+    public function invoices(Request $request): Response
+    {
+        $user = $request->user();
+        $client = $user->client;
+
+        if (!$client) {
+            abort(403, 'No client record found for this user.');
+        }
+
+        $filters = $request->only(['status']);
+
+        $invoices = Invoice::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('client_id', $client->id)
+            ->whereNot('status', InvoiceStatus::DRAFT) // Clients cannot see draft invoices
+            ->when($filters['status'] ?? null, function ($query, $status) {
+                if ($status !== 'all') {
+                    $query->where('status', $status);
+                }
+            })
+            ->orderBy('issue_date', 'desc')
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn ($invoice) => [
+                'id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'status' => $invoice->status->value,
+                'status_label' => $invoice->status->label(),
+                'issue_date' => $invoice->issue_date,
+                'due_date' => $invoice->due_date,
+                'total_amount' => $invoice->total_amount,
+                'currency' => $invoice->currency,
+                'is_overdue' => $invoice->status === InvoiceStatus::OVERDUE,
+            ]);
+
+        // Calculate totals for client
+        $totals = [
+            'unpaid_count' => Invoice::where('tenant_id', $user->tenant_id)
+                ->where('client_id', $client->id)
+                ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
+                ->count(),
+            'total_due' => Invoice::where('tenant_id', $user->tenant_id)
+                ->where('client_id', $client->id)
+                ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
+                ->sum('total_amount'),
+            'overdue_count' => Invoice::where('tenant_id', $user->tenant_id)
+                ->where('client_id', $client->id)
+                ->where('status', InvoiceStatus::OVERDUE)
+                ->count(),
+        ];
+
+        return Inertia::render('Client/Invoices/Index', [
+            'invoices' => $invoices,
+            'filters' => $filters,
+            'totals' => $totals,
+            'currency' => $user->tenant->getSetting('currency', 'USD'),
+        ]);
+    }
+
+    public function showInvoice(Request $request, Invoice $invoice): Response
+    {
+        $user = $request->user();
+        $client = $user->client;
+
+        if (!$client) {
+            abort(403, 'No client record found for this user.');
+        }
+
+        // Check authorization
+        if ($invoice->client_id !== $client->id || $invoice->tenant_id !== $user->tenant_id) {
+            abort(403, 'Unauthorized to view this invoice.');
+        }
+
+        // Clients cannot view draft invoices
+        if ($invoice->status === InvoiceStatus::DRAFT) {
+            abort(403, 'This invoice is not available.');
+        }
+
+        $invoice->load([
+            'items.order:id,order_number,title',
+            'payments' => fn ($q) => $q->orderBy('payment_date', 'desc'),
+        ]);
+
+        // Calculate balance due
+        $totalPaid = $invoice->payments->sum('amount');
+        $balanceDue = $invoice->total_amount - $totalPaid;
+
+        return Inertia::render('Client/Invoices/Show', [
+            'invoice' => [
+                'id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'status' => $invoice->status->value,
+                'status_label' => $invoice->status->label(),
+                'issue_date' => $invoice->issue_date,
+                'due_date' => $invoice->due_date,
+                'subtotal' => $invoice->subtotal,
+                'tax_rate' => $invoice->tax_rate,
+                'tax_amount' => $invoice->tax_amount,
+                'discount_amount' => $invoice->discount_amount,
+                'total_amount' => $invoice->total_amount,
+                'currency' => $invoice->currency,
+                'notes' => $invoice->notes,
+                'payment_terms' => $invoice->payment_terms,
+                'is_overdue' => $invoice->status === InvoiceStatus::OVERDUE,
+                'balance_due' => $balanceDue,
+            ],
+            'items' => $invoice->items->map(fn ($item) => [
+                'id' => $item->id,
+                'description' => $item->description,
+                'quantity' => $item->quantity,
+                'unit_price' => $item->unit_price,
+                'amount' => $item->amount,
+                'order' => $item->order ? [
+                    'id' => $item->order->id,
+                    'order_number' => $item->order->order_number,
+                    'title' => $item->order->title,
+                ] : null,
+            ]),
+            'payments' => $invoice->payments->map(fn ($payment) => [
+                'id' => $payment->id,
+                'amount' => $payment->amount,
+                'payment_date' => $payment->payment_date,
+                'payment_method' => $payment->payment_method,
+                'reference' => $payment->reference,
+            ]),
+            'companyDetails' => $user->tenant->getSetting('company_details', []),
+            'bankDetails' => $user->tenant->getSetting('bank_details'),
+        ]);
+    }
+
+    public function downloadInvoicePdf(Request $request, Invoice $invoice, InvoicePdfService $pdfService): HttpResponse
+    {
+        $user = $request->user();
+        $client = $user->client;
+
+        if (!$client) {
+            abort(403, 'No client record found for this user.');
+        }
+
+        // Check authorization
+        if ($invoice->client_id !== $client->id || $invoice->tenant_id !== $user->tenant_id) {
+            abort(403, 'Unauthorized to download this invoice.');
+        }
+
+        // Clients cannot download draft invoices
+        if ($invoice->status === InvoiceStatus::DRAFT) {
+            abort(403, 'This invoice is not available.');
+        }
+
+        return $pdfService->download($invoice);
     }
 }

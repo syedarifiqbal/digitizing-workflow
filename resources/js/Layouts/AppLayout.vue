@@ -259,6 +259,20 @@ const toggleReportsMenu = () => {
                                 My Orders
                             </Link>
 
+                            <!-- Client: Invoices -->
+                            <Link
+                                v-if="user?.is_client"
+                                :href="route('client.invoices.index')"
+                                class="inline-flex items-center rounded-full px-3 py-1.5 transition"
+                                :class="
+                                    route().current('client.invoices.*')
+                                        ? 'bg-indigo-100 text-indigo-700'
+                                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                Invoices
+                            </Link>
+
                             <!-- Clients - Admin/Manager only -->
                             <Link
                                 v-if="user?.is_admin || user?.is_manager"
@@ -576,6 +590,17 @@ const toggleReportsMenu = () => {
                                 "
                             >
                                 My Orders
+                            </Link>
+                            <Link
+                                :href="route('client.invoices.index')"
+                                class="block rounded-lg px-4 py-2 text-base font-medium"
+                                :class="
+                                    route().current('client.invoices.*')
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                Invoices
                             </Link>
                             <Link
                                 :href="route('client.orders.create')"
