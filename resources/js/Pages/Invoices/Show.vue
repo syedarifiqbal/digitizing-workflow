@@ -2,7 +2,9 @@
 import { computed, ref } from "vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
-import Button from "../../Components/Button.vue";
+import Button from "@/Components/Button.vue";
+import Modal from "@/Components/Modal.vue";
+import ConfirmModal from "@/Components/ConfirmModal.vue";
 
 const props = defineProps({
     invoice: {
@@ -436,41 +438,19 @@ const submitSend = () => {
             </div>
         </div>
 
-        <div
-            v-if="actionModal"
-            class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
-        >
-            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl space-y-4">
-                <h3 class="text-lg font-semibold text-slate-900">
-                    {{ actionMessages[actionModal]?.title }}
-                </h3>
-                <p class="text-sm text-slate-600">
-                    {{ actionMessages[actionModal]?.body }}
-                </p>
-                <div class="flex justify-end gap-3">
-                    <button
-                        type="button"
-                        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        @click="closeActionModal"
-                    >
-                        Keep Invoice
-                    </button>
-                    <button
-                        type="button"
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
-                        @click="performAction"
-                    >
-                        {{ actionMessages[actionModal]?.confirm }}
-                    </button>
-                </div>
-            </div>
-        </div>
+        <ConfirmModal
+            :show="!!actionModal"
+            :title="actionMessages[actionModal]?.title ?? ''"
+            :message="actionMessages[actionModal]?.body ?? ''"
+            :confirm-label="actionMessages[actionModal]?.confirm ?? 'Confirm'"
+            cancel-label="Keep Invoice"
+            variant="primary"
+            @close="closeActionModal"
+            @confirm="performAction"
+        />
 
-        <div
-            v-if="showSendModal"
-            class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
-        >
-            <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
+        <Modal :show="showSendModal" max-width="lg" @close="closeSendModal">
+            <div class="space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-semibold text-slate-900">Send Invoice</h3>
                     <button class="text-slate-400 hover:text-slate-600" @click="closeSendModal">&times;</button>
@@ -515,13 +495,10 @@ const submitSend = () => {
                     </Button>
                 </div>
             </div>
-        </div>
+        </Modal>
 
-        <div
-            v-if="showPaymentModal"
-            class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
-        >
-            <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
+        <Modal :show="showPaymentModal" max-width="lg" @close="closePaymentModal">
+            <div class="space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-semibold text-slate-900">Record Payment</h3>
                     <button class="text-slate-400 hover:text-slate-600" @click="closePaymentModal">&times;</button>
@@ -601,6 +578,6 @@ const submitSend = () => {
                     </Button>
                 </div>
             </div>
-        </div>
+        </Modal>
     </AppLayout>
 </template>
