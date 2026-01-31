@@ -73,4 +73,20 @@ class Invoice extends Model
     {
         return $this->hasMany(InvoicePayment::class);
     }
+
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(InvoiceActivityLog::class);
+    }
+
+    public function logActivity(string $action, ?string $description = null, ?int $userId = null, ?array $metadata = null): void
+    {
+        $this->activityLogs()->create([
+            'tenant_id' => $this->tenant_id,
+            'user_id' => $userId,
+            'action' => $action,
+            'description' => $description,
+            'metadata' => $metadata,
+        ]);
+    }
 }

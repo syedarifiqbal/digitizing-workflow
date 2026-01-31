@@ -6,6 +6,8 @@ use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Models\Client;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Order;
 use App\Models\OrderComment;
 use App\Models\OrderStatusHistory;
@@ -429,6 +431,7 @@ class OrderController extends Controller
                     'created_at' => $comment->created_at?->toDateTimeString(),
                 ])
                 ->values(),
+            'invoiceInfo' => $this->getOrderInvoiceInfo($order, $canAssign),
         ]);
     }
 
@@ -1186,5 +1189,35 @@ class OrderController extends Controller
             'notes' => $event['notes'] ?? null,
             'timestamp' => $event['timestamp'],
         ])->all();
+    }
+
+    private function getOrderInvoiceInfo(Order $order, bool $canManage): array
+    {
+        $isEligible = $canManage
+            && ! $order->is_invoiced
+            && ! $order->is_quote
+            && in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED]);
+
+        $linkedInvoice = null;
+        if ($order->is_invoiced) {
+            $invoiceItem = InvoiceItem::where('order_id', $order->id)
+                ->with('invoice:id,invoice_number,status')
+                ->first();
+
+            if ($invoiceItem?->invoice) {
+                $linkedInvoice = [
+                    'id' => $invoiceItem->invoice->id,
+                    'number' => $invoiceItem->invoice->invoice_number,
+                    'status' => $invoiceItem->invoice->status?->value,
+                    'status_label' => $invoiceItem->invoice->status?->label(),
+                ];
+            }
+        }
+
+        return [
+            'can_create_invoice' => $isEligible,
+            'is_invoiced' => (bool) $order->is_invoiced,
+            'linked_invoice' => $linkedInvoice,
+        ];
     }
 }

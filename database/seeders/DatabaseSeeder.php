@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             CommissionRuleSeeder::class,
             CommissionSeeder::class,
             OrderCommentSeeder::class,
+            InvoiceSeeder::class,
         ]);
     }
 }

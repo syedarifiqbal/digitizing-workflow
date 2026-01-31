@@ -610,6 +610,7 @@ class InvoiceController extends Controller
         }
 
         $invoice = $this->workflow->transitionTo($invoice, InvoiceStatus::SENT);
+        $invoice->logActivity('sent', 'Invoice sent to client.', $request->user()->id);
         $invoice->load('client');
         $this->notifyClient(
             $invoice,
@@ -625,6 +626,7 @@ class InvoiceController extends Controller
         abort_if(! in_array($invoice->status, [InvoiceStatus::DRAFT, InvoiceStatus::SENT], true), 403);
 
         $this->workflow->transitionTo($invoice, InvoiceStatus::CANCELLED);
+        $invoice->logActivity('cancelled', 'Invoice cancelled.', $request->user()->id);
         $this->releaseOrders($invoice);
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice cancelled.');
@@ -636,6 +638,7 @@ class InvoiceController extends Controller
         abort_if(! in_array($invoice->status, [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE, InvoiceStatus::PAID], true), 403);
 
         $this->workflow->transitionTo($invoice, InvoiceStatus::VOID);
+        $invoice->logActivity('voided', 'Invoice voided.', $request->user()->id);
         $this->releaseOrders($invoice);
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice voided.');
@@ -647,6 +650,7 @@ class InvoiceController extends Controller
         abort_if(! in_array($invoice->status, [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE], true), 403);
 
         $this->workflow->transitionTo($invoice, InvoiceStatus::PAID);
+        $invoice->logActivity('marked_paid', 'Invoice marked as paid.', $request->user()->id);
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice marked as paid.');
     }
@@ -679,6 +683,13 @@ class InvoiceController extends Controller
         $invoice->refresh()->load('payments', 'client');
         $balance = max((float) $invoice->total_amount - (float) $invoice->payments->sum('amount'), 0);
 
+        $invoice->logActivity('payment_recorded', "Payment of {$data['amount']} recorded via {$data['payment_method']}.", $request->user()->id, [
+            'payment_id' => $payment->id,
+            'amount' => (float) $data['amount'],
+            'method' => $data['payment_method'],
+            'balance' => $balance,
+        ]);
+
         $this->notifyClient(
             $invoice,
             new InvoicePaymentRecordedNotification(
@@ -689,6 +700,44 @@ class InvoiceController extends Controller
         );
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Payment recorded.');
+    }
+
+    public function print(Request $request, Invoice $invoice)
+    {
+        $this->authorize('view', $invoice);
+
+        $invoice->loadMissing(['client', 'items.order', 'payments']);
+        $companyDetails = $request->user()->tenant->getSetting('company_details', []);
+        $paidAmount = (float) $invoice->payments->sum('amount');
+        $balance = max((float) $invoice->total_amount - $paidAmount, 0);
+
+        $logoPath = $request->user()->tenant->getSetting('company_logo_path');
+        $companyLogo = null;
+        if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($logoPath)) {
+            $contents = \Illuminate\Support\Facades\Storage::disk('public')->get($logoPath);
+            $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($logoPath) ?? 'image/png';
+            $companyLogo = 'data:' . $mime . ';base64,' . base64_encode($contents);
+        }
+
+        $statusInfo = match ($invoice->status) {
+            InvoiceStatus::PAID => ['label' => 'Paid', 'background' => '#dcfce7', 'border' => '#86efac', 'color' => '#15803d'],
+            InvoiceStatus::PARTIALLY_PAID => ['label' => 'Partially Paid', 'background' => '#fef3c7', 'border' => '#fcd34d', 'color' => '#b45309'],
+            InvoiceStatus::OVERDUE => ['label' => 'Overdue', 'background' => '#fee2e2', 'border' => '#fecaca', 'color' => '#b91c1c'],
+            InvoiceStatus::VOID, InvoiceStatus::CANCELLED => ['label' => $invoice->status->label(), 'background' => '#f3f4f6', 'border' => '#e5e7eb', 'color' => '#4b5563'],
+            InvoiceStatus::SENT => ['label' => 'Sent', 'background' => '#dbeafe', 'border' => '#bfdbfe', 'color' => '#1d4ed8'],
+            default => ['label' => $invoice->status?->label() ?? 'Draft', 'background' => '#f3f4f6', 'border' => '#e5e7eb', 'color' => '#374151'],
+        };
+
+        return view('pdf.invoice', [
+            'invoice' => $invoice,
+            'companyDetails' => $companyDetails,
+            'companyLogo' => $companyLogo,
+            'bankDetails' => $request->user()->tenant->getSetting('bank_details', ''),
+            'statusInfo' => $statusInfo,
+            'paidAmount' => $paidAmount,
+            'balance' => $balance,
+            'printView' => true,
+        ]);
     }
 
     public function downloadPdf(Request $request, Invoice $invoice)
@@ -832,6 +881,177 @@ class InvoiceController extends Controller
             })
             ->orderByDesc('delivered_at')
             ->orderByDesc('id');
+    }
+
+    public function report(Request $request): Response
+    {
+        $this->authorize('viewAny', Invoice::class);
+
+        $filters = $request->only(['status', 'client_id', 'date_from', 'date_to']);
+        $tenantId = $request->user()->tenant_id;
+
+        $query = Invoice::query()
+            ->where('tenant_id', $tenantId)
+            ->when($filters['status'] ?? null, function ($q, $status) {
+                if ($status !== 'all') {
+                    $q->where('status', $status);
+                }
+            })
+            ->when($filters['client_id'] ?? null, function ($q, $clientId) {
+                if ($clientId !== 'all') {
+                    $q->where('client_id', $clientId);
+                }
+            })
+            ->when($filters['date_from'] ?? null, fn ($q, $d) => $q->whereDate('issue_date', '>=', $d))
+            ->when($filters['date_to'] ?? null, fn ($q, $d) => $q->whereDate('issue_date', '<=', $d));
+
+        $summary = [
+            'total_invoiced' => (float) (clone $query)->sum('total_amount'),
+            'total_paid' => (float) (clone $query)->whereIn('status', [InvoiceStatus::PAID])->sum('total_amount'),
+            'total_outstanding' => (float) (clone $query)->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])->sum('total_amount'),
+            'total_overdue' => (float) (clone $query)->where('status', InvoiceStatus::OVERDUE)->sum('total_amount'),
+            'count_by_status' => collect(InvoiceStatus::cases())->mapWithKeys(fn (InvoiceStatus $s) => [
+                $s->value => (int) (clone $query)->where('status', $s)->count(),
+            ])->all(),
+        ];
+
+        $agingBuckets = $this->calculateAging($tenantId);
+
+        $clients = Client::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name'])->map(fn (Client $c) => [
+            'label' => $c->name,
+            'value' => (string) $c->id,
+        ])->prepend(['label' => 'All Clients', 'value' => 'all']);
+
+        $statusOptions = collect([['label' => 'All Statuses', 'value' => 'all']])
+            ->merge(collect(InvoiceStatus::cases())->map(fn (InvoiceStatus $s) => ['label' => $s->label(), 'value' => $s->value]));
+
+        return Inertia::render('Invoices/Report', [
+            'filters' => [
+                'status' => $filters['status'] ?? 'all',
+                'client_id' => $filters['client_id'] ?? 'all',
+                'date_from' => $filters['date_from'] ?? '',
+                'date_to' => $filters['date_to'] ?? '',
+            ],
+            'summary' => $summary,
+            'aging' => $agingBuckets,
+            'clients' => $clients,
+            'statusOptions' => $statusOptions,
+            'currency' => $request->user()->tenant->getSetting('currency', 'USD'),
+        ]);
+    }
+
+    public function exportCsv(Request $request)
+    {
+        $this->authorize('viewAny', Invoice::class);
+
+        $filters = $request->only(['status', 'client_id', 'date_from', 'date_to']);
+        $tenantId = $request->user()->tenant_id;
+
+        $invoices = Invoice::query()
+            ->with('client:id,name,company')
+            ->where('tenant_id', $tenantId)
+            ->when($filters['status'] ?? null, function ($q, $status) {
+                if ($status !== 'all') {
+                    $q->where('status', $status);
+                }
+            })
+            ->when($filters['client_id'] ?? null, function ($q, $clientId) {
+                if ($clientId !== 'all') {
+                    $q->where('client_id', $clientId);
+                }
+            })
+            ->when($filters['date_from'] ?? null, fn ($q, $d) => $q->whereDate('issue_date', '>=', $d))
+            ->when($filters['date_to'] ?? null, fn ($q, $d) => $q->whereDate('issue_date', '<=', $d))
+            ->orderBy('issue_date', 'desc')
+            ->get();
+
+        $output = fopen('php://temp', 'r+');
+        fputcsv($output, [
+            'Invoice Number', 'Client', 'Company', 'Status', 'Issue Date', 'Due Date',
+            'Subtotal', 'Tax Rate', 'Tax Amount', 'Discount', 'Total', 'Currency', 'Payment Terms', 'Notes',
+        ]);
+
+        foreach ($invoices as $invoice) {
+            fputcsv($output, [
+                $invoice->invoice_number ?? sprintf('#%05d', $invoice->id),
+                $invoice->client?->name ?? '',
+                $invoice->client?->company ?? '',
+                $invoice->status?->label() ?? '',
+                $invoice->issue_date?->toDateString() ?? '',
+                $invoice->due_date?->toDateString() ?? '',
+                number_format((float) $invoice->subtotal, 2, '.', ''),
+                number_format((float) $invoice->tax_rate, 2, '.', ''),
+                number_format((float) $invoice->tax_amount, 2, '.', ''),
+                number_format((float) $invoice->discount_amount, 2, '.', ''),
+                number_format((float) $invoice->total_amount, 2, '.', ''),
+                $invoice->currency,
+                $invoice->payment_terms ?? '',
+                $invoice->notes ?? '',
+            ]);
+        }
+
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+
+        $filename = 'invoices_' . now()->format('Y-m-d_His') . '.csv';
+
+        return \Illuminate\Support\Facades\Response::make($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    private function calculateAging(int $tenantId): array
+    {
+        $outstanding = Invoice::where('tenant_id', $tenantId)
+            ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
+            ->with('client:id,name')
+            ->get();
+
+        $buckets = ['current' => 0, '1_30' => 0, '31_60' => 0, '61_90' => 0, 'over_90' => 0];
+        $details = [];
+
+        foreach ($outstanding as $invoice) {
+            $dueDate = $invoice->due_date ?? $invoice->issue_date;
+            $daysOverdue = $dueDate ? (int) now()->diffInDays($dueDate, false) * -1 : 0;
+            $amount = (float) $invoice->total_amount;
+
+            if ($daysOverdue <= 0) {
+                $buckets['current'] += $amount;
+                $bucket = 'current';
+            } elseif ($daysOverdue <= 30) {
+                $buckets['1_30'] += $amount;
+                $bucket = '1_30';
+            } elseif ($daysOverdue <= 60) {
+                $buckets['31_60'] += $amount;
+                $bucket = '31_60';
+            } elseif ($daysOverdue <= 90) {
+                $buckets['61_90'] += $amount;
+                $bucket = '61_90';
+            } else {
+                $buckets['over_90'] += $amount;
+                $bucket = 'over_90';
+            }
+
+            $details[] = [
+                'id' => $invoice->id,
+                'number' => $invoice->invoice_number ?? sprintf('#%05d', $invoice->id),
+                'client_name' => $invoice->client?->name ?? '—',
+                'total_amount' => $amount,
+                'due_date' => $dueDate?->toDateString(),
+                'days_overdue' => max($daysOverdue, 0),
+                'bucket' => $bucket,
+                'status' => $invoice->status?->value,
+                'status_label' => $invoice->status?->label(),
+                'currency' => $invoice->currency,
+            ];
+        }
+
+        return [
+            'buckets' => $buckets,
+            'details' => $details,
+        ];
     }
 
     private function transformOrderForSelection(Order $order): array

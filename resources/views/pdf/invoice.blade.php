@@ -354,5 +354,11 @@
 
         <p class="thank-you">Thank you for your business</p>
     </div>
+
+    @if (!empty($printView))
+    <script>
+        window.onload = function () { window.print(); };
+    </script>
+    @endif
 </body>
 </html>

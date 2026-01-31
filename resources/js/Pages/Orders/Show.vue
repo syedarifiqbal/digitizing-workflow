@@ -27,6 +27,7 @@ const props = defineProps({
     currency: String,
     commissions: Array,
     comments: Array,
+    invoiceInfo: Object,
 });
 
 const selectedDesigner = ref(props.order?.designer?.id ?? "");
@@ -1410,6 +1411,47 @@ const priorityBadgeClass = (priority) => {
                                             }}
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Invoice Info -->
+                        <div
+                            v-if="invoiceInfo?.is_invoiced || invoiceInfo?.can_create_invoice"
+                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                        >
+                            <div class="px-5 py-4 border-b border-gray-100">
+                                <h3 class="text-sm font-semibold text-gray-900">
+                                    Invoice
+                                </h3>
+                            </div>
+                            <div class="px-5 py-4">
+                                <div v-if="invoiceInfo.linked_invoice" class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-900">
+                                            <Link
+                                                :href="route('invoices.show', invoiceInfo.linked_invoice.id)"
+                                                class="font-medium text-indigo-600 hover:text-indigo-900"
+                                            >
+                                                {{ invoiceInfo.linked_invoice.number }}
+                                            </Link>
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-0.5">
+                                            Status: {{ invoiceInfo.linked_invoice.status_label }}
+                                        </p>
+                                    </div>
+                                    <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20">
+                                        Invoiced
+                                    </span>
+                                </div>
+                                <div v-else-if="invoiceInfo.can_create_invoice">
+                                    <p class="text-sm text-gray-500 mb-3">This order has not been invoiced yet.</p>
+                                    <Link
+                                        :href="route('invoices.create', { orders: [order.id], client_id: order.client.id })"
+                                        class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                                    >
+                                        Create Invoice
+                                    </Link>
                                 </div>
                             </div>
                         </div>

@@ -1,71 +1,68 @@
 <script setup>
-import { Link } from "@inertiajs/vue3";
-import { computed } from "vue";
+import { Link } from '@inertiajs/vue3';
+import { computed, useAttrs } from 'vue';
+
+defineOptions({ inheritAttrs: false });
+
+const attrs = useAttrs();
 
 const props = defineProps({
-    // 'button' | 'link'
-    as: { type: String, default: "button" },
+  // 'auto' | 'button' | 'link' | 'a'
+  as: { type: String, default: 'auto' },
 
-    // used when as === 'link'
-    href: { type: String, default: null },
+  href: { type: String, default: null },
 
-    // used when as === 'button'
-    type: { type: String, default: "button" }, // button | submit | reset
-    disabled: { type: Boolean, default: false },
+  htmlType: { type: String, default: 'button' },
+  disabled: { type: Boolean, default: false },
 
-    // 'plain' | 'primary'
-    variant: { type: String, default: "plain" },
+  // styling
+  variant: { type: String, default: 'plain' }, // plain | primary
+  primary: { type: Boolean, default: false },
 
-    // optional semantic style hint (you can expand these mappings)
-    // 'default' | 'create' | 'save' | 'danger'
-    directive: { type: String, default: "default" },
-
-    extraClass: { type: String, default: "" },
+  extraClass: { type: String, default: '' },
 });
 
-const component = computed(() => (props.as === "link" ? Link : "button"));
-
 const variantClasses = {
-    plain: "inline-flex justify-center items-center text-capitalize rounded-xl bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50",
-    primary:
-        "inline-flex justify-center items-center text-capitalize rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110",
+  plain:
+    'inline-flex items-center rounded-xl bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50',
+  primary:
+    'inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110',
 };
 
-// Optional “directive” tweaks.
-// Keep these light so it doesn’t get messy.
-const directiveClasses = {
-    default: "",
-    create: "",
-    save: "",
-    danger: "border-red-300 text-red-700 hover:bg-red-50",
-};
+const disabledClasses = 'disabled:opacity-50 disabled:cursor-not-allowed';
 
-const disabledClasses = "disabled:opacity-50 disabled:cursor-not-allowed";
+const resolvedVariant = computed(() => (props.primary ? 'primary' : props.variant));
 
 const classes = computed(() => {
-    const base = variantClasses[props.variant] ?? variantClasses.plain;
+  const base = variantClasses[resolvedVariant.value] ?? variantClasses.plain;
+  return [base, disabledClasses, props.extraClass].filter(Boolean).join(' ');
+});
 
-    // If variant is plain, allow directive to tweak it a bit (like danger).
-    // For primary, ignore directive by default to keep it consistent.
-    const directive =
-        props.variant === "plain"
-            ? directiveClasses[props.directive] ?? ""
-            : "";
+// If target=_blank or download is present, use native <a> so Inertia doesn't intercept.
+const wantsNativeAnchor = computed(() => {
+  return attrs.target === '_blank' || Object.prototype.hasOwnProperty.call(attrs, 'download');
+});
 
-    return [base, directive, disabledClasses, props.extraClass]
-        .filter(Boolean)
-        .join(" ");
+const component = computed(() => {
+  if (props.as === 'button') return 'button';
+  if (props.as === 'a') return 'a';
+  if (props.as === 'link') return Link;
+
+  // auto
+  if (props.href) return wantsNativeAnchor.value ? 'a' : Link;
+  return 'button';
 });
 </script>
 
 <template>
-    <component
-        :is="component"
-        :href="props.as === 'link' ? props.href : undefined"
-        :type="props.as === 'button' ? props.type : undefined"
-        :disabled="props.as === 'button' ? props.disabled : undefined"
-        :class="classes"
-    >
-        <slot />
-    </component>
+  <component
+    :is="component"
+    v-bind="attrs"
+    :href="component !== 'button' ? props.href : undefined"
+    :type="component === 'button' ? props.htmlType : undefined"
+    :disabled="component === 'button' ? props.disabled : undefined"
+    :class="classes"
+  >
+    <slot />
+  </component>
 </template>

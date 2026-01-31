@@ -119,12 +119,20 @@ watch(
                         balances.
                     </p>
                 </div>
-                <Link
-                    :href="route('invoices.create')"
-                    class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
-                >
-                    New Invoice
-                </Link>
+                <div class="flex items-center gap-3">
+                    <Link
+                        :href="route('invoices.report')"
+                        class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                        Reports
+                    </Link>
+                    <Link
+                        :href="route('invoices.create')"
+                        class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
+                    >
+                        New Invoice
+                    </Link>
+                </div>
             </div>
         </template>
 

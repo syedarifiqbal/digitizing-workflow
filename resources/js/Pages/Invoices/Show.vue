@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { Link, router, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "../../Components/Button.vue";
 
 const props = defineProps({
     invoice: {
@@ -167,70 +168,68 @@ const submitSend = () => {
                     >
                         {{ invoice.status_label }}
                     </span>
-                    <a
+                    <Button
                         :href="route('invoices.pdf', invoice.id)"
-                        class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50"
                         target="_blank"
                         rel="noopener"
-                    >
+                        >
                         Download PDF
-                    </a>
-                    <Link
+                    </Button>
+                    <Button
                         :href="route('invoices.index')"
-                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
                         Back to list
-                    </Link>
-                    <Link
+                    </Button>
+                    <Button
                         v-if="canEdit"
+                        variant="primary"
                         :href="route('invoices.edit', invoice.id)"
-                        class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
                     >
                         Edit Invoice
-                    </Link>
+                    </Button>
                 </div>
             </div>
             <div class="mt-4 flex flex-wrap gap-2">
-                <button
+                <Button
                     v-if="isDraft"
-                    type="button"
-                    class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
+                    as="button"
                     @click="openSendModal"
+                    variant="primary"
                 >
                     Send Invoice
-                </button>
-                <button
+                </Button>
+                <Button
                     v-if="canRecordPayment"
-                    type="button"
-                    class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    as="button"
+                    class="!text-slate-700 hover:bg-slate-50"
                     @click="openPaymentModal"
                 >
                     Record Payment
-                </button>
-                <button
+                </Button>
+                <Button
                     v-if="canMarkPaid"
-                    type="button"
-                    class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    as="button"
+                    class="!text-slate-700 hover:bg-slate-50"
                     @click="openActionModal('markPaid')"
                 >
                     Mark as Paid
-                </button>
-                <button
+                </Button>
+                <Button
                     v-if="canCancel"
-                    type="button"
-                    class="inline-flex items-center rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                    as="button"
+                    class="!text-red-600 hover:bg-red-50"
                     @click="openActionModal('cancel')"
                 >
                     Cancel Invoice
-                </button>
-                <button
+                </Button>
+                <Button
                     v-if="canVoid"
-                    type="button"
-                    class="inline-flex items-center rounded-md border border-amber-200 bg-white px-3 py-2 text-sm font-medium text-amber-600 hover:bg-amber-50"
+                    as="button"
+                    class="!text-amber-600 hover:bg-amber-50"
                     @click="openActionModal('void')"
                 >
                     Void Invoice
-                </button>
+                </Button>
             </div>
         </template>
 
@@ -500,21 +499,20 @@ const submitSend = () => {
                     {{ sendForm.errors.pdf }}
                 </p>
                 <div class="flex justify-end gap-3">
-                    <button
-                        type="button"
-                        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    <Button
+                        as="button"
                         @click="closeSendModal"
                     >
                         Cancel
-                    </button>
-                    <button
-                        type="button"
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
+                    </Button>
+                    <Button
+                        as="button"
+                        variant="primary"
                         :disabled="sendForm.processing"
                         @click="submitSend"
                     >
                         {{ sendForm.processing ? "Sending..." : "Send Invoice" }}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
@@ -587,21 +585,20 @@ const submitSend = () => {
                     </div>
                 </div>
                 <div class="flex justify-end gap-3">
-                    <button
-                        type="button"
-                        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    <Button
+                        as="button"
                         @click="closePaymentModal"
                     >
                         Cancel
-                    </button>
-                    <button
-                        type="button"
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
+                    </Button>
+                    <Button
+                        as="button"
+                        variant="primary"
                         :disabled="paymentForm.processing"
                         @click="submitPayment"
                     >
                         {{ paymentForm.processing ? "Saving..." : "Save Payment" }}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
