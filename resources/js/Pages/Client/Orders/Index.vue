@@ -4,6 +4,7 @@ import { Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
+import RowActions from "@/Components/RowActions.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 
 const { formatDate } = useDateFormat();
@@ -198,14 +199,11 @@ const orderColumns = [
                 </template>
 
                 <template #cell-actions="{ row }">
-                    <div class="text-right">
-                        <Link
-                            :href="route('client.orders.show', row.id)"
-                            class="text-sm font-medium text-indigo-600 hover:text-indigo-900"
-                        >
-                            View
-                        </Link>
-                    </div>
+                    <RowActions
+                        :actions="[
+                            { type: 'view', href: route('client.orders.show', row.id) },
+                        ]"
+                    />
                 </template>
             </DataTable>
 

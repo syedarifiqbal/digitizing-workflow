@@ -1,10 +1,10 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
-import { PencilSquareIcon, TrashIcon } from "@heroicons/vue/24/outline";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
+import RowActions from "@/Components/RowActions.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 import Button from "../../Components/Button.vue";
@@ -291,27 +291,12 @@ const userColumns = [
                             }}</span>
                         </template>
                         <template #cell-actions="{ row }">
-                            <div
-                                class="text-right text-sm font-medium space-x-1"
-                            >
-                                <Link
-                                    :href="route('users.edit', row.id)"
-                                    class="inline-flex items-center rounded-full p-2 text-slate-400 hover:text-indigo-300"
-                                    title="Edit"
-                                >
-                                    <span class="sr-only">Edit</span>
-                                    <PencilSquareIcon class="h-5 w-5" />
-                                </Link>
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center rounded-full p-2 text-slate-400 hover:text-red-400"
-                                    @click="openDeleteModal(row.id)"
-                                    title="Delete"
-                                >
-                                    <span class="sr-only">Delete</span>
-                                    <TrashIcon class="h-5 w-5" />
-                                </button>
-                            </div>
+                            <RowActions
+                                :actions="[
+                                    { type: 'edit', href: route('users.edit', row.id) },
+                                    { type: 'delete', action: () => openDeleteModal(row.id) },
+                                ]"
+                            />
                         </template>
                     </DataTable>
 

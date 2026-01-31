@@ -4,6 +4,7 @@ import { Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
+import RowActions from "@/Components/RowActions.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 import Button from "../../Components/Button.vue";
 
@@ -507,14 +508,11 @@ const toggleRowSelection = (id, checked) => {
                             </template>
 
                             <template #cell-actions="{ row }">
-                                <button
-                                    v-if="!row.is_paid"
-                                    @click="markAsPaid(row.id)"
-                                    type="button"
-                                    class="text-xs text-green-600 hover:text-green-900 font-medium"
-                                >
-                                    Mark Paid
-                                </button>
+                                <RowActions
+                                    :actions="[
+                                        { type: 'confirm', action: () => markAsPaid(row.id), label: 'Mark Paid', show: !row.is_paid },
+                                    ]"
+                                />
                             </template>
                         </DataTable>
                         <PaginationControls

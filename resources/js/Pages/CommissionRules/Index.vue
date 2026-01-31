@@ -5,6 +5,7 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
 import Modal from "@/Components/Modal.vue";
+import RowActions from "@/Components/RowActions.vue";
 import Button from "@/Components/Button.vue";
 
 const props = defineProps({
@@ -281,22 +282,12 @@ const formatAmount = (rule) => {
                 </template>
 
                 <template #cell-actions="{ row }">
-                    <div class="flex items-center justify-end gap-2">
-                        <button
-                            type="button"
-                            class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
-                            @click="openEditModal(row)"
-                        >
-                            Edit
-                        </button>
-                        <button
-                            type="button"
-                            class="text-sm font-medium text-red-600 hover:text-red-800"
-                            @click="openDeleteModal(row)"
-                        >
-                            Delete
-                        </button>
-                    </div>
+                    <RowActions
+                        :actions="[
+                            { type: 'edit', action: () => openEditModal(row) },
+                            { type: 'delete', action: () => openDeleteModal(row) },
+                        ]"
+                    />
                 </template>
             </DataTable>
         </div>

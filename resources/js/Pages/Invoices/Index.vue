@@ -4,6 +4,7 @@ import { computed, reactive, watch } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
+import RowActions from "@/Components/RowActions.vue";
 import DatePicker from "@/Components/DatePicker.vue";
 
 const props = defineProps({
@@ -330,29 +331,12 @@ watch(
                                 </template>
 
                                 <template #cell-actions="{ row }">
-                                    <div
-                                        class="text-right text-sm font-medium space-x-1"
-                                    >
-                                        <Link
-                                            :href="
-                                                route('invoices.show', row.id)
-                                            "
-                                            class="inline-flex items-center rounded-full px-3 py-1 text-slate-500 hover:text-slate-900"
-                                            title="View"
-                                        >
-                                            View
-                                        </Link>
-                                        <Link
-                                            v-if="row.can_edit"
-                                            :href="
-                                                route('invoices.edit', row.id)
-                                            "
-                                            class="inline-flex items-center rounded-full px-3 py-1 text-slate-500 hover:text-indigo-600"
-                                            title="Edit"
-                                        >
-                                            Edit
-                                        </Link>
-                                    </div>
+                                    <RowActions
+                                        :actions="[
+                                            { type: 'view', href: route('invoices.show', row.id) },
+                                            { type: 'edit', href: route('invoices.edit', row.id), show: row.can_edit },
+                                        ]"
+                                    />
                                 </template>
                             </DataTable>
 

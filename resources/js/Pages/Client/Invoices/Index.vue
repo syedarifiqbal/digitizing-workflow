@@ -2,8 +2,10 @@
 import { computed, reactive } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import { DocumentIcon } from "@heroicons/vue/24/outline";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
+import RowActions from "@/Components/RowActions.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 
 const { formatDate } = useDateFormat();
@@ -185,21 +187,12 @@ const invoiceColumns = [
                 </template>
 
                 <template #cell-actions="{ row }">
-                    <div class="flex items-center justify-end gap-3">
-                        <Link
-                            :href="route('client.invoices.show', row.id)"
-                            class="text-sm font-medium text-indigo-600 hover:text-indigo-900"
-                        >
-                            View
-                        </Link>
-                        <a
-                            :href="route('client.invoices.pdf', row.id)"
-                            class="text-sm font-medium text-slate-600 hover:text-slate-900"
-                            target="_blank"
-                        >
-                            PDF
-                        </a>
-                    </div>
+                    <RowActions
+                        :actions="[
+                            { type: 'view', href: route('client.invoices.show', row.id) },
+                            { type: 'download', url: route('client.invoices.pdf', row.id), icon: DocumentIcon, label: 'PDF' },
+                        ]"
+                    />
                 </template>
             </DataTable>
 
