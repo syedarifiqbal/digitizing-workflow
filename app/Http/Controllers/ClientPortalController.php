@@ -8,8 +8,10 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Services\InvoicePdfService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class ClientPortalController extends Controller
@@ -310,7 +312,11 @@ class ClientPortalController extends Controller
             'extension' => $file->extension,
             'created_at' => $file->created_at,
             'uploader' => $file->uploader ? ['id' => $file->uploader->id, 'name' => $file->uploader->name] : null,
-            'download_url' => route('orders.files.download', ['file' => $file->id]),
+            'download_url' => URL::temporarySignedRoute(
+                'orders.files.download',
+                now()->addMinutes(30),
+                ['file' => $file->id]
+            ),
         ]);
 
         $outputFiles = $showOutputFiles
@@ -321,7 +327,11 @@ class ClientPortalController extends Controller
                 'extension' => $file->extension,
                 'created_at' => $file->created_at,
                 'uploader' => $file->uploader ? ['id' => $file->uploader->id, 'name' => $file->uploader->name] : null,
-                'download_url' => route('orders.files.download', ['file' => $file->id]),
+                'download_url' => URL::temporarySignedRoute(
+                    'orders.files.download',
+                    now()->addMinutes(30),
+                    ['file' => $file->id]
+                ),
             ])
             : [];
 
@@ -538,6 +548,14 @@ class ClientPortalController extends Controller
             abort(403, 'This invoice is not available.');
         }
 
-        return $pdfService->download($invoice);
+        try {
+            $pdf = $pdfService->make($invoice);
+        } catch (RuntimeException $e) {
+            abort(500, $e->getMessage());
+        }
+
+        $filename = ($invoice->invoice_number ?? 'invoice-' . $invoice->id) . '.pdf';
+
+        return $pdf->download($filename);
     }
 }
