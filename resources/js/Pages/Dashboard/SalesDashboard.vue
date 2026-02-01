@@ -10,6 +10,7 @@ import {
     ShoppingCartIcon,
 } from '@heroicons/vue/24/outline';
 import { useDashboard } from '@/Composables/useDashboard';
+import Button from '@/Components/Button.vue';
 import StatCard from '@/Components/Dashboard/StatCard.vue';
 import MiniStatCard from '@/Components/Dashboard/MiniStatCard.vue';
 import DashboardSection from '@/Components/Dashboard/DashboardSection.vue';
@@ -223,14 +224,14 @@ const { formatCurrency, getStatusColor, getPriorityClass, formatDate } = useDash
         <DashboardSection title="Quick Actions">
             <div class="p-6">
                 <div class="flex flex-wrap gap-3">
-                    <Link :href="route('orders.index')" class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110">
+                    <Button :href="route('orders.index')" variant="primary">
                         <ClipboardDocumentListIcon class="h-4 w-4 mr-2" />
                         My Orders
-                    </Link>
-                    <Link :href="route('commissions.my')" class="inline-flex items-center rounded-xl bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                    </Button>
+                    <Button :href="route('commissions.my')">
                         <CurrencyDollarIcon class="h-4 w-4 mr-2" />
                         My Commissions
-                    </Link>
+                    </Button>
                 </div>
             </div>
         </DashboardSection>

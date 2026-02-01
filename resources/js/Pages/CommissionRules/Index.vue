@@ -308,7 +308,7 @@ const formatAmount = (rule) => {
                     <label class="block text-sm font-medium text-slate-700">{{ userLabel }}</label>
                     <select
                         v-model="form.user_id"
-                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     >
                         <option value="">
                             Select a {{ userLabel.toLowerCase() }}
@@ -342,7 +342,7 @@ const formatAmount = (rule) => {
                                 type="radio"
                                 v-model="form.type"
                                 :value="option.value"
-                                class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
                             />
                             <span class="text-sm text-slate-700">{{
                                 option.label
@@ -360,7 +360,7 @@ const formatAmount = (rule) => {
                             step="0.01"
                             min="0"
                             placeholder="0.00"
-                            class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                         <span class="text-sm text-slate-500 whitespace-nowrap">{{ form.currency }}</span>
                     </div>
@@ -376,7 +376,7 @@ const formatAmount = (rule) => {
                             min="0"
                             max="100"
                             placeholder="0.0"
-                            class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                         <span class="text-sm text-slate-500">%</span>
                     </div>
@@ -390,23 +390,19 @@ const formatAmount = (rule) => {
                         v-model="form.is_active"
                         type="checkbox"
                         id="is_active"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     <label for="is_active" class="text-sm text-slate-700">Active</label>
                 </div>
 
                 <div class="flex justify-end gap-3">
-                    <button
-                        type="button"
-                        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        @click="showModal = false"
-                    >
+                    <Button as="button" @click="showModal = false">
                         Cancel
-                    </button>
-                    <button
-                        type="button"
+                    </Button>
+                    <Button
+                        as="button"
+                        variant="primary"
                         :disabled="saving || (!editingRule && !form.user_id)"
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                         @click="saveRule"
                     >
                         {{
@@ -416,7 +412,7 @@ const formatAmount = (rule) => {
                                 ? "Update"
                                 : "Create"
                         }}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </Modal>

@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { Link } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "@/Components/Button.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 
 const { formatDate } = useDateFormat();
@@ -70,16 +71,17 @@ const isOverdue = computed(() => props.invoice?.status === "overdue");
                         Issued {{ formatDate(invoice.issue_date) }}
                     </p>
                 </div>
-                <a
+                <Button
+                    as="a"
                     :href="route('client.invoices.pdf', invoice.id)"
                     target="_blank"
-                    class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
+                    variant="primary"
                 >
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Download PDF
-                </a>
+                </Button>
             </div>
         </template>
 

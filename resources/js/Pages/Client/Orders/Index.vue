@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "@/Components/Button.vue";
 import DataTable from "@/Components/DataTable.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
 import RowActions from "@/Components/RowActions.vue";
@@ -47,10 +48,10 @@ const getStatusColor = (status) => {
         in_review: "bg-yellow-50 text-yellow-700 ring-yellow-600/20",
         approved: "bg-teal-50 text-teal-700 ring-teal-600/20",
         delivered: "bg-green-50 text-green-700 ring-green-600/20",
-        closed: "bg-gray-100 text-gray-700 ring-gray-600/20",
+        closed: "bg-slate-100 text-slate-700 ring-slate-600/20",
         cancelled: "bg-red-50 text-red-700 ring-red-600/20",
     };
-    return colors[status] || "bg-gray-100 text-gray-700";
+    return colors[status] || "bg-slate-100 text-slate-700";
 };
 
 const getPriorityColor = (priority) => {
@@ -76,12 +77,12 @@ const orderColumns = [
                     <h2 class="text-2xl font-semibold text-slate-900">My Orders</h2>
                     <p class="text-sm text-slate-500">View and manage your orders.</p>
                 </div>
-                <Link
+                <Button
                     :href="route('client.orders.create')"
-                    class="inline-flex items-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
+                    variant="primary"
                 >
                     Create Order
-                </Link>
+                </Button>
             </div>
         </template>
 

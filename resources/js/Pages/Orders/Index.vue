@@ -852,7 +852,7 @@ const orderColumns = [
                                     row.status === 'delivered' ||
                                     row.status === 'approved'
                                         ? 'bg-green-100 text-green-800'
-                                        : 'bg-gray-100 text-gray-800',
+                                        : 'bg-slate-100 text-slate-800',
                                 ]"
                             >
                                 {{ (row.status || "").split("_").join(" ") }}

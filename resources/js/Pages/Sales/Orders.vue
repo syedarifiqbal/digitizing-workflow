@@ -33,7 +33,7 @@ const statusTabs = [
 ];
 
 const statCards = computed(() => [
-    { key: 'received', label: 'Received', value: props.stats.received, color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' },
+    { key: 'received', label: 'Received', value: props.stats.received, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
     { key: 'in_progress', label: 'In Progress', value: props.stats.in_progress, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
     { key: 'in_review', label: 'In Review', value: props.stats.in_review + props.stats.submitted, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
     { key: 'approved', label: 'Approved', value: props.stats.approved, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
@@ -43,7 +43,7 @@ const statCards = computed(() => [
 
 const statusBadge = (status) => {
     const map = {
-        received: 'bg-gray-100 text-gray-700',
+        received: 'bg-slate-100 text-slate-700',
         assigned: 'bg-blue-100 text-blue-700',
         in_progress: 'bg-yellow-100 text-yellow-700',
         submitted: 'bg-indigo-100 text-indigo-700',
@@ -53,7 +53,7 @@ const statusBadge = (status) => {
         closed: 'bg-slate-100 text-slate-700',
         cancelled: 'bg-red-100 text-red-700',
     };
-    return map[status] || 'bg-gray-100 text-gray-700';
+    return map[status] || 'bg-slate-100 text-slate-700';
 };
 
 const statusLabel = (status) => {

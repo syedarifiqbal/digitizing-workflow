@@ -34,7 +34,7 @@ const statusBadge = (status) => {
         in_review: 'bg-purple-100 text-purple-700',
         approved: 'bg-green-100 text-green-700',
     };
-    return map[status] || 'bg-gray-100 text-gray-700';
+    return map[status] || 'bg-slate-100 text-slate-700';
 };
 
 const statusLabel = (status) => {

@@ -149,11 +149,11 @@ watch(
                             >
                                 <div>
                                     <h3
-                                        class="text-sm font-semibold text-gray-900"
+                                        class="text-sm font-semibold text-slate-900"
                                     >
                                         Filters
                                     </h3>
-                                    <p class="text-xs text-gray-500">
+                                    <p class="text-xs text-slate-500">
                                         Refine invoices by client, status, or
                                         date range.
                                     </p>
@@ -174,7 +174,7 @@ watch(
                             >
                                 <div>
                                     <label
-                                        class="block text-xs font-medium text-gray-700"
+                                        class="block text-xs font-medium text-slate-700"
                                         for="search"
                                     >
                                         Search
@@ -183,14 +183,14 @@ watch(
                                         v-model="filterForm.search"
                                         id="search"
                                         type="text"
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         placeholder="Invoice # or client"
                                         @keyup.enter="applyFilters"
                                     />
                                 </div>
                                 <div>
                                     <label
-                                        class="block text-xs font-medium text-gray-700"
+                                        class="block text-xs font-medium text-slate-700"
                                         for="status"
                                     >
                                         Status
@@ -198,7 +198,7 @@ watch(
                                     <select
                                         v-model="filterForm.status"
                                         id="status"
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option
                                             v-for="option in statusOptions"
@@ -211,7 +211,7 @@ watch(
                                 </div>
                                 <div>
                                     <label
-                                        class="block text-xs font-medium text-gray-700"
+                                        class="block text-xs font-medium text-slate-700"
                                         for="client"
                                     >
                                         Client
@@ -219,7 +219,7 @@ watch(
                                     <select
                                         v-model="filterForm.client_id"
                                         id="client"
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option
                                             v-for="client in clients"
@@ -235,7 +235,7 @@ watch(
                                 >
                                     <div>
                                         <label
-                                            class="block text-xs font-medium text-gray-700"
+                                            class="block text-xs font-medium text-slate-700"
                                         >
                                             Issued From
                                         </label>
@@ -247,7 +247,7 @@ watch(
                                     </div>
                                     <div>
                                         <label
-                                            class="block text-xs font-medium text-gray-700"
+                                            class="block text-xs font-medium text-slate-700"
                                         >
                                             Issued To
                                         </label>

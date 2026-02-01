@@ -2,6 +2,7 @@
 import { computed, watch } from "vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "@/Components/Button.vue";
 
 const props = defineProps({
     user: Object,
@@ -39,8 +40,8 @@ const submit = () => {
         <Head :title="`Edit User - ${user.name}`" />
         <template #header>
             <div>
-                <h2 class="text-xl font-semibold text-gray-800">Edit User</h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <h2 class="text-xl font-semibold text-slate-800">Edit User</h2>
+                <p class="mt-1 text-sm text-slate-600">
                     Update profile details, role, and status.
                 </p>
             </div>
@@ -54,14 +55,14 @@ const submit = () => {
                             <div>
                                 <label
                                     for="name"
-                                    class="block text-sm font-medium text-gray-700"
+                                    class="block text-sm font-medium text-slate-700"
                                     >Name</label
                                 >
                                 <input
                                     v-model="form.name"
                                     id="name"
                                     type="text"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                                 <p
                                     v-if="form.errors.name"
@@ -74,14 +75,14 @@ const submit = () => {
                             <div>
                                 <label
                                     for="email"
-                                    class="block text-sm font-medium text-gray-700"
+                                    class="block text-sm font-medium text-slate-700"
                                     >Email</label
                                 >
                                 <input
                                     v-model="form.email"
                                     id="email"
                                     type="email"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                                 <p
                                     v-if="form.errors.email"
@@ -95,14 +96,14 @@ const submit = () => {
                                 <div>
                                     <label
                                         for="phone"
-                                        class="block text-sm font-medium text-gray-700"
+                                        class="block text-sm font-medium text-slate-700"
                                         >Phone</label
                                     >
                                     <input
                                         v-model="form.phone"
                                         id="phone"
                                         type="text"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                     <p
                                         v-if="form.errors.phone"
@@ -115,13 +116,13 @@ const submit = () => {
                                 <div>
                                     <label
                                         for="role"
-                                        class="block text-sm font-medium text-gray-700"
+                                        class="block text-sm font-medium text-slate-700"
                                         >Role</label
                                     >
                                     <select
                                         v-model="form.role"
                                         id="role"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option
                                             v-for="role in roles"
@@ -143,13 +144,13 @@ const submit = () => {
                             <div>
                                 <label
                                     for="status"
-                                    class="block text-sm font-medium text-gray-700"
+                                    class="block text-sm font-medium text-slate-700"
                                     >Status</label
                                 >
                                 <select
                                     v-model="form.is_active"
                                     id="status"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 >
                                     <option value="1">Active</option>
                                     <option value="0">Inactive</option>
@@ -165,13 +166,13 @@ const submit = () => {
                             <div v-if="requiresClient">
                                 <label
                                     for="client_id"
-                                    class="block text-sm font-medium text-gray-700"
+                                    class="block text-sm font-medium text-slate-700"
                                     >Linked client</label
                                 >
                                 <select
                                     v-model="form.client_id"
                                     id="client_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 >
                                     <option value="">Select client</option>
                                     <option
@@ -193,19 +194,17 @@ const submit = () => {
                             </div>
 
                             <div class="flex items-center justify-end gap-3">
-                                <Link
-                                    :href="route('users.index')"
-                                    class="text-sm text-gray-500 hover:text-gray-700"
-                                >
+                                <Button :href="route('users.index')">
                                     Cancel
-                                </Link>
-                                <button
-                                    type="submit"
+                                </Button>
+                                <Button
+                                    as="button"
+                                    html-type="submit"
+                                    variant="primary"
                                     :disabled="form.processing"
-                                    class="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
                                 >
                                     Save changes
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

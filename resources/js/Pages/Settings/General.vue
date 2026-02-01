@@ -194,8 +194,8 @@ const componentProps = computed(() => {
     <AppLayout>
         <template #header>
             <div class="flex flex-col gap-1">
-                <h2 class="text-lg font-semibold text-gray-900">Settings</h2>
-                <p class="text-sm text-gray-500">
+                <h2 class="text-lg font-semibold text-slate-900">Settings</h2>
+                <p class="text-sm text-slate-500">
                     Configure company-wide preferences for workflows, uploads, and billing.
                 </p>
             </div>
@@ -219,10 +219,10 @@ const componentProps = computed(() => {
 
                 <form @submit.prevent="submit">
                     <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
-                        <div class="bg-white shadow-sm rounded-lg border border-gray-200 h-max">
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <p class="text-sm font-semibold text-gray-900">Settings Sections</p>
-                                <p class="mt-0.5 text-xs text-gray-500">
+                        <div class="bg-white shadow-sm rounded-lg border border-slate-200 h-max">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <p class="text-sm font-semibold text-slate-900">Settings Sections</p>
+                                <p class="mt-0.5 text-xs text-slate-500">
                                     Jump between focused groups of preferences.
                                 </p>
                             </div>
@@ -235,12 +235,12 @@ const componentProps = computed(() => {
                                     :class="
                                         activeTab === tab.id
                                             ? 'border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm'
-                                            : 'border-transparent text-gray-700 hover:bg-slate-50'
+                                            : 'border-transparent text-slate-700 hover:bg-slate-50'
                                     "
                                     @click="activeTab = tab.id"
                                 >
                                     <p class="text-sm font-medium">{{ tab.label }}</p>
-                                    <p class="mt-0.5 text-xs text-gray-500">
+                                    <p class="mt-0.5 text-xs text-slate-500">
                                         {{ tab.description }}
                                     </p>
                                 </button>
@@ -255,9 +255,9 @@ const componentProps = computed(() => {
                                 @generate="generateApiKey"
                             />
 
-                            <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="bg-white shadow-sm rounded-lg border border-slate-200">
                                 <div class="px-5 py-4 space-y-4">
-                                    <p class="text-sm text-gray-600">
+                                    <p class="text-sm text-slate-600">
                                         Review your changes before saving. Updates apply across your workspace
                                         immediately.
                                     </p>

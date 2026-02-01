@@ -177,10 +177,10 @@ const toggleRowSelection = (id, checked) => {
         <Head :title="`All Commissions`" />
         <template #header>
             <div class="flex flex-col gap-1">
-                <h2 class="text-lg font-semibold text-gray-900">
+                <h2 class="text-lg font-semibold text-slate-900">
                     All Commissions
                 </h2>
-                <p class="text-sm text-gray-500">
+                <p class="text-sm text-slate-500">
                     Manage and track all sales commissions and designer
                     earnings.
                 </p>
@@ -192,23 +192,23 @@ const toggleRowSelection = (id, checked) => {
                 <!-- Summary Cards -->
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
                     <div
-                        class="bg-white rounded-lg border border-gray-200 px-5 py-4"
+                        class="bg-white rounded-lg border border-slate-200 px-5 py-4"
                     >
                         <div
-                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                         >
                             Total Earned
                         </div>
-                        <div class="mt-1 text-2xl font-semibold text-gray-900">
+                        <div class="mt-1 text-2xl font-semibold text-slate-900">
                             {{ currency }}
                             {{ formatCurrency(totals.total_earned) }}
                         </div>
                     </div>
                     <div
-                        class="bg-white rounded-lg border border-gray-200 px-5 py-4"
+                        class="bg-white rounded-lg border border-slate-200 px-5 py-4"
                     >
                         <div
-                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                         >
                             Total Paid
                         </div>
@@ -218,10 +218,10 @@ const toggleRowSelection = (id, checked) => {
                         </div>
                     </div>
                     <div
-                        class="bg-white rounded-lg border border-gray-200 px-5 py-4"
+                        class="bg-white rounded-lg border border-slate-200 px-5 py-4"
                     >
                         <div
-                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                         >
                             Total Unpaid
                         </div>
@@ -236,11 +236,11 @@ const toggleRowSelection = (id, checked) => {
 
                 <!-- Filters and Actions -->
                 <div
-                    class="bg-white shadow-sm rounded-lg border border-gray-200 mb-6"
+                    class="bg-white shadow-sm rounded-lg border border-slate-200 mb-6"
                 >
-                    <div class="px-5 py-4 border-b border-gray-100">
+                    <div class="px-5 py-4 border-b border-slate-100">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-semibold text-gray-900">
+                            <h3 class="text-sm font-semibold text-slate-900">
                                 Filters
                             </h3>
                             <div class="flex items-center gap-2">
@@ -270,25 +270,25 @@ const toggleRowSelection = (id, checked) => {
                         >
                             <div>
                                 <label
-                                    class="block text-xs font-medium text-gray-700"
+                                    class="block text-xs font-medium text-slate-700"
                                     >Search</label
                                 >
                                 <input
                                     v-model="search"
                                     type="text"
                                     placeholder="User or order..."
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     @keyup.enter="applyFilters"
                                 />
                             </div>
                             <div>
                                 <label
-                                    class="block text-xs font-medium text-gray-700"
+                                    class="block text-xs font-medium text-slate-700"
                                     >Role Type</label
                                 >
                                 <select
                                     v-model="roleType"
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     @change="applyFilters"
                                 >
                                     <option
@@ -302,12 +302,12 @@ const toggleRowSelection = (id, checked) => {
                             </div>
                             <div>
                                 <label
-                                    class="block text-xs font-medium text-gray-700"
+                                    class="block text-xs font-medium text-slate-700"
                                     >User</label
                                 >
                                 <select
                                     v-model="userId"
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     @change="applyFilters"
                                 >
                                     <option
@@ -321,12 +321,12 @@ const toggleRowSelection = (id, checked) => {
                             </div>
                             <div>
                                 <label
-                                    class="block text-xs font-medium text-gray-700"
+                                    class="block text-xs font-medium text-slate-700"
                                     >Payment Status</label
                                 >
                                 <select
                                     v-model="isPaid"
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     @change="applyFilters"
                                 >
                                     <option value="">All</option>
@@ -336,25 +336,25 @@ const toggleRowSelection = (id, checked) => {
                             </div>
                             <div>
                                 <label
-                                    class="block text-xs font-medium text-gray-700"
+                                    class="block text-xs font-medium text-slate-700"
                                     >Start Date</label
                                 >
                                 <input
                                     v-model="startDate"
                                     type="date"
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     @change="applyFilters"
                                 />
                             </div>
                             <div>
                                 <label
-                                    class="block text-xs font-medium text-gray-700"
+                                    class="block text-xs font-medium text-slate-700"
                                     >End Date</label
                                 >
                                 <input
                                     v-model="endDate"
                                     type="date"
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     @change="applyFilters"
                                 />
                             </div>
@@ -386,7 +386,7 @@ const toggleRowSelection = (id, checked) => {
                             <template #head-select>
                                 <input
                                     type="checkbox"
-                                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                     :checked="allSelected"
                                     @change="toggleAll($event.target.checked)"
                                 />
@@ -397,7 +397,7 @@ const toggleRowSelection = (id, checked) => {
                                     <input
                                         v-if="!row.is_paid"
                                         type="checkbox"
-                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                         :checked="
                                             selectedCommissions.includes(row.id)
                                         "
@@ -408,23 +408,23 @@ const toggleRowSelection = (id, checked) => {
                                             )
                                         "
                                     />
-                                    <span v-else class="text-xs text-gray-400"
+                                    <span v-else class="text-xs text-slate-400"
                                         >—</span
                                     >
                                 </div>
                             </template>
 
                             <template #cell-user="{ row }">
-                                <div class="font-medium text-gray-900">
+                                <div class="font-medium text-slate-900">
                                     {{ row.user?.name ?? "Unassigned" }}
                                 </div>
-                                <div class="text-xs text-gray-500">
+                                <div class="text-xs text-slate-500">
                                     {{ row.user?.email ?? "—" }}
                                 </div>
                             </template>
 
                             <template #cell-order="{ row }">
-                                <div class="font-medium text-gray-900">
+                                <div class="font-medium text-slate-900">
                                     <Link
                                         v-if="row.order"
                                         :href="
@@ -438,7 +438,7 @@ const toggleRowSelection = (id, checked) => {
                                     </Link>
                                     <span v-else>—</span>
                                 </div>
-                                <div class="text-xs text-gray-500">
+                                <div class="text-xs text-slate-500">
                                     {{ row.order?.title ?? "" }}
                                 </div>
                             </template>
@@ -459,13 +459,13 @@ const toggleRowSelection = (id, checked) => {
 
                             <template #cell-amount="{ row }">
                                 <div
-                                    class="text-sm font-semibold text-gray-900"
+                                    class="text-sm font-semibold text-slate-900"
                                 >
                                     {{ row.currency }} {{ row.total_amount }}
                                 </div>
                                 <div
                                     v-if="row.extra_amount > 0"
-                                    class="text-xs text-gray-500"
+                                    class="text-xs text-slate-500"
                                 >
                                     Base: {{ row.currency }}
                                     {{ row.base_amount }}
@@ -480,10 +480,10 @@ const toggleRowSelection = (id, checked) => {
                             </template>
 
                             <template #cell-earned="{ row }">
-                                <div class="text-sm text-gray-900">
+                                <div class="text-sm text-slate-900">
                                     {{ formatDate(row.earned_at) }}
                                 </div>
-                                <div class="text-xs text-gray-500">
+                                <div class="text-xs text-slate-500">
                                     on {{ row.earned_on_status }}
                                 </div>
                             </template>
@@ -502,7 +502,7 @@ const toggleRowSelection = (id, checked) => {
                                 </span>
                                 <div
                                     v-if="row.is_paid && row.paid_at"
-                                    class="text-xs text-gray-500 mt-1"
+                                    class="text-xs text-slate-500 mt-1"
                                 >
                                     {{ formatDate(row.paid_at) }}
                                 </div>

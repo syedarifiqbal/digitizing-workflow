@@ -2,6 +2,7 @@
 import { ref, onMounted, nextTick } from "vue";
 import { Link, router, usePage } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "@/Components/Button.vue";
 import OrderTimeline from "@/Components/OrderTimeline.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 
@@ -380,30 +381,30 @@ const getButtonClass = (style) => {
         info: "bg-blue-600 hover:bg-blue-700 text-white",
         warning: "bg-yellow-500 hover:bg-yellow-600 text-white",
         danger: "bg-red-600 hover:bg-red-700 text-white",
-        secondary: "bg-gray-600 hover:bg-gray-700 text-white",
+        secondary: "bg-slate-600 hover:bg-slate-700 text-white",
     };
     return classes[style] || classes.secondary;
 };
 
 const statusBadgeClass = (status) => {
     const map = {
-        received: "bg-gray-100 text-gray-700",
+        received: "bg-slate-100 text-slate-700",
         assigned: "bg-blue-100 text-blue-700",
         in_progress: "bg-indigo-100 text-indigo-700",
         submitted: "bg-purple-100 text-purple-700",
         in_review: "bg-cyan-100 text-cyan-700",
         approved: "bg-green-100 text-green-700",
         delivered: "bg-emerald-100 text-emerald-700",
-        closed: "bg-gray-100 text-gray-600",
+        closed: "bg-slate-100 text-slate-600",
         cancelled: "bg-red-100 text-red-700",
     };
-    return map[status] || "bg-gray-100 text-gray-700";
+    return map[status] || "bg-slate-100 text-slate-700";
 };
 
 const priorityBadgeClass = (priority) => {
     return priority === "rush"
         ? "bg-red-50 text-red-700 ring-1 ring-red-200"
-        : "bg-gray-50 text-gray-600 ring-1 ring-gray-200";
+        : "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
 };
 </script>
 
@@ -416,7 +417,7 @@ const priorityBadgeClass = (priority) => {
                 <div class="flex items-center gap-3">
                     <div>
                         <div class="flex items-center gap-2">
-                            <h2 class="text-lg font-semibold text-gray-900">
+                            <h2 class="text-lg font-semibold text-slate-900">
                                 {{ order.order_number }}
                             </h2>
                             <span
@@ -436,7 +437,7 @@ const priorityBadgeClass = (priority) => {
                                 {{ order.priority }}
                             </span>
                         </div>
-                        <p class="mt-0.5 text-sm text-gray-500">
+                        <p class="mt-0.5 text-sm text-slate-500">
                             {{ order.title }}
                         </p>
                         <p
@@ -456,13 +457,13 @@ const priorityBadgeClass = (priority) => {
                 <div class="flex items-center gap-2">
                     <Link
                         :href="route('orders.edit', order.id)"
-                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                        class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
                     >
                         Edit
                     </Link>
                     <Link
                         :href="route('orders.index')"
-                        class="inline-flex items-center rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-gray-800"
+                        class="inline-flex items-center rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
                     >
                         Back
                     </Link>
@@ -477,10 +478,10 @@ const priorityBadgeClass = (priority) => {
                     <div class="lg:col-span-2 space-y-6">
                         <!-- Order Details -->
                         <div
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Order Details
                                 </h3>
                             </div>
@@ -490,12 +491,12 @@ const priorityBadgeClass = (priority) => {
                                 >
                                     <div>
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Type
                                         </dt>
                                         <dd
-                                            class="mt-1 text-sm text-gray-900 capitalize"
+                                            class="mt-1 text-sm text-slate-900 capitalize"
                                         >
                                             {{
                                                 (order.type || "")
@@ -506,24 +507,24 @@ const priorityBadgeClass = (priority) => {
                                     </div>
                                     <div>
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Client
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.client.name }}
                                         </dd>
-                                        <dd class="text-xs text-gray-500">
+                                        <dd class="text-xs text-slate-500">
                                             {{ order.client.email }}
                                         </dd>
                                     </div>
                                     <div>
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Designer
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{
                                                 order.designer?.name ??
                                                 "Unassigned"
@@ -532,11 +533,11 @@ const priorityBadgeClass = (priority) => {
                                     </div>
                                     <div>
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Sales
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{
                                                 order.sales?.name ??
                                                 "Unassigned"
@@ -545,21 +546,21 @@ const priorityBadgeClass = (priority) => {
                                     </div>
                                     <div v-if="order.po_number">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             PO #
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.po_number }}
                                         </dd>
                                     </div>
                                     <div>
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Price
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{
                                                 order.price_amount
                                                     ? `${order.currency} ${order.price_amount}`
@@ -569,11 +570,11 @@ const priorityBadgeClass = (priority) => {
                                     </div>
                                     <div>
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Due Date
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{
                                                 order.due_at
                                                     ? formatDate(order.due_at)
@@ -583,11 +584,11 @@ const priorityBadgeClass = (priority) => {
                                     </div>
                                     <div>
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Created
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{
                                                 formatDate(
                                                     order.created_at,
@@ -601,33 +602,33 @@ const priorityBadgeClass = (priority) => {
                                 <!-- Submitted Work Details -->
                                 <div
                                     v-if="order.submitted_width || order.submitted_height || order.submitted_stitch_count"
-                                    class="mt-4 pt-4 border-t border-gray-100"
+                                    class="mt-4 pt-4 border-t border-slate-100"
                                 >
-                                    <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                                    <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">
                                         Submitted Work Details
                                     </h4>
                                     <dl class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
                                         <div v-if="order.submitted_width">
-                                            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                            <dt class="text-xs font-medium text-slate-500 uppercase tracking-wide">
                                                 Submitted Width
                                             </dt>
-                                            <dd class="mt-1 text-sm text-gray-900">
+                                            <dd class="mt-1 text-sm text-slate-900">
                                                 {{ order.submitted_width }}
                                             </dd>
                                         </div>
                                         <div v-if="order.submitted_height">
-                                            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                            <dt class="text-xs font-medium text-slate-500 uppercase tracking-wide">
                                                 Submitted Height
                                             </dt>
-                                            <dd class="mt-1 text-sm text-gray-900">
+                                            <dd class="mt-1 text-sm text-slate-900">
                                                 {{ order.submitted_height }}
                                             </dd>
                                         </div>
                                         <div v-if="order.submitted_stitch_count">
-                                            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                            <dt class="text-xs font-medium text-slate-500 uppercase tracking-wide">
                                                 Stitch Count
                                             </dt>
-                                            <dd class="mt-1 text-sm text-gray-900">
+                                            <dd class="mt-1 text-sm text-slate-900">
                                                 {{ order.submitted_stitch_count?.toLocaleString() }}
                                             </dd>
                                         </div>
@@ -645,10 +646,10 @@ const priorityBadgeClass = (priority) => {
                                     order.placement ||
                                     order.file_format)
                             "
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Digitizing Details
                                 </h3>
                             </div>
@@ -658,41 +659,41 @@ const priorityBadgeClass = (priority) => {
                                 >
                                     <div v-if="order.height">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Height
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.height }}"
                                         </dd>
                                     </div>
                                     <div v-if="order.width">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Width
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.width }}"
                                         </dd>
                                     </div>
                                     <div v-if="order.placement">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Placement
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.placement }}
                                         </dd>
                                     </div>
                                     <div v-if="order.file_format">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             File Format
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.file_format }}
                                         </dd>
                                     </div>
@@ -709,10 +710,10 @@ const priorityBadgeClass = (priority) => {
                                     order.height ||
                                     order.backing)
                             "
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Patch Details
                                 </h3>
                             </div>
@@ -722,107 +723,107 @@ const priorityBadgeClass = (priority) => {
                                 >
                                     <div v-if="order.patch_type">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Patch Type
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.patch_type }}
                                         </dd>
                                     </div>
                                     <div v-if="order.quantity">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Quantity
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.quantity }}
                                         </dd>
                                     </div>
                                     <div v-if="order.height">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Size
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.height }}" x
                                             {{ order.width }}"
                                         </dd>
                                     </div>
                                     <div v-if="order.backing">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Backing
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.backing }}
                                         </dd>
                                     </div>
                                     <div v-if="order.placement">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Placement
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.placement }}
                                         </dd>
                                     </div>
                                     <div v-if="order.merrow_border">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Merrow Border
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.merrow_border }}
                                         </dd>
                                     </div>
                                     <div v-if="order.num_colors">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Colors
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.num_colors }}
                                         </dd>
                                     </div>
                                     <div v-if="order.fabric">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Fabric
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.fabric }}
                                         </dd>
                                     </div>
                                     <div v-if="order.need_by">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Need By
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ formatDate(order.need_by) }}
                                         </dd>
                                     </div>
                                 </dl>
                                 <div
                                     v-if="order.shipping_address"
-                                    class="mt-4 pt-4 border-t border-gray-100"
+                                    class="mt-4 pt-4 border-t border-slate-100"
                                 >
                                     <dt
-                                        class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                        class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                     >
                                         Shipping Address
                                     </dt>
                                     <dd
-                                        class="mt-1 text-sm text-gray-900 whitespace-pre-line"
+                                        class="mt-1 text-sm text-slate-900 whitespace-pre-line"
                                     >
                                         {{ order.shipping_address }}
                                     </dd>
@@ -838,10 +839,10 @@ const priorityBadgeClass = (priority) => {
                                     order.vector_order_type ||
                                     order.required_format)
                             "
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Vector Details
                                 </h3>
                             </div>
@@ -851,41 +852,41 @@ const priorityBadgeClass = (priority) => {
                                 >
                                     <div v-if="order.color_type">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Color Type
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.color_type }}
                                         </dd>
                                     </div>
                                     <div v-if="order.num_colors">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Colors
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.num_colors }}
                                         </dd>
                                     </div>
                                     <div v-if="order.vector_order_type">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Order Type
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.vector_order_type }}
                                         </dd>
                                     </div>
                                     <div v-if="order.required_format">
                                         <dt
-                                            class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                            class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
                                             Format
                                         </dt>
-                                        <dd class="mt-1 text-sm text-gray-900">
+                                        <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.required_format }}
                                         </dd>
                                     </div>
@@ -895,16 +896,16 @@ const priorityBadgeClass = (priority) => {
 
                         <!-- Instructions -->
                         <div
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Instructions
                                 </h3>
                             </div>
                             <div class="px-5 py-4">
                                 <p
-                                    class="whitespace-pre-line text-sm text-gray-700 leading-relaxed"
+                                    class="whitespace-pre-line text-sm text-slate-700 leading-relaxed"
                                 >
                                     {{
                                         order.instructions ||
@@ -917,14 +918,14 @@ const priorityBadgeClass = (priority) => {
                         <!-- Revision Orders -->
                         <div
                             v-if="revisionOrders?.length"
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Revision Orders ({{ revisionOrders.length }})
                                 </h3>
                             </div>
-                            <div class="divide-y divide-gray-50">
+                            <div class="divide-y divide-slate-50">
                                 <div
                                     v-for="rev in revisionOrders"
                                     :key="rev.id"
@@ -937,7 +938,7 @@ const priorityBadgeClass = (priority) => {
                                         >
                                             {{ rev.order_number }}
                                         </Link>
-                                        <p class="text-xs text-gray-500">
+                                        <p class="text-xs text-slate-500">
                                             {{ formatDate(rev.created_at, true) }}
                                         </p>
                                     </div>
@@ -955,10 +956,10 @@ const priorityBadgeClass = (priority) => {
 
                         <!-- Input Files -->
                         <div
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Input Files
                                 </h3>
                                 <a
@@ -974,15 +975,15 @@ const priorityBadgeClass = (priority) => {
                                 <div
                                     v-for="file in inputFiles"
                                     :key="file.id"
-                                    class="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0"
+                                    class="flex items-center justify-between px-5 py-3 border-b border-slate-50 last:border-0"
                                 >
                                     <div class="min-w-0 flex-1">
                                         <p
-                                            class="text-sm font-medium text-gray-900 truncate"
+                                            class="text-sm font-medium text-slate-900 truncate"
                                         >
                                             {{ file.original_name }}
                                         </p>
-                                        <p class="text-xs text-gray-500">
+                                        <p class="text-xs text-slate-500">
                                             {{ formatSize(file.size) }} &bull;
                                             {{
                                                 formatDate(
@@ -994,14 +995,14 @@ const priorityBadgeClass = (priority) => {
                                     </div>
                                     <a
                                         :href="file.download_url"
-                                        class="ml-3 inline-flex items-center rounded-md bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-100"
+                                        class="ml-3 inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
                                     >
                                         Download
                                     </a>
                                 </div>
                             </div>
                             <div v-else class="px-5 py-4">
-                                <p class="text-sm text-gray-500">
+                                <p class="text-sm text-slate-500">
                                     No input files uploaded.
                                 </p>
                             </div>
@@ -1010,10 +1011,10 @@ const priorityBadgeClass = (priority) => {
                         <!-- Output Files -->
                         <div
                             v-if="outputFiles?.length"
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Output Files
                                 </h3>
                                 <a
@@ -1029,12 +1030,12 @@ const priorityBadgeClass = (priority) => {
                                 <div
                                     v-for="file in outputFiles"
                                     :key="file.id"
-                                    class="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0"
+                                    class="flex items-center justify-between px-5 py-3 border-b border-slate-50 last:border-0"
                                 >
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-2">
                                             <p
-                                                class="text-sm font-medium text-gray-900 truncate"
+                                                class="text-sm font-medium text-slate-900 truncate"
                                             >
                                                 {{ file.original_name }}
                                             </p>
@@ -1045,7 +1046,7 @@ const priorityBadgeClass = (priority) => {
                                                 Delivered
                                             </span>
                                         </div>
-                                        <p class="text-xs text-gray-500">
+                                        <p class="text-xs text-slate-500">
                                             {{ formatSize(file.size) }} &bull;
                                             {{
                                                 formatDate(
@@ -1057,7 +1058,7 @@ const priorityBadgeClass = (priority) => {
                                     </div>
                                     <a
                                         :href="file.download_url"
-                                        class="ml-3 inline-flex items-center rounded-md bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-100"
+                                        class="ml-3 inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
                                     >
                                         Download
                                     </a>
@@ -1068,15 +1069,15 @@ const priorityBadgeClass = (priority) => {
                         <!-- Submit Work Form -->
                         <div
                             v-if="canSubmitWork"
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Submit Work
                                 </h3>
                             </div>
                             <div class="px-5 py-4 space-y-4">
-                                <p class="text-xs text-gray-500">
+                                <p class="text-xs text-slate-500">
                                     Upload your completed files to submit for
                                     review.
                                     <span v-if="allowedOutputExtensions">
@@ -1091,7 +1092,7 @@ const priorityBadgeClass = (priority) => {
                                         ref="fileInput"
                                         type="file"
                                         multiple
-                                        class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                        class="block w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                                         @change="handleFileSelect"
                                     />
                                     <p
@@ -1104,7 +1105,7 @@ const priorityBadgeClass = (priority) => {
 
                                 <div
                                     v-if="submitFiles.length"
-                                    class="rounded-md border border-gray-200 divide-y divide-gray-100"
+                                    class="rounded-md border border-slate-200 divide-y divide-slate-100"
                                 >
                                     <div
                                         v-for="(file, index) in submitFiles"
@@ -1113,11 +1114,11 @@ const priorityBadgeClass = (priority) => {
                                     >
                                         <div>
                                             <p
-                                                class="text-xs font-medium text-gray-900"
+                                                class="text-xs font-medium text-slate-900"
                                             >
                                                 {{ file.name }}
                                             </p>
-                                            <p class="text-xs text-gray-500">
+                                            <p class="text-xs text-slate-500">
                                                 {{ formatSize(file.size) }}
                                             </p>
                                         </div>
@@ -1135,7 +1136,7 @@ const priorityBadgeClass = (priority) => {
                                     <div>
                                         <label
                                             for="submit_width"
-                                            class="block text-xs font-medium text-gray-700"
+                                            class="block text-xs font-medium text-slate-700"
                                             >Width</label
                                         >
                                         <input
@@ -1143,13 +1144,13 @@ const priorityBadgeClass = (priority) => {
                                             id="submit_width"
                                             type="text"
                                             placeholder='e.g. 3.5"'
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                         />
                                     </div>
                                     <div>
                                         <label
                                             for="submit_height"
-                                            class="block text-xs font-medium text-gray-700"
+                                            class="block text-xs font-medium text-slate-700"
                                             >Height</label
                                         >
                                         <input
@@ -1157,13 +1158,13 @@ const priorityBadgeClass = (priority) => {
                                             id="submit_height"
                                             type="text"
                                             placeholder='e.g. 2.5"'
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                         />
                                     </div>
                                     <div>
                                         <label
                                             for="submit_stitch_count"
-                                            class="block text-xs font-medium text-gray-700"
+                                            class="block text-xs font-medium text-slate-700"
                                             >Stitch Count</label
                                         >
                                         <input
@@ -1172,7 +1173,7 @@ const priorityBadgeClass = (priority) => {
                                             type="number"
                                             min="0"
                                             placeholder="e.g. 12000"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                         />
                                     </div>
                                 </div>
@@ -1180,7 +1181,7 @@ const priorityBadgeClass = (priority) => {
                                 <div>
                                     <label
                                         for="submit_notes"
-                                        class="block text-xs font-medium text-gray-700"
+                                        class="block text-xs font-medium text-slate-700"
                                         >Notes (optional)</label
                                     >
                                     <textarea
@@ -1188,7 +1189,7 @@ const priorityBadgeClass = (priority) => {
                                         id="submit_notes"
                                         rows="2"
                                         placeholder="Any notes about your submission..."
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                     ></textarea>
                                 </div>
 
@@ -1220,10 +1221,10 @@ const priorityBadgeClass = (priority) => {
                                 canDeliver ||
                                 canCancel
                             "
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Actions
                                 </h3>
                             </div>
@@ -1281,10 +1282,10 @@ const priorityBadgeClass = (priority) => {
                         <!-- Designer Assignment -->
                         <div
                             v-if="canAssign"
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Assign Designer
                                 </h3>
                             </div>
@@ -1292,7 +1293,7 @@ const priorityBadgeClass = (priority) => {
                                 <div class="space-y-3">
                                     <select
                                         v-model="selectedDesigner"
-                                        class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         :disabled="assigning"
                                     >
                                         <option value="">Unassigned</option>
@@ -1338,10 +1339,10 @@ const priorityBadgeClass = (priority) => {
                         <!-- Sales Assignment -->
                         <div
                             v-if="canAssign && salesUsers?.length"
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Assign Sales
                                 </h3>
                             </div>
@@ -1349,7 +1350,7 @@ const priorityBadgeClass = (priority) => {
                                 <div class="space-y-3">
                                     <select
                                         v-model="selectedSales"
-                                        class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         :disabled="assigningSales"
                                     >
                                         <option value="">Unassigned</option>
@@ -1395,14 +1396,14 @@ const priorityBadgeClass = (priority) => {
                         <!-- Commissions -->
                         <div
                             v-if="commissions?.length"
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Commissions & Earnings
                                 </h3>
                             </div>
-                            <div class="divide-y divide-gray-50">
+                            <div class="divide-y divide-slate-50">
                                 <div
                                     v-for="commission in commissions"
                                     :key="commission.id"
@@ -1429,7 +1430,7 @@ const priorityBadgeClass = (priority) => {
                                                     {{ commission.role_label }}
                                                 </span>
                                                 <span
-                                                    class="text-sm font-medium text-gray-900"
+                                                    class="text-sm font-medium text-slate-900"
                                                 >
                                                     {{
                                                         commission.user?.name ??
@@ -1438,7 +1439,7 @@ const priorityBadgeClass = (priority) => {
                                                 </span>
                                             </div>
                                             <div
-                                                class="mt-1 text-xs text-gray-500"
+                                                class="mt-1 text-xs text-slate-500"
                                             >
                                                 Earned on
                                                 {{
@@ -1453,7 +1454,7 @@ const priorityBadgeClass = (priority) => {
                                             </div>
                                             <div
                                                 v-if="commission.notes"
-                                                class="mt-2 text-xs text-gray-600 bg-gray-50 rounded px-2 py-1"
+                                                class="mt-2 text-xs text-slate-600 bg-slate-50 rounded px-2 py-1"
                                             >
                                                 {{ commission.notes }}
                                             </div>
@@ -1463,7 +1464,7 @@ const priorityBadgeClass = (priority) => {
                                         >
                                             <div class="text-right">
                                                 <div
-                                                    class="text-sm font-semibold text-gray-900"
+                                                    class="text-sm font-semibold text-slate-900"
                                                 >
                                                     {{ commission.currency }}
                                                     {{
@@ -1477,7 +1478,7 @@ const priorityBadgeClass = (priority) => {
                                                         parseFloat(commission.extra_amount || 0) >
                                                         0
                                                     "
-                                                    class="text-xs text-gray-500"
+                                                    class="text-xs text-slate-500"
                                                 >
                                                     Base:
                                                     {{ commission.currency }}
@@ -1550,17 +1551,17 @@ const priorityBadgeClass = (priority) => {
                         <!-- Invoice Info -->
                         <div
                             v-if="invoiceInfo?.is_invoiced || invoiceInfo?.can_create_invoice"
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Invoice
                                 </h3>
                             </div>
                             <div class="px-5 py-4">
                                 <div v-if="invoiceInfo.linked_invoice" class="flex items-center justify-between">
                                     <div>
-                                        <p class="text-sm text-gray-900">
+                                        <p class="text-sm text-slate-900">
                                             <Link
                                                 :href="route('invoices.show', invoiceInfo.linked_invoice.id)"
                                                 class="font-medium text-indigo-600 hover:text-indigo-900"
@@ -1568,7 +1569,7 @@ const priorityBadgeClass = (priority) => {
                                                 {{ invoiceInfo.linked_invoice.number }}
                                             </Link>
                                         </p>
-                                        <p class="text-xs text-gray-500 mt-0.5">
+                                        <p class="text-xs text-slate-500 mt-0.5">
                                             Status: {{ invoiceInfo.linked_invoice.status_label }}
                                         </p>
                                     </div>
@@ -1577,7 +1578,7 @@ const priorityBadgeClass = (priority) => {
                                     </span>
                                 </div>
                                 <div v-else-if="invoiceInfo.can_create_invoice">
-                                    <p class="text-sm text-gray-500 mb-3">This order has not been invoiced yet.</p>
+                                    <p class="text-sm text-slate-500 mb-3">This order has not been invoiced yet.</p>
                                     <Link
                                         :href="route('invoices.create', { orders: [order.id], client_id: order.client.id })"
                                         class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
@@ -1591,10 +1592,10 @@ const priorityBadgeClass = (priority) => {
                         <!-- Activity Timeline -->
                         <div
                             v-if="timeline?.length"
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Activity
                                 </h3>
                             </div>
@@ -1605,10 +1606,10 @@ const priorityBadgeClass = (priority) => {
 
                         <!-- Comments -->
                         <div
-                            class="bg-white shadow-sm rounded-lg border border-gray-200"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
-                                <h3 class="text-sm font-semibold text-gray-900">
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">
                                     Comments
                                 </h3>
                             </div>
@@ -1640,7 +1641,7 @@ const priorityBadgeClass = (priority) => {
                                                     class="flex items-center gap-2"
                                                 >
                                                     <p
-                                                        class="text-sm font-medium text-gray-900"
+                                                        class="text-sm font-medium text-slate-900"
                                                     >
                                                         {{ comment.user.name }}
                                                     </p>
@@ -1655,7 +1656,7 @@ const priorityBadgeClass = (priority) => {
                                                     </span>
                                                 </div>
                                                 <p
-                                                    class="text-xs text-gray-500"
+                                                    class="text-xs text-slate-500"
                                                 >
                                                     {{
                                                         formatDate(
@@ -1666,26 +1667,26 @@ const priorityBadgeClass = (priority) => {
                                             </div>
                                         </div>
                                         <p
-                                            class="mt-2 text-sm text-gray-700 whitespace-pre-wrap"
+                                            class="mt-2 text-sm text-slate-700 whitespace-pre-wrap"
                                         >
                                             {{ comment.body }}
                                         </p>
                                     </div>
                                 </div>
-                                <p v-else class="text-sm text-gray-500">
+                                <p v-else class="text-sm text-slate-500">
                                     No comments yet.
                                 </p>
 
                                 <!-- Add Comment Form -->
-                                <div class="pt-4 border-t border-gray-200">
+                                <div class="pt-4 border-t border-slate-200">
                                     <label
-                                        class="block text-sm font-medium text-gray-700 mb-2"
+                                        class="block text-sm font-medium text-slate-700 mb-2"
                                         >Add a comment</label
                                     >
                                     <textarea
                                         v-model="newComment"
                                         rows="3"
-                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                         placeholder="Type your comment..."
                                     ></textarea>
                                     <div
@@ -1700,10 +1701,10 @@ const priorityBadgeClass = (priority) => {
                                                     v-model="commentVisibility"
                                                     type="radio"
                                                     value="client"
-                                                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                    class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                                 />
                                                 <span
-                                                    class="ml-2 text-sm text-gray-700"
+                                                    class="ml-2 text-sm text-slate-700"
                                                     >Visible to client</span
                                                 >
                                             </label>
@@ -1712,10 +1713,10 @@ const priorityBadgeClass = (priority) => {
                                                     v-model="commentVisibility"
                                                     type="radio"
                                                     value="internal"
-                                                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                    class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                                 />
                                                 <span
-                                                    class="ml-2 text-sm text-gray-700"
+                                                    class="ml-2 text-sm text-slate-700"
                                                     >Internal only</span
                                                 >
                                             </label>
@@ -1746,30 +1747,30 @@ const priorityBadgeClass = (priority) => {
         <div v-if="showDeliverModal" class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex min-h-full items-center justify-center p-4">
                 <div
-                    class="fixed inset-0 bg-gray-500/75"
+                    class="fixed inset-0 bg-slate-500/75"
                     @click="showDeliverModal = false"
                 ></div>
                 <div
                     class="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-xl"
                 >
-                    <h3 class="text-lg font-semibold text-gray-900">
+                    <h3 class="text-lg font-semibold text-slate-900">
                         Deliver Order
                     </h3>
-                    <p class="mt-1 text-sm text-gray-500">
+                    <p class="mt-1 text-sm text-slate-500">
                         Send the completed work to the client via email.
                     </p>
 
                     <div class="mt-4 space-y-4">
                         <div>
                             <label
-                                class="block text-sm font-medium text-gray-700"
+                                class="block text-sm font-medium text-slate-700"
                                 >Message to Client (optional)</label
                             >
                             <textarea
                                 v-model="deliverMessage"
                                 rows="3"
                                 placeholder="Add a message or feedback for the client..."
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                             ></textarea>
                         </div>
 
@@ -1804,19 +1805,19 @@ const priorityBadgeClass = (priority) => {
 
                         <div v-if="outputFiles?.length">
                             <label
-                                class="block text-sm font-medium text-gray-700"
+                                class="block text-sm font-medium text-slate-700"
                                 >Attach Files</label
                             >
-                            <p class="text-xs text-gray-500 mt-0.5">
+                            <p class="text-xs text-slate-500 mt-0.5">
                                 Select which files to send as email attachments.
                             </p>
                             <div
-                                class="mt-2 max-h-48 overflow-y-auto rounded-md border border-gray-200 divide-y divide-gray-100"
+                                class="mt-2 max-h-48 overflow-y-auto rounded-md border border-slate-200 divide-y divide-slate-100"
                             >
                                 <label
                                     v-for="file in outputFiles"
                                     :key="file.id"
-                                    class="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50"
+                                    class="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50"
                                 >
                                     <input
                                         type="checkbox"
@@ -1824,21 +1825,21 @@ const priorityBadgeClass = (priority) => {
                                             selectedFileIds.includes(file.id)
                                         "
                                         @change="toggleFileSelection(file.id)"
-                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                     />
                                     <div class="min-w-0 flex-1">
                                         <p
-                                            class="text-sm font-medium text-gray-900 truncate"
+                                            class="text-sm font-medium text-slate-900 truncate"
                                         >
                                             {{ file.original_name }}
                                         </p>
-                                        <p class="text-xs text-gray-500">
+                                        <p class="text-xs text-slate-500">
                                             {{ formatSize(file.size) }}
                                         </p>
                                     </div>
                                 </label>
                             </div>
-                            <p class="mt-1 text-xs text-gray-500">
+                            <p class="mt-1 text-xs text-slate-500">
                                 {{ selectedFileIds.length }} of
                                 {{ outputFiles.length }} files selected
                             </p>
@@ -1858,7 +1859,7 @@ const priorityBadgeClass = (priority) => {
                     <div class="mt-5 flex justify-end gap-3">
                         <button
                             type="button"
-                            class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                             @click="showDeliverModal = false"
                         >
                             Cancel
@@ -1887,31 +1888,31 @@ const priorityBadgeClass = (priority) => {
         >
             <div class="flex min-h-full items-center justify-center p-4">
                 <div
-                    class="fixed inset-0 bg-gray-500/75"
+                    class="fixed inset-0 bg-slate-500/75"
                     @click="showCreateRevisionModal = false"
                 ></div>
                 <div
                     class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
                 >
-                    <h3 class="text-lg font-semibold text-gray-900">
+                    <h3 class="text-lg font-semibold text-slate-900">
                         Create Revision Order
                     </h3>
-                    <p class="mt-1 text-sm text-gray-500">
+                    <p class="mt-1 text-sm text-slate-500">
                         A new revision order will be created with all details copied from this order.
                     </p>
                     <div class="mt-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes / Instructions (optional)</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Notes / Instructions (optional)</label>
                         <textarea
                             v-model="revisionNotes"
                             rows="4"
                             placeholder="Describe what changes are needed for the revision..."
-                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                            class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                         ></textarea>
                     </div>
                     <div class="mt-4 flex justify-end gap-3">
                         <button
                             type="button"
-                            class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                             @click="showCreateRevisionModal = false"
                         >
                             Cancel
@@ -1937,16 +1938,16 @@ const priorityBadgeClass = (priority) => {
         <div v-if="showCancelModal" class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex min-h-full items-center justify-center p-4">
                 <div
-                    class="fixed inset-0 bg-gray-500/75"
+                    class="fixed inset-0 bg-slate-500/75"
                     @click="showCancelModal = false"
                 ></div>
                 <div
                     class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
                 >
-                    <h3 class="text-lg font-semibold text-gray-900">
+                    <h3 class="text-lg font-semibold text-slate-900">
                         Cancel Order
                     </h3>
-                    <p class="mt-1 text-sm text-gray-500">
+                    <p class="mt-1 text-sm text-slate-500">
                         This action cannot be undone. Please provide a reason.
                     </p>
                     <div class="mt-4">
@@ -1954,13 +1955,13 @@ const priorityBadgeClass = (priority) => {
                             v-model="cancelReason"
                             rows="3"
                             placeholder="Reason for cancellation..."
-                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                            class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                         ></textarea>
                     </div>
                     <div class="mt-4 flex justify-end gap-3">
                         <button
                             type="button"
-                            class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                             @click="showCancelModal = false"
                         >
                             Keep Order
@@ -1982,7 +1983,7 @@ const priorityBadgeClass = (priority) => {
         <div v-if="showStatusModal" class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex min-h-full items-center justify-center p-4">
                 <div
-                    class="fixed inset-0 bg-gray-500/75"
+                    class="fixed inset-0 bg-slate-500/75"
                     @click="
                         showStatusModal = false;
                         pendingStatus = null;
@@ -1992,10 +1993,10 @@ const priorityBadgeClass = (priority) => {
                 <div
                     class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
                 >
-                    <h3 class="text-lg font-semibold text-gray-900">
+                    <h3 class="text-lg font-semibold text-slate-900">
                         Confirm Status Change
                     </h3>
-                    <p class="mt-2 text-sm text-gray-600">
+                    <p class="mt-2 text-sm text-slate-600">
                         Are you sure you want to change the order status to
                         <span class="font-semibold">{{
                             pendingTransition?.label
@@ -2003,9 +2004,8 @@ const priorityBadgeClass = (priority) => {
                         >?
                     </p>
                     <div class="mt-5 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        <Button
+                            as="button"
                             @click="
                                 showStatusModal = false;
                                 pendingStatus = null;
@@ -2013,7 +2013,7 @@ const priorityBadgeClass = (priority) => {
                             "
                         >
                             Cancel
-                        </button>
+                        </Button>
                         <button
                             type="button"
                             :disabled="transitioning"
@@ -2037,13 +2037,13 @@ const priorityBadgeClass = (priority) => {
         >
             <div class="flex min-h-full items-center justify-center p-4">
                 <div
-                    class="fixed inset-0 bg-gray-500/75"
+                    class="fixed inset-0 bg-slate-500/75"
                     @click="showCommissionTipModal = false"
                 ></div>
                 <div
                     class="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-xl"
                 >
-                    <h3 class="text-lg font-semibold text-gray-900">
+                    <h3 class="text-lg font-semibold text-slate-900">
                         {{
                             selectedCommission?.extra_amount > 0
                                 ? "Edit"
@@ -2051,7 +2051,7 @@ const priorityBadgeClass = (priority) => {
                         }}
                         Commission Tip
                     </h3>
-                    <p class="mt-1 text-sm text-gray-500">
+                    <p class="mt-1 text-sm text-slate-500">
                         Add an extra amount (tip/bonus) for
                         {{ selectedCommission?.user?.name }}.
                     </p>
@@ -2059,14 +2059,14 @@ const priorityBadgeClass = (priority) => {
                     <div class="mt-4 space-y-4">
                         <div>
                             <label
-                                class="block text-sm font-medium text-gray-700"
+                                class="block text-sm font-medium text-slate-700"
                                 >Tip Amount *</label
                             >
                             <div class="mt-1 relative rounded-md shadow-sm">
                                 <div
                                     class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                                 >
-                                    <span class="text-gray-500 sm:text-sm">{{
+                                    <span class="text-slate-500 sm:text-sm">{{
                                         currency
                                     }}</span>
                                 </div>
@@ -2075,11 +2075,11 @@ const priorityBadgeClass = (priority) => {
                                     type="number"
                                     step="0.01"
                                     min="0"
-                                    class="block w-full pl-12 pr-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                    class="block w-full pl-12 pr-3 py-2 border-slate-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                                     placeholder="0.00"
                                 />
                             </div>
-                            <p class="mt-1 text-xs text-gray-500">
+                            <p class="mt-1 text-xs text-slate-500">
                                 Current base: {{ currency }}
                                 {{
                                     parseFloat(
@@ -2091,34 +2091,33 @@ const priorityBadgeClass = (priority) => {
 
                         <div>
                             <label
-                                class="block text-sm font-medium text-gray-700"
+                                class="block text-sm font-medium text-slate-700"
                                 >Notes (Optional)</label
                             >
                             <textarea
                                 v-model="commissionTipNotes"
                                 rows="3"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 placeholder="Add a note about this tip..."
                             ></textarea>
                         </div>
                     </div>
 
                     <div class="mt-5 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        <Button
+                            as="button"
                             @click="showCommissionTipModal = false"
                         >
                             Cancel
-                        </button>
-                        <button
-                            type="button"
+                        </Button>
+                        <Button
+                            as="button"
+                            variant="primary"
                             :disabled="!commissionTipAmount || updatingTip"
-                            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                             @click="submitCommissionTip"
                         >
                             {{ updatingTip ? "Updating..." : "Update Tip" }}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

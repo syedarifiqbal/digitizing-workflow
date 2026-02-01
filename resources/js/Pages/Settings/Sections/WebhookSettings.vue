@@ -38,42 +38,42 @@ const sendTestWebhook = () => {
 </script>
 
 <template>
-    <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-        <div class="px-5 py-4 border-b border-gray-100">
-            <h3 class="text-sm font-semibold text-gray-900">Webhooks</h3>
-            <p class="mt-0.5 text-xs text-gray-500">
+    <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+        <div class="px-5 py-4 border-b border-slate-100">
+            <h3 class="text-sm font-semibold text-slate-900">Webhooks</h3>
+            <p class="mt-0.5 text-xs text-slate-500">
                 Send HTTP POST notifications to an external URL when order events occur. Payloads are signed with HMAC SHA256.
             </p>
         </div>
         <div class="px-5 py-4 space-y-4">
             <div>
-                <label for="webhook_url" class="block text-sm font-medium text-gray-700">Webhook URL</label>
+                <label for="webhook_url" class="block text-sm font-medium text-slate-700">Webhook URL</label>
                 <input
                     v-model="form.webhook_url"
                     id="webhook_url"
                     type="url"
                     placeholder="https://example.com/webhook"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 />
                 <p v-if="form.errors.webhook_url" class="mt-1 text-xs text-red-600">{{ form.errors.webhook_url }}</p>
             </div>
 
             <div>
-                <label for="webhook_secret" class="block text-sm font-medium text-gray-700">Webhook Secret</label>
+                <label for="webhook_secret" class="block text-sm font-medium text-slate-700">Webhook Secret</label>
                 <input
                     v-model="form.webhook_secret"
                     id="webhook_secret"
                     type="text"
                     placeholder="your-secret-key"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
+                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
                 />
-                <p class="mt-1 text-xs text-gray-500">Used to sign payloads. The receiving server should verify the <code class="text-xs bg-gray-100 px-1 rounded">X-Signature</code> header.</p>
+                <p class="mt-1 text-xs text-slate-500">Used to sign payloads. The receiving server should verify the <code class="text-xs bg-slate-100 px-1 rounded">X-Signature</code> header.</p>
                 <p v-if="form.errors.webhook_secret" class="mt-1 text-xs text-red-600">{{ form.errors.webhook_secret }}</p>
             </div>
 
-            <div class="border-t border-gray-100 pt-4">
-                <h4 class="text-sm font-medium text-gray-900">Events</h4>
-                <p class="mt-0.5 text-xs text-gray-500">Select which events trigger a webhook delivery.</p>
+            <div class="border-t border-slate-100 pt-4">
+                <h4 class="text-sm font-medium text-slate-900">Events</h4>
+                <p class="mt-0.5 text-xs text-slate-500">Select which events trigger a webhook delivery.</p>
             </div>
 
             <div class="space-y-3">
@@ -87,21 +87,21 @@ const sendTestWebhook = () => {
                         type="checkbox"
                         :checked="form.webhook_events.includes(event.value)"
                         @change="toggleEvent(event.value)"
-                        class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        class="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     <label :for="'event-' + event.value" class="ml-2">
-                        <p class="text-sm font-medium text-gray-700">{{ event.label }}</p>
-                        <p class="text-xs text-gray-500">{{ event.description }}</p>
+                        <p class="text-sm font-medium text-slate-700">{{ event.label }}</p>
+                        <p class="text-xs text-slate-500">{{ event.description }}</p>
                     </label>
                 </div>
             </div>
             <p v-if="form.errors.webhook_events" class="mt-1 text-xs text-red-600">{{ form.errors.webhook_events }}</p>
 
-            <div class="border-t border-gray-100 pt-4">
+            <div class="border-t border-slate-100 pt-4">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h4 class="text-sm font-medium text-gray-900">Test Webhook</h4>
-                        <p class="mt-0.5 text-xs text-gray-500">
+                        <h4 class="text-sm font-medium text-slate-900">Test Webhook</h4>
+                        <p class="mt-0.5 text-xs text-slate-500">
                             Send a test ping to the saved webhook URL. Save settings first if you've made changes.
                         </p>
                     </div>
@@ -109,14 +109,14 @@ const sendTestWebhook = () => {
                         type="button"
                         :disabled="sendingTest || !form.webhook_url"
                         @click="sendTestWebhook"
-                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {{ sendingTest ? "Sending..." : "Send Test Ping" }}
                     </button>
                 </div>
             </div>
 
-            <div class="border-t border-gray-100 pt-4">
+            <div class="border-t border-slate-100 pt-4">
                 <a
                     :href="route('webhook-logs.index')"
                     class="text-sm font-medium text-indigo-600 hover:text-indigo-800"

@@ -54,15 +54,15 @@ watch(
 
 <template>
     <div class="space-y-6">
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-            <div class="px-5 py-4 border-b border-gray-100">
-                <h3 class="text-sm font-semibold text-gray-900">Invoice Defaults</h3>
-                <p class="mt-0.5 text-xs text-gray-500">Used when creating new invoices.</p>
+        <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+            <div class="px-5 py-4 border-b border-slate-100">
+                <h3 class="text-sm font-semibold text-slate-900">Invoice Defaults</h3>
+                <p class="mt-0.5 text-xs text-slate-500">Used when creating new invoices.</p>
             </div>
             <div class="px-5 py-4 space-y-4">
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="block text-xs font-medium text-gray-700" for="invoice_number_prefix">
+                        <label class="block text-xs font-medium text-slate-700" for="invoice_number_prefix">
                             Invoice Prefix
                         </label>
                         <input
@@ -70,7 +70,7 @@ watch(
                             id="invoice_number_prefix"
                             type="text"
                             maxlength="10"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             placeholder="INV-"
                         />
                         <p v-if="form.errors.invoice_number_prefix" class="mt-1 text-xs text-red-600">
@@ -78,7 +78,7 @@ watch(
                         </p>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-700" for="default_tax_rate">
+                        <label class="block text-xs font-medium text-slate-700" for="default_tax_rate">
                             Default Tax Rate (%)
                         </label>
                         <input
@@ -88,7 +88,7 @@ watch(
                             min="0"
                             max="100"
                             step="0.01"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                         <p v-if="form.errors.default_tax_rate" class="mt-1 text-xs text-red-600">
                             {{ form.errors.default_tax_rate }}
@@ -96,7 +96,7 @@ watch(
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-700" for="default_payment_terms">
+                    <label class="block text-xs font-medium text-slate-700" for="default_payment_terms">
                         Default Payment Terms
                     </label>
                     <input
@@ -105,7 +105,7 @@ watch(
                         type="text"
                         maxlength="255"
                         placeholder="Net 30"
-                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
                     <p v-if="form.errors.default_payment_terms" class="mt-1 text-xs text-red-600">
                         {{ form.errors.default_payment_terms }}
@@ -114,26 +114,26 @@ watch(
             </div>
         </div>
 
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-            <div class="px-5 py-4 border-b border-gray-100">
-                <h3 class="text-sm font-semibold text-gray-900">Branding & Payment Instructions</h3>
-                <p class="mt-0.5 text-xs text-gray-500">Shown on invoices, PDFs, and emails.</p>
+        <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+            <div class="px-5 py-4 border-b border-slate-100">
+                <h3 class="text-sm font-semibold text-slate-900">Branding & Payment Instructions</h3>
+                <p class="mt-0.5 text-xs text-slate-500">Shown on invoices, PDFs, and emails.</p>
             </div>
             <div class="px-5 py-4 space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-gray-700">Company Logo</label>
+                    <label class="block text-xs font-medium text-slate-700">Company Logo</label>
                     <div class="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center">
                         <div
-                            class="h-24 w-24 rounded-lg border border-dashed border-gray-300 bg-white flex items-center justify-center overflow-hidden"
+                            class="h-24 w-24 rounded-lg border border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden"
                         >
                             <img v-if="logoPreview" :src="logoPreview" alt="Logo preview" class="max-h-full max-w-full object-contain" />
-                            <span v-else class="text-[11px] uppercase tracking-wide text-gray-400">Logo</span>
+                            <span v-else class="text-[11px] uppercase tracking-wide text-slate-400">Logo</span>
                         </div>
-                        <div class="space-y-2 text-xs text-gray-500">
+                        <div class="space-y-2 text-xs text-slate-500">
                             <p>Upload a square PNG, SVG, or JPG (max 2MB) to brand invoices and PDF exports.</p>
                             <div class="flex flex-wrap gap-2">
                                 <label
-                                    class="inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    class="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
                                 >
                                     <input
                                         ref="logoInput"
@@ -161,61 +161,61 @@ watch(
                 </div>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="block text-xs font-medium text-gray-700" for="invoice_company_name">
+                        <label class="block text-xs font-medium text-slate-700" for="invoice_company_name">
                             Company Name
                         </label>
                         <input
                             v-model="form.company_details.name"
                             id="invoice_company_name"
                             type="text"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-700" for="invoice_company_email">
+                        <label class="block text-xs font-medium text-slate-700" for="invoice_company_email">
                             Billing Email
                         </label>
                         <input
                             v-model="form.company_details.email"
                             id="invoice_company_email"
                             type="email"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="block text-xs font-medium text-gray-700" for="invoice_company_phone">
+                        <label class="block text-xs font-medium text-slate-700" for="invoice_company_phone">
                             Phone
                         </label>
                         <input
                             v-model="form.company_details.phone"
                             id="invoice_company_phone"
                             type="text"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-700" for="invoice_company_address">
+                        <label class="block text-xs font-medium text-slate-700" for="invoice_company_address">
                             Address
                         </label>
                         <textarea
                             v-model="form.company_details.address"
                             id="invoice_company_address"
                             rows="2"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         ></textarea>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-700" for="bank_details">
+                    <label class="block text-xs font-medium text-slate-700" for="bank_details">
                         Bank / Payment Instructions
                     </label>
                     <textarea
                         v-model="form.bank_details"
                         id="bank_details"
                         rows="3"
-                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         placeholder="Bank: Example Bank&#10;Account: 123456789&#10;Routing: 987654321"
                     ></textarea>
                     <p v-if="form.errors.bank_details" class="mt-1 text-xs text-red-600">

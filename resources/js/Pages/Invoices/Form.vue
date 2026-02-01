@@ -287,14 +287,14 @@ const submit = () => {
                         <div class="px-5 py-4 space-y-4">
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700" for="client_id">
+                                    <label class="block text-xs font-medium text-slate-700" for="client_id">
                                         Client
                                     </label>
                                     <select
                                         v-model="form.client_id"
                                         id="client_id"
                                         :disabled="isEditMode"
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option value="" disabled>Select client</option>
                                         <option
@@ -313,14 +313,14 @@ const submit = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700" for="payment_terms">
+                                    <label class="block text-xs font-medium text-slate-700" for="payment_terms">
                                         Payment Terms
                                     </label>
                                     <input
                                         v-model="form.payment_terms"
                                         id="payment_terms"
                                         type="text"
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         placeholder="e.g. Net 30"
                                     />
                                     <p v-if="form.errors.payment_terms" class="mt-1 text-xs text-red-600">
@@ -330,7 +330,7 @@ const submit = () => {
                             </div>
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700">
+                                    <label class="block text-xs font-medium text-slate-700">
                                         Issue Date
                                     </label>
                                     <DatePicker v-model="form.issue_date" id="issue_date" placeholder="Select issue date" />
@@ -339,7 +339,7 @@ const submit = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700">
+                                    <label class="block text-xs font-medium text-slate-700">
                                         Due Date
                                     </label>
                                     <DatePicker v-model="form.due_date" id="due_date" placeholder="Select due date" />
@@ -349,14 +349,14 @@ const submit = () => {
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-700" for="notes">
+                                <label class="block text-xs font-medium text-slate-700" for="notes">
                                     Notes
                                 </label>
                                 <textarea
                                     v-model="form.notes"
                                     id="notes"
                                     rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="Visible to client on the invoice"
                                 ></textarea>
                                 <p v-if="form.errors.notes" class="mt-1 text-xs text-red-600">
@@ -370,13 +370,13 @@ const submit = () => {
                         <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                             <div>
                                 <h3 class="text-sm font-semibold text-slate-900">Eligible Orders</h3>
-                                <p class="text-xs text-gray-500">
+                                <p class="text-xs text-slate-500">
                                     Delivered/closed orders that haven’t been invoiced yet.
                                 </p>
                             </div>
                             <button
                                 type="button"
-                                class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                 @click="fetchOrders(form.client_id)"
                             >
                                 Refresh
@@ -415,7 +415,7 @@ const submit = () => {
                                         <div>
                                             <input
                                                 type="checkbox"
-                                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                                 :checked="selectedOrderIds.includes(order.id)"
                                                 @change="toggleOrderSelection(order.id, $event.target.checked)"
                                             />
@@ -461,7 +461,7 @@ const submit = () => {
                                 <textarea
                                     v-model="orderNotes[order.id]"
                                     rows="2"
-                                    class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="Optional note for this order (visible to client)"
                                 ></textarea>
                             </div>
@@ -478,7 +478,7 @@ const submit = () => {
                             </div>
                             <button
                                 type="button"
-                                class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                 @click="addCustomItem"
                             >
                                 Add custom line
@@ -510,13 +510,13 @@ const submit = () => {
                                 </div>
                                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700">
+                                        <label class="block text-xs font-medium text-slate-700">
                                             Description
                                         </label>
                                         <input
                                             v-model="item.description"
                                             type="text"
-                                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             placeholder="e.g. Rush fee"
                                         />
                                         <p v-if="form.errors[`custom_items.${index}.description`]" class="mt-1 text-xs text-red-600">
@@ -525,7 +525,7 @@ const submit = () => {
                                     </div>
                                     <div class="grid grid-cols-2 gap-3">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700">
+                                            <label class="block text-xs font-medium text-slate-700">
                                                 Quantity
                                             </label>
                                             <input
@@ -533,14 +533,14 @@ const submit = () => {
                                                 type="number"
                                                 min="0"
                                                 step="0.01"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors[`custom_items.${index}.quantity`]" class="mt-1 text-xs text-red-600">
                                                 {{ form.errors[`custom_items.${index}.quantity`] }}
                                             </p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700">
+                                            <label class="block text-xs font-medium text-slate-700">
                                                 Unit Price ({{ form.currency }})
                                             </label>
                                             <input
@@ -548,7 +548,7 @@ const submit = () => {
                                                 type="number"
                                                 min="0"
                                                 step="0.01"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors[`custom_items.${index}.unit_price`]" class="mt-1 text-xs text-red-600">
                                                 {{ form.errors[`custom_items.${index}.unit_price`] }}
@@ -567,39 +567,39 @@ const submit = () => {
                         <div class="px-5 py-4 space-y-4">
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700">Tax Rate (%)</label>
+                                    <label class="block text-xs font-medium text-slate-700">Tax Rate (%)</label>
                                     <input
                                         v-model.number="form.tax_rate"
                                         type="number"
                                         min="0"
                                         max="100"
                                         step="0.01"
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                     <p v-if="form.errors.tax_rate" class="mt-1 text-xs text-red-600">
                                         {{ form.errors.tax_rate }}
                                     </p>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700">Discount ({{ form.currency }})</label>
+                                    <label class="block text-xs font-medium text-slate-700">Discount ({{ form.currency }})</label>
                                     <input
                                         v-model.number="form.discount_amount"
                                         type="number"
                                         min="0"
                                         step="0.01"
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                     <p v-if="form.errors.discount_amount" class="mt-1 text-xs text-red-600">
                                         {{ form.errors.discount_amount }}
                                     </p>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700">Currency</label>
+                                    <label class="block text-xs font-medium text-slate-700">Currency</label>
                                     <input
                                         v-model="form.currency"
                                         type="text"
                                         maxlength="3"
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm uppercase shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full rounded-md border-slate-300 text-sm uppercase shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                     <p v-if="form.errors.currency" class="mt-1 text-xs text-red-600">
                                         {{ form.errors.currency }}

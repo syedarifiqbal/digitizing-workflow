@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Button from '@/Components/Button.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { ref } from 'vue';
 import { useDateFormat } from '@/Composables/useDateFormat';
@@ -37,29 +38,23 @@ const confirmDelete = () => {
         <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-xl font-semibold text-gray-800">{{ client.name }}</h2>
-                    <p class="text-sm text-gray-600">{{ client.company || 'No company listed' }}</p>
+                    <h2 class="text-xl font-semibold text-slate-800">{{ client.name }}</h2>
+                    <p class="text-sm text-slate-600">{{ client.company || 'No company listed' }}</p>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <Link
-                        :href="route('clients.edit', client.id)"
-                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                    >
+                    <Button :href="route('clients.edit', client.id)">
                         Edit
-                    </Link>
-                    <Link
-                        :href="route('clients.index')"
-                        class="inline-flex items-center rounded-md border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800"
-                    >
+                    </Button>
+                    <Button :href="route('clients.index')" variant="primary">
                         Back to list
-                    </Link>
-                    <button
-                        type="button"
+                    </Button>
+                    <Button
+                        as="button"
+                        variant="danger"
                         @click="destroyClient"
-                        class="inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
                     >
                         Delete
-                    </button>
+                    </Button>
                 </div>
             </div>
         </template>
@@ -68,18 +63,18 @@ const confirmDelete = () => {
             <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="p-6">
-                        <h3 class="text-lg font-medium text-gray-900">Contact Info</h3>
+                        <h3 class="text-lg font-medium text-slate-900">Contact Info</h3>
                         <dl class="mt-4 grid gap-6 sm:grid-cols-2">
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Email</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ client.email ?? '—' }}</dd>
+                                <dt class="text-sm font-medium text-slate-500">Email</dt>
+                                <dd class="mt-1 text-sm text-slate-900">{{ client.email ?? '—' }}</dd>
                             </div>
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Phone</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ client.phone ?? '—' }}</dd>
+                                <dt class="text-sm font-medium text-slate-500">Phone</dt>
+                                <dd class="mt-1 text-sm text-slate-900">{{ client.phone ?? '—' }}</dd>
                             </div>
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Status</dt>
+                                <dt class="text-sm font-medium text-slate-500">Status</dt>
                                 <dd class="mt-1">
                                     <span
                                         :class="[
@@ -94,8 +89,8 @@ const confirmDelete = () => {
                                 </dd>
                             </div>
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Created</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ formatDate(client.created_at) }}</dd>
+                                <dt class="text-sm font-medium text-slate-500">Created</dt>
+                                <dd class="mt-1 text-sm text-slate-900">{{ formatDate(client.created_at) }}</dd>
                             </div>
                         </dl>
                     </div>
@@ -103,8 +98,8 @@ const confirmDelete = () => {
 
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="p-6">
-                        <h3 class="text-lg font-medium text-gray-900">Notes</h3>
-                        <p class="mt-3 text-sm text-gray-700 whitespace-pre-line">
+                        <h3 class="text-lg font-medium text-slate-900">Notes</h3>
+                        <p class="mt-3 text-sm text-slate-700 whitespace-pre-line">
                             {{ client.notes || 'No notes yet.' }}
                         </p>
                     </div>
@@ -113,11 +108,11 @@ const confirmDelete = () => {
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="p-6">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-medium text-gray-900">Order History</h3>
-                            <p class="text-sm text-gray-500">Orders integration coming in Phase 4.</p>
+                            <h3 class="text-lg font-medium text-slate-900">Order History</h3>
+                            <p class="text-sm text-slate-500">Orders integration coming in Phase 4.</p>
                         </div>
 
-                        <div class="mt-4 rounded-md border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+                        <div class="mt-4 rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
                             No orders to display yet.
                         </div>
                     </div>

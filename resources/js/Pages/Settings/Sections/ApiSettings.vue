@@ -18,12 +18,12 @@ const emit = defineEmits(["generate"]);
 </script>
 
 <template>
-    <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-        <div class="px-5 py-4 border-b border-gray-100">
+    <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+        <div class="px-5 py-4 border-b border-slate-100">
             <div class="flex items-center justify-between">
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-900">Intake API</h3>
-                    <p class="mt-0.5 text-xs text-gray-500">
+                    <h3 class="text-sm font-semibold text-slate-900">Intake API</h3>
+                    <p class="mt-0.5 text-xs text-slate-500">
                         Enable or disable the external intake API and manage keys.
                     </p>
                 </div>
@@ -38,15 +38,15 @@ const emit = defineEmits(["generate"]);
         </div>
         <div class="px-5 py-4 space-y-4">
             <div>
-                <label class="flex items-center gap-2 text-sm text-gray-700">
+                <label class="flex items-center gap-2 text-sm text-slate-700">
                     <input
                         v-model="form.api_enabled"
                         type="checkbox"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     Enable intake API
                 </label>
-                <p class="mt-1 text-xs text-gray-500">
+                <p class="mt-1 text-xs text-slate-500">
                     Requests with a valid API key can create clients and orders.
                 </p>
                 <p v-if="form.errors.api_enabled" class="mt-1 text-xs text-red-600">

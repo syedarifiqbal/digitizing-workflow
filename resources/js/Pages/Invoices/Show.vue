@@ -462,7 +462,7 @@ const submitSend = () => {
                     <textarea
                         v-model="sendForm.message"
                         rows="3"
-                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         placeholder="Optional message to include in the email"
                     ></textarea>
                     <p v-if="sendForm.errors.message" class="mt-1 text-xs text-red-600">
@@ -473,7 +473,7 @@ const submitSend = () => {
                     <input
                         v-model="sendForm.attach_pdf"
                         type="checkbox"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     Attach PDF invoice
                 </label>
@@ -513,7 +513,7 @@ const submitSend = () => {
                             type="number"
                             min="0.01"
                             step="0.01"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                         <p v-if="paymentForm.errors.amount" class="mt-1 text-xs text-red-600">
                             {{ paymentForm.errors.amount }}
@@ -524,7 +524,7 @@ const submitSend = () => {
                         <input
                             v-model="paymentForm.payment_date"
                             type="date"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                         <p v-if="paymentForm.errors.payment_date" class="mt-1 text-xs text-red-600">
                             {{ paymentForm.errors.payment_date }}
@@ -536,7 +536,7 @@ const submitSend = () => {
                     <input
                         v-model="paymentForm.payment_method"
                         type="text"
-                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         placeholder="Wire transfer, cash, etc."
                     />
                     <p v-if="paymentForm.errors.payment_method" class="mt-1 text-xs text-red-600">
@@ -549,7 +549,7 @@ const submitSend = () => {
                         <input
                             v-model="paymentForm.reference"
                             type="text"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             placeholder="Optional reference"
                         />
                     </div>
@@ -558,7 +558,7 @@ const submitSend = () => {
                         <input
                             v-model="paymentForm.notes"
                             type="text"
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             placeholder="Optional note"
                         />
                     </div>

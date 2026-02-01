@@ -17,12 +17,12 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="grid gap-8 lg:grid-cols-3">
                     <!-- Starter Plan -->
-                    <div class="border border-gray-200 rounded-lg p-8">
-                        <h3 class="text-lg font-medium text-gray-900">Starter</h3>
-                        <p class="mt-2 text-gray-500">For small digitizing shops</p>
+                    <div class="border border-slate-200 rounded-lg p-8">
+                        <h3 class="text-lg font-medium text-slate-900">Starter</h3>
+                        <p class="mt-2 text-slate-500">For small digitizing shops</p>
                         <p class="mt-4">
-                            <span class="text-4xl font-extrabold text-gray-900">$29</span>
-                            <span class="text-gray-500">/month</span>
+                            <span class="text-4xl font-extrabold text-slate-900">$29</span>
+                            <span class="text-slate-500">/month</span>
                         </p>
                         <ul class="mt-6 space-y-4">
                             <li class="flex items-center">
@@ -60,11 +60,11 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
                         <div class="absolute top-0 right-0 -translate-y-1/2 translate-x-0">
                             <span class="bg-indigo-600 text-white text-sm font-medium px-3 py-1 rounded-full">Popular</span>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900">Professional</h3>
-                        <p class="mt-2 text-gray-500">For growing businesses</p>
+                        <h3 class="text-lg font-medium text-slate-900">Professional</h3>
+                        <p class="mt-2 text-slate-500">For growing businesses</p>
                         <p class="mt-4">
-                            <span class="text-4xl font-extrabold text-gray-900">$79</span>
-                            <span class="text-gray-500">/month</span>
+                            <span class="text-4xl font-extrabold text-slate-900">$79</span>
+                            <span class="text-slate-500">/month</span>
                         </p>
                         <ul class="mt-6 space-y-4">
                             <li class="flex items-center">
@@ -104,11 +104,11 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
                     </div>
 
                     <!-- Enterprise Plan -->
-                    <div class="border border-gray-200 rounded-lg p-8">
-                        <h3 class="text-lg font-medium text-gray-900">Enterprise</h3>
-                        <p class="mt-2 text-gray-500">For large operations</p>
+                    <div class="border border-slate-200 rounded-lg p-8">
+                        <h3 class="text-lg font-medium text-slate-900">Enterprise</h3>
+                        <p class="mt-2 text-slate-500">For large operations</p>
                         <p class="mt-4">
-                            <span class="text-4xl font-extrabold text-gray-900">Custom</span>
+                            <span class="text-4xl font-extrabold text-slate-900">Custom</span>
                         </p>
                         <ul class="mt-6 space-y-4">
                             <li class="flex items-center">
@@ -151,21 +151,21 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
         </div>
 
         <!-- FAQ -->
-        <div class="py-16 bg-gray-50">
+        <div class="py-16 bg-slate-50">
             <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 class="text-2xl font-bold text-gray-900 text-center mb-8">Frequently Asked Questions</h2>
+                <h2 class="text-2xl font-bold text-slate-900 text-center mb-8">Frequently Asked Questions</h2>
                 <div class="space-y-6">
                     <div class="bg-white rounded-lg p-6">
-                        <h3 class="text-lg font-medium text-gray-900">Can I try before I buy?</h3>
-                        <p class="mt-2 text-gray-500">Yes! All plans come with a 14-day free trial. No credit card required.</p>
+                        <h3 class="text-lg font-medium text-slate-900">Can I try before I buy?</h3>
+                        <p class="mt-2 text-slate-500">Yes! All plans come with a 14-day free trial. No credit card required.</p>
                     </div>
                     <div class="bg-white rounded-lg p-6">
-                        <h3 class="text-lg font-medium text-gray-900">Can I change plans later?</h3>
-                        <p class="mt-2 text-gray-500">Absolutely. You can upgrade or downgrade at any time. Changes take effect on your next billing cycle.</p>
+                        <h3 class="text-lg font-medium text-slate-900">Can I change plans later?</h3>
+                        <p class="mt-2 text-slate-500">Absolutely. You can upgrade or downgrade at any time. Changes take effect on your next billing cycle.</p>
                     </div>
                     <div class="bg-white rounded-lg p-6">
-                        <h3 class="text-lg font-medium text-gray-900">What payment methods do you accept?</h3>
-                        <p class="mt-2 text-gray-500">We accept all major credit cards and PayPal. Enterprise customers can pay via invoice.</p>
+                        <h3 class="text-lg font-medium text-slate-900">What payment methods do you accept?</h3>
+                        <p class="mt-2 text-slate-500">We accept all major credit cards and PayPal. Enterprise customers can pay via invoice.</p>
                     </div>
                 </div>
             </div>

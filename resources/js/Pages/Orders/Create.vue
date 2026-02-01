@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { Link, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import Button from "@/Components/Button.vue";
 import DatePicker from "@/Components/DatePicker.vue";
 
 const props = defineProps({
@@ -84,11 +85,11 @@ const selectedTypeLabel = computed(() => {
     <AppLayout>
         <template #header>
             <div class="flex flex-col gap-1">
-                <h2 class="text-lg font-semibold text-gray-900">
+                <h2 class="text-lg font-semibold text-slate-900">
                     New {{ selectedTypeLabel }}
                     {{ props.isQuote ? "Quote" : "Order" }}
                 </h2>
-                <p class="text-sm text-gray-500">
+                <p class="text-sm text-slate-500">
                     {{
                         props.isQuote
                             ? "Create a quote for the selected service type."
@@ -107,13 +108,13 @@ const selectedTypeLabel = computed(() => {
                         <div class="lg:col-span-2 space-y-6">
 
                             <!-- Basic Info -->
-                            <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-                                <div class="px-5 py-4 border-b border-gray-100">
-                                    <h3 class="text-sm font-semibold text-gray-900">Basic Information</h3>
+                            <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+                                <div class="px-5 py-4 border-b border-slate-100">
+                                    <h3 class="text-sm font-semibold text-slate-900">Basic Information</h3>
                                 </div>
                                 <div class="px-5 py-4 space-y-4">
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700" for="type">Order Type</label>
+                                        <label class="block text-xs font-medium text-slate-700" for="type">Order Type</label>
                                         <div class="mt-1 flex gap-2">
                                             <button
                                                 v-for="option in typeOptions"
@@ -123,7 +124,7 @@ const selectedTypeLabel = computed(() => {
                                                     'inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium transition',
                                                     form.type === option.value
                                                         ? 'bg-indigo-600 text-white shadow-sm'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 ]"
                                                 @click="form.type = option.value"
                                             >
@@ -134,35 +135,35 @@ const selectedTypeLabel = computed(() => {
 
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="title">Design Name *</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="title">Design Name *</label>
                                             <input
                                                 v-model="form.title"
                                                 id="title"
                                                 type="text"
                                                 placeholder="Enter design name"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors.title" class="mt-1 text-xs text-red-600">{{ form.errors.title }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="po_number">Purchase Order #</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="po_number">Purchase Order #</label>
                                             <input
                                                 v-model="form.po_number"
                                                 id="po_number"
                                                 type="text"
                                                 placeholder="PO number"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors.po_number" class="mt-1 text-xs text-red-600">{{ form.errors.po_number }}</p>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700" for="client">Client *</label>
+                                        <label class="block text-xs font-medium text-slate-700" for="client">Client *</label>
                                         <select
                                             v-model="form.client_id"
                                             id="client"
-                                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         >
                                             <option value="">Select client</option>
                                             <option
@@ -179,43 +180,43 @@ const selectedTypeLabel = computed(() => {
                             </div>
 
                             <!-- Digitizing Fields -->
-                            <div v-if="isDigitizing" class="bg-white shadow-sm rounded-lg border border-gray-200">
-                                <div class="px-5 py-4 border-b border-gray-100">
-                                    <h3 class="text-sm font-semibold text-gray-900">Digitizing Details</h3>
-                                    <p class="mt-0.5 text-xs text-gray-500">Write PROP in height or width for proportional sizing.</p>
+                            <div v-if="isDigitizing" class="bg-white shadow-sm rounded-lg border border-slate-200">
+                                <div class="px-5 py-4 border-b border-slate-100">
+                                    <h3 class="text-sm font-semibold text-slate-900">Digitizing Details</h3>
+                                    <p class="mt-0.5 text-xs text-slate-500">Write PROP in height or width for proportional sizing.</p>
                                 </div>
                                 <div class="px-5 py-4 space-y-4">
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="height">Height (inches)</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="height">Height (inches)</label>
                                             <input
                                                 v-model="form.height"
                                                 id="height"
                                                 type="text"
                                                 placeholder="e.g. 3.5 or PROP"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors.height" class="mt-1 text-xs text-red-600">{{ form.errors.height }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="width">Width (inches)</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="width">Width (inches)</label>
                                             <input
                                                 v-model="form.width"
                                                 id="width"
                                                 type="text"
                                                 placeholder="e.g. 4.0 or PROP"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors.width" class="mt-1 text-xs text-red-600">{{ form.errors.width }}</p>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="placement">Design Placement</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="placement">Design Placement</label>
                                             <select
                                                 v-model="form.placement"
                                                 id="placement"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select placement</option>
                                                 <option v-for="p in fieldOptions.placements" :key="p" :value="p">{{ p }}</option>
@@ -223,11 +224,11 @@ const selectedTypeLabel = computed(() => {
                                             <p v-if="form.errors.placement" class="mt-1 text-xs text-red-600">{{ form.errors.placement }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="file_format">File Format Required</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="file_format">File Format Required</label>
                                             <select
                                                 v-model="form.file_format"
                                                 id="file_format"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select format</option>
                                                 <option v-for="f in fieldOptions.fileFormats" :key="f" :value="f">{{ f }}</option>
@@ -239,18 +240,18 @@ const selectedTypeLabel = computed(() => {
                             </div>
 
                             <!-- Patch Fields -->
-                            <div v-if="isPatch" class="bg-white shadow-sm rounded-lg border border-gray-200">
-                                <div class="px-5 py-4 border-b border-gray-100">
-                                    <h3 class="text-sm font-semibold text-gray-900">Patch Details</h3>
+                            <div v-if="isPatch" class="bg-white shadow-sm rounded-lg border border-slate-200">
+                                <div class="px-5 py-4 border-b border-slate-100">
+                                    <h3 class="text-sm font-semibold text-slate-900">Patch Details</h3>
                                 </div>
                                 <div class="px-5 py-4 space-y-4">
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="patch_type">Patch Type</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="patch_type">Patch Type</label>
                                             <select
                                                 v-model="form.patch_type"
                                                 id="patch_type"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select patch type</option>
                                                 <option v-for="pt in fieldOptions.patchTypes" :key="pt" :value="pt">{{ pt }}</option>
@@ -258,49 +259,49 @@ const selectedTypeLabel = computed(() => {
                                             <p v-if="form.errors.patch_type" class="mt-1 text-xs text-red-600">{{ form.errors.patch_type }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="quantity">Quantity</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="quantity">Quantity</label>
                                             <input
                                                 v-model.number="form.quantity"
                                                 id="quantity"
                                                 type="number"
                                                 min="1"
                                                 placeholder="Number of patches"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors.quantity" class="mt-1 text-xs text-red-600">{{ form.errors.quantity }}</p>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="patch_height">Height (inches)</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="patch_height">Height (inches)</label>
                                             <input
                                                 v-model="form.height"
                                                 id="patch_height"
                                                 type="text"
                                                 placeholder="e.g. 3.5"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors.height" class="mt-1 text-xs text-red-600">{{ form.errors.height }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="patch_width">Width (inches)</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="patch_width">Width (inches)</label>
                                             <input
                                                 v-model="form.width"
                                                 id="patch_width"
                                                 type="text"
                                                 placeholder="e.g. 4.0"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors.width" class="mt-1 text-xs text-red-600">{{ form.errors.width }}</p>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="backing">Backing</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="backing">Backing</label>
                                             <select
                                                 v-model="form.backing"
                                                 id="backing"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select backing</option>
                                                 <option v-for="b in fieldOptions.backings" :key="b" :value="b">{{ b }}</option>
@@ -308,11 +309,11 @@ const selectedTypeLabel = computed(() => {
                                             <p v-if="form.errors.backing" class="mt-1 text-xs text-red-600">{{ form.errors.backing }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="patch_placement">Placement</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="patch_placement">Placement</label>
                                             <select
                                                 v-model="form.placement"
                                                 id="patch_placement"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select placement</option>
                                                 <option v-for="p in fieldOptions.placements" :key="p" :value="p">{{ p }}</option>
@@ -322,11 +323,11 @@ const selectedTypeLabel = computed(() => {
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="merrow_border">Merrow Border</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="merrow_border">Merrow Border</label>
                                             <select
                                                 v-model="form.merrow_border"
                                                 id="merrow_border"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select</option>
                                                 <option v-for="m in fieldOptions.merrowBorders" :key="m" :value="m">{{ m }}</option>
@@ -334,22 +335,22 @@ const selectedTypeLabel = computed(() => {
                                             <p v-if="form.errors.merrow_border" class="mt-1 text-xs text-red-600">{{ form.errors.merrow_border }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="num_colors">No. of Colors</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="num_colors">No. of Colors</label>
                                             <input
                                                 v-model.number="form.num_colors"
                                                 id="num_colors"
                                                 type="number"
                                                 min="0"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors.num_colors" class="mt-1 text-xs text-red-600">{{ form.errors.num_colors }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="fabric">Fabric</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="fabric">Fabric</label>
                                             <select
                                                 v-model="form.fabric"
                                                 id="fabric"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select fabric</option>
                                                 <option v-for="f in fieldOptions.fabrics" :key="f" :value="f">{{ f }}</option>
@@ -358,18 +359,18 @@ const selectedTypeLabel = computed(() => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700" for="shipping_address">Shipping Address (Optional)</label>
+                                        <label class="block text-xs font-medium text-slate-700" for="shipping_address">Shipping Address (Optional)</label>
                                         <textarea
                                             v-model="form.shipping_address"
                                             id="shipping_address"
                                             rows="2"
                                             placeholder="Enter shipping address if needed"
-                                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         ></textarea>
                                         <p v-if="form.errors.shipping_address" class="mt-1 text-xs text-red-600">{{ form.errors.shipping_address }}</p>
                                     </div>
                                     <div class="sm:w-1/2">
-                                        <label class="block text-xs font-medium text-gray-700" for="need_by">Patches Need By</label>
+                                        <label class="block text-xs font-medium text-slate-700" for="need_by">Patches Need By</label>
                                         <DatePicker
                                             v-model="form.need_by"
                                             id="need_by"
@@ -381,18 +382,18 @@ const selectedTypeLabel = computed(() => {
                             </div>
 
                             <!-- Vector Fields -->
-                            <div v-if="isVector" class="bg-white shadow-sm rounded-lg border border-gray-200">
-                                <div class="px-5 py-4 border-b border-gray-100">
-                                    <h3 class="text-sm font-semibold text-gray-900">Vector Details</h3>
+                            <div v-if="isVector" class="bg-white shadow-sm rounded-lg border border-slate-200">
+                                <div class="px-5 py-4 border-b border-slate-100">
+                                    <h3 class="text-sm font-semibold text-slate-900">Vector Details</h3>
                                 </div>
                                 <div class="px-5 py-4 space-y-4">
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="color_type">Color Type</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="color_type">Color Type</label>
                                             <select
                                                 v-model="form.color_type"
                                                 id="color_type"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select color type</option>
                                                 <option v-for="c in fieldOptions.colorTypes" :key="c" :value="c">{{ c }}</option>
@@ -400,24 +401,24 @@ const selectedTypeLabel = computed(() => {
                                             <p v-if="form.errors.color_type" class="mt-1 text-xs text-red-600">{{ form.errors.color_type }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="vector_num_colors">Number of Colors</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="vector_num_colors">Number of Colors</label>
                                             <input
                                                 v-model.number="form.num_colors"
                                                 id="vector_num_colors"
                                                 type="number"
                                                 min="0"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                             <p v-if="form.errors.num_colors" class="mt-1 text-xs text-red-600">{{ form.errors.num_colors }}</p>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="vector_order_type">Order Type</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="vector_order_type">Order Type</label>
                                             <select
                                                 v-model="form.vector_order_type"
                                                 id="vector_order_type"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select order type</option>
                                                 <option v-for="v in fieldOptions.vectorOrderTypes" :key="v" :value="v">{{ v }}</option>
@@ -425,11 +426,11 @@ const selectedTypeLabel = computed(() => {
                                             <p v-if="form.errors.vector_order_type" class="mt-1 text-xs text-red-600">{{ form.errors.vector_order_type }}</p>
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-700" for="required_format">Required Format</label>
+                                            <label class="block text-xs font-medium text-slate-700" for="required_format">Required Format</label>
                                             <select
                                                 v-model="form.required_format"
                                                 id="required_format"
-                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             >
                                                 <option value="">Select format</option>
                                                 <option v-for="r in fieldOptions.requiredFormats" :key="r" :value="r">{{ r }}</option>
@@ -441,13 +442,13 @@ const selectedTypeLabel = computed(() => {
                             </div>
 
                             <!-- Instructions + Files -->
-                            <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-                                <div class="px-5 py-4 border-b border-gray-100">
-                                    <h3 class="text-sm font-semibold text-gray-900">Instructions & Files</h3>
+                            <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+                                <div class="px-5 py-4 border-b border-slate-100">
+                                    <h3 class="text-sm font-semibold text-slate-900">Instructions & Files</h3>
                                 </div>
                                 <div class="px-5 py-4 space-y-4">
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700" for="instructions">
+                                        <label class="block text-xs font-medium text-slate-700" for="instructions">
                                             {{ isVector ? 'Vector Instructions' : 'Design Instructions' }}
                                         </label>
                                         <textarea
@@ -455,19 +456,19 @@ const selectedTypeLabel = computed(() => {
                                             id="instructions"
                                             rows="4"
                                             placeholder="Write design instructions here"
-                                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         ></textarea>
                                         <p v-if="form.errors.instructions" class="mt-1 text-xs text-red-600">{{ form.errors.instructions }}</p>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700" for="attachments">Input Artwork</label>
-                                        <p class="mt-0.5 text-xs text-gray-400">Upload up to 10 files.</p>
+                                        <label class="block text-xs font-medium text-slate-700" for="attachments">Input Artwork</label>
+                                        <p class="mt-0.5 text-xs text-slate-400">Upload up to 10 files.</p>
                                         <input
                                             id="attachments"
                                             type="file"
                                             multiple
                                             @change="handleFiles"
-                                            class="mt-1 block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                            class="mt-1 block w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                                         />
                                         <p v-if="attachmentError" class="mt-1 text-xs text-red-600">{{ attachmentError }}</p>
                                     </div>
@@ -479,9 +480,9 @@ const selectedTypeLabel = computed(() => {
                         <div class="space-y-6">
 
                             <!-- Priority -->
-                            <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-                                <div class="px-5 py-4 border-b border-gray-100">
-                                    <h3 class="text-sm font-semibold text-gray-900">Priority</h3>
+                            <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+                                <div class="px-5 py-4 border-b border-slate-100">
+                                    <h3 class="text-sm font-semibold text-slate-900">Priority</h3>
                                 </div>
                                 <div class="px-5 py-4">
                                     <div class="flex items-center gap-3">
@@ -492,7 +493,7 @@ const selectedTypeLabel = computed(() => {
                                                 'inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium cursor-pointer border transition',
                                                 form.priority === option.value
                                                     ? (option.value === 'rush' ? 'border-red-300 bg-red-50 text-red-700' : 'border-indigo-300 bg-indigo-50 text-indigo-700')
-                                                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                                             ]"
                                         >
                                             <input
@@ -509,30 +510,30 @@ const selectedTypeLabel = computed(() => {
                             </div>
 
                             <!-- Pricing -->
-                            <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-                                <div class="px-5 py-4 border-b border-gray-100">
-                                    <h3 class="text-sm font-semibold text-gray-900">Pricing</h3>
+                            <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+                                <div class="px-5 py-4 border-b border-slate-100">
+                                    <h3 class="text-sm font-semibold text-slate-900">Pricing</h3>
                                 </div>
                                 <div class="px-5 py-4 space-y-4">
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700" for="price_amount">Quoted Price</label>
+                                        <label class="block text-xs font-medium text-slate-700" for="price_amount">Quoted Price</label>
                                         <input
                                             v-model="form.price_amount"
                                             id="price_amount"
                                             type="number"
                                             step="0.01"
-                                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         />
                                         <p v-if="form.errors.price_amount" class="mt-1 text-xs text-red-600">{{ form.errors.price_amount }}</p>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700" for="currency">Currency</label>
+                                        <label class="block text-xs font-medium text-slate-700" for="currency">Currency</label>
                                         <input
                                             v-model="form.currency"
                                             id="currency"
                                             type="text"
                                             maxlength="3"
-                                            class="mt-1 block w-32 rounded-md border-gray-300 text-sm shadow-sm uppercase focus:border-indigo-500 focus:ring-indigo-500"
+                                            class="mt-1 block w-32 rounded-md border-slate-300 text-sm shadow-sm uppercase focus:border-indigo-500 focus:ring-indigo-500"
                                         />
                                         <p v-if="form.errors.currency" class="mt-1 text-xs text-red-600">{{ form.errors.currency }}</p>
                                     </div>
@@ -540,13 +541,13 @@ const selectedTypeLabel = computed(() => {
                             </div>
 
                             <!-- Schedule -->
-                            <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-                                <div class="px-5 py-4 border-b border-gray-100">
-                                    <h3 class="text-sm font-semibold text-gray-900">Schedule</h3>
+                            <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+                                <div class="px-5 py-4 border-b border-slate-100">
+                                    <h3 class="text-sm font-semibold text-slate-900">Schedule</h3>
                                 </div>
                                 <div class="px-5 py-4 space-y-4">
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700" for="due_at">Due Date</label>
+                                        <label class="block text-xs font-medium text-slate-700" for="due_at">Due Date</label>
                                         <DatePicker
                                             v-model="form.due_at"
                                             id="due_at"
@@ -555,13 +556,13 @@ const selectedTypeLabel = computed(() => {
                                         <p v-if="form.errors.due_at" class="mt-1 text-xs text-red-600">{{ form.errors.due_at }}</p>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-medium text-gray-700" for="source">Source</label>
+                                        <label class="block text-xs font-medium text-slate-700" for="source">Source</label>
                                         <input
                                             v-model="form.source"
                                             id="source"
                                             type="text"
                                             placeholder="Website, phone, API..."
-                                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         />
                                         <p v-if="form.errors.source" class="mt-1 text-xs text-red-600">{{ form.errors.source }}</p>
                                     </div>
@@ -569,22 +570,24 @@ const selectedTypeLabel = computed(() => {
                             </div>
 
                             <!-- Submit -->
-                            <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="bg-white shadow-sm rounded-lg border border-slate-200">
                                 <div class="px-5 py-4 space-y-3">
                                     <input type="hidden" name="quote" :value="form.quote" />
-                                    <button
-                                        type="submit"
+                                    <Button
+                                        as="button"
+                                        html-type="submit"
+                                        variant="primary"
                                         :disabled="form.processing"
-                                        class="w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                                        extra-class="w-full justify-center"
                                     >
                                         {{ form.processing ? 'Creating...' : (props.isQuote ? 'Create Quote' : 'Create Order') }}
-                                    </button>
-                                    <Link
+                                    </Button>
+                                    <Button
                                         :href="route('orders.index')"
-                                        class="block text-center text-sm text-gray-500 hover:text-gray-700"
+                                        extra-class="w-full justify-center"
                                     >
                                         Cancel
-                                    </Link>
+                                    </Button>
                                 </div>
                             </div>
                         </div>

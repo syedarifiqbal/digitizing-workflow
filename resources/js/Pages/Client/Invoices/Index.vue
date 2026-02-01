@@ -49,10 +49,10 @@ const getStatusColor = (status) => {
         partially_paid: "bg-yellow-50 text-yellow-700 ring-yellow-600/20",
         paid: "bg-green-50 text-green-700 ring-green-600/20",
         overdue: "bg-red-50 text-red-700 ring-red-600/20",
-        cancelled: "bg-gray-100 text-gray-700 ring-gray-600/20",
-        void: "bg-gray-100 text-gray-700 ring-gray-600/20",
+        cancelled: "bg-slate-100 text-slate-700 ring-slate-600/20",
+        void: "bg-slate-100 text-slate-700 ring-slate-600/20",
     };
-    return colors[status] || "bg-gray-100 text-gray-700";
+    return colors[status] || "bg-slate-100 text-slate-700";
 };
 
 const formatAmount = (amount) => {
