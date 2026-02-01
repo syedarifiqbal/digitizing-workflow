@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\WebhookDispatcher;
 use App\Support\TenantMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -74,6 +75,10 @@ class TenantSettingsController extends Controller
             'smtp_encryption' => ['nullable', 'string', 'in:,tls,ssl'],
             'mail_from_address' => ['nullable', 'email', 'max:255'],
             'mail_from_name' => ['nullable', 'string', 'max:255'],
+            'webhook_url' => ['nullable', 'url', 'max:500'],
+            'webhook_secret' => ['nullable', 'string', 'max:255'],
+            'webhook_events' => ['nullable', 'array'],
+            'webhook_events.*' => ['string', 'in:order.delivered,order.closed,order.cancelled'],
         ]);
 
         $tenant = $request->user()->tenant;
@@ -127,6 +132,9 @@ class TenantSettingsController extends Controller
             'smtp_encryption' => $validated['smtp_encryption'] ?? '',
             'mail_from_address' => $validated['mail_from_address'] ?? '',
             'mail_from_name' => $validated['mail_from_name'] ?? '',
+            'webhook_url' => $validated['webhook_url'] ?? '',
+            'webhook_secret' => $validated['webhook_secret'] ?? '',
+            'webhook_events' => $validated['webhook_events'] ?? [],
         ]);
 
         $tenant->update([
@@ -166,6 +174,30 @@ class TenantSettingsController extends Controller
             return back()->with('success', "Test email sent to {$toAddress}.");
         } catch (\Throwable $e) {
             return back()->with('error', 'Test email failed: ' . $e->getMessage());
+        }
+    }
+
+    public function sendTestWebhook(Request $request, WebhookDispatcher $dispatcher): RedirectResponse
+    {
+        abort_if(! $request->user()?->isAdmin(), 403);
+
+        $tenant = $request->user()->tenant;
+        $url = $tenant->getSetting('webhook_url');
+
+        if (empty($url)) {
+            return back()->with('error', 'No webhook URL configured. Save your settings first.');
+        }
+
+        try {
+            $log = $dispatcher->dispatchTest($tenant);
+
+            if ($log->success) {
+                return back()->with('success', "Test webhook sent to {$url} — HTTP {$log->response_status}.");
+            }
+
+            return back()->with('error', "Test webhook failed — HTTP {$log->response_status}: " . mb_substr($log->response_body ?? '', 0, 200));
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Test webhook failed: ' . $e->getMessage());
         }
     }
 
@@ -210,6 +242,9 @@ class TenantSettingsController extends Controller
             'smtp_encryption' => '',
             'mail_from_address' => '',
             'mail_from_name' => '',
+            'webhook_url' => '',
+            'webhook_secret' => '',
+            'webhook_events' => [],
         ];
     }
 }

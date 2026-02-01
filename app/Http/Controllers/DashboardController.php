@@ -182,8 +182,7 @@ class DashboardController extends Controller
     private function getTopDesigners(int $tenantId, Carbon $startOfMonth): array
     {
         // Get designers with completed orders this month
-        $designers = User::where('tenant_id', $tenantId)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'Designer'))
+        $designers = User::whereHas('roles', fn ($q) => $q->where('name', 'Designer'))
             ->withCount(['designedOrders as completed_orders' => function ($query) use ($startOfMonth) {
                 $query->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
                     ->where('delivered_at', '>=', $startOfMonth);

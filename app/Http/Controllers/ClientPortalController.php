@@ -407,8 +407,7 @@ class ClientPortalController extends Controller
         $notification = new \App\Notifications\OrderCommentNotification($order, $comment, $user);
 
         // Notify admin/managers of the tenant
-        $admins = \App\Models\User::where('tenant_id', $order->tenant_id)
-            ->whereHas('roles', fn ($q) => $q->whereIn('name', ['Admin', 'Manager']))
+        $admins = \App\Models\User::whereHas('roles', fn ($q) => $q->whereIn('name', ['Admin', 'Manager']))
             ->where('id', '!=', $user->id)
             ->get();
         foreach ($admins as $admin) {

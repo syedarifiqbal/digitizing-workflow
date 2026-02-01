@@ -100,6 +100,9 @@ class TenantSettingsTest extends TestCase
             'smtp_encryption' => '',
             'mail_from_address' => null,
             'mail_from_name' => '',
+            'webhook_url' => '',
+            'webhook_secret' => '',
+            'webhook_events' => [],
         ], $overrides);
     }
 }

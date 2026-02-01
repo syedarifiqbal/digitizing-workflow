@@ -8,6 +8,7 @@ import WorkflowSettings from "@/Pages/Settings/Sections/WorkflowSettings.vue";
 import CommissionsSettings from "@/Pages/Settings/Sections/CommissionsSettings.vue";
 import EmailSettings from "@/Pages/Settings/Sections/EmailSettings.vue";
 import NotificationSettings from "@/Pages/Settings/Sections/NotificationSettings.vue";
+import WebhookSettings from "@/Pages/Settings/Sections/WebhookSettings.vue";
 import ApiSettings from "@/Pages/Settings/Sections/ApiSettings.vue";
 import Button from "@/Components/Button.vue";
 
@@ -62,6 +63,9 @@ const form = useForm({
     smtp_encryption: props.settings.smtp_encryption ?? "",
     mail_from_address: props.settings.mail_from_address ?? "",
     mail_from_name: props.settings.mail_from_name ?? "",
+    webhook_url: props.settings.webhook_url ?? "",
+    webhook_secret: props.settings.webhook_secret ?? "",
+    webhook_events: props.settings.webhook_events ?? [],
 });
 
 const resetTransform = () => {
@@ -145,6 +149,12 @@ const tabs = [
         label: "Notifications",
         description: "Email alerts for your team.",
         component: NotificationSettings,
+    },
+    {
+        id: "webhooks",
+        label: "Webhooks",
+        description: "Outbound event notifications.",
+        component: WebhookSettings,
     },
     {
         id: "api",

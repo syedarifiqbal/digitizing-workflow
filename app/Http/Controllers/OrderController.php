@@ -1169,8 +1169,7 @@ class OrderController extends Controller
             }
         } elseif ($commenter->isDesigner()) {
             // Notify admin/managers of the tenant
-            $admins = User::where('tenant_id', $order->tenant_id)
-                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['Admin', 'Manager']))
+            $admins = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['Admin', 'Manager']))
                 ->where('id', '!=', $commenter->id)
                 ->get();
             foreach ($admins as $admin) {

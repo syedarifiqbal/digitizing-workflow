@@ -22,6 +22,7 @@ use App\Http\Controllers\SalesController;
 use App\Http\Controllers\CommissionRuleController;
 use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\TenantSettingsController;
+use App\Http\Controllers\WebhookLogController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -98,6 +99,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/settings', [TenantSettingsController::class, 'update'])->name('settings.update');
         Route::post('/settings/api-key', [ApiKeyController::class, 'store'])->name('settings.api-key.generate');
         Route::post('/settings/test-email', [TenantSettingsController::class, 'sendTestEmail'])->name('settings.test-email');
+        Route::post('/settings/test-webhook', [TenantSettingsController::class, 'sendTestWebhook'])->name('settings.test-webhook');
+        Route::get('/webhook-logs', [WebhookLogController::class, 'index'])->name('webhook-logs.index');
         Route::delete('clients/bulk', [ClientController::class, 'bulkDestroy'])->name('clients.bulk-destroy');
         Route::resource('clients', ClientController::class);
         Route::patch('clients/{client}/status', [ClientController::class, 'toggleStatus'])->name('clients.status');

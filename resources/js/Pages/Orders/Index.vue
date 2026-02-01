@@ -590,7 +590,7 @@ const orderColumns = [
                                 <Button
                                     as="button"
                                     variant="primary"
-                                    type="submit"
+                                    html-type="submit"
                                     >Apply filters</Button
                                 >
                             </div>

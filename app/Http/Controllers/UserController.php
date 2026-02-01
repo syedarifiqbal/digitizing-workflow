@@ -23,7 +23,6 @@ class UserController extends Controller
         $filters = $request->only(['search', 'role', 'status']);
 
         $users = User::query()
-            ->where('tenant_id', $request->user()->tenant_id)
             ->with(['roles', 'client'])
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -93,7 +92,6 @@ class UserController extends Controller
         $data = $this->validateUser($request);
 
         $user = User::create([
-            'tenant_id' => $request->user()->tenant_id,
             'client_id' => $data['client_id'] ?? null,
             'name' => $data['name'],
             'email' => $data['email'],
@@ -165,9 +163,7 @@ class UserController extends Controller
             'ids.*' => ['integer'],
         ]);
 
-        $users = User::where('tenant_id', $request->user()->tenant_id)
-            ->whereIn('id', $validated['ids'])
-            ->get();
+        $users = User::whereIn('id', $validated['ids'])->get();
 
         foreach ($users as $user) {
             $this->authorize('delete', $user);
@@ -217,7 +213,6 @@ class UserController extends Controller
     private function clientOptions(Request $request)
     {
         return Client::query()
-            ->where('tenant_id', $request->user()->tenant_id)
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
     }
