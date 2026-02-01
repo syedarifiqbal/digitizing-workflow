@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, nextTick } from "vue";
 import { Link, router, usePage } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import OrderTimeline from "@/Components/OrderTimeline.vue";
@@ -75,6 +75,25 @@ const commentVisibility = ref("client");
 const submittingComment = ref(false);
 
 const page = usePage();
+const highlightedCommentId = ref(null);
+
+onMounted(() => {
+    const params = new URLSearchParams(window.location.search);
+    const commentId = params.get("comment");
+    if (commentId) {
+        highlightedCommentId.value = parseInt(commentId);
+        nextTick(() => {
+            const el = document.getElementById(`comment-${commentId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                // Remove highlight after animation
+                setTimeout(() => {
+                    highlightedCommentId.value = null;
+                }, 3000);
+            }
+        });
+    }
+});
 
 const formatSize = (size) => {
     if (!size) return "0 KB";
@@ -945,8 +964,9 @@ const priorityBadgeClass = (priority) => {
                                 <a
                                     v-if="downloadInputZipUrl && inputFiles?.length"
                                     :href="downloadInputZipUrl"
-                                    class="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-100"
+                                    class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200 hover:bg-indigo-100 transition"
                                 >
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                     Download All
                                 </a>
                             </div>
@@ -999,8 +1019,9 @@ const priorityBadgeClass = (priority) => {
                                 <a
                                     v-if="downloadOutputZipUrl"
                                     :href="downloadOutputZipUrl"
-                                    class="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-100"
+                                    class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200 hover:bg-indigo-100 transition"
                                 >
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                     Download All
                                 </a>
                             </div>
@@ -1600,12 +1621,16 @@ const priorityBadgeClass = (priority) => {
                                     <div
                                         v-for="comment in comments"
                                         :key="comment.id"
-                                        class="border-l-2 pl-4"
-                                        :class="
+                                        :id="`comment-${comment.id}`"
+                                        class="border-l-2 pl-4 rounded-r-md transition-all duration-700"
+                                        :class="[
                                             comment.visibility === 'internal'
                                                 ? 'border-yellow-300 bg-yellow-50/30'
-                                                : 'border-indigo-200'
-                                        "
+                                                : 'border-indigo-200',
+                                            highlightedCommentId === comment.id
+                                                ? 'bg-indigo-50 ring-2 ring-indigo-300 !border-indigo-400'
+                                                : '',
+                                        ]"
                                     >
                                         <div
                                             class="flex items-start justify-between"

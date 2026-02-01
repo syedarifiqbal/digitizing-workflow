@@ -1,15 +1,17 @@
 <script setup>
 import { computed, ref } from "vue";
-import { Link, usePage, useForm } from "@inertiajs/vue3";
+import { Link, router, usePage, useForm } from "@inertiajs/vue3";
 
 const showMobileMenu = ref(false);
 const showUserMenu = ref(false);
 const showReportsMenu = ref(false);
 const showOrdersMenu = ref(false);
 const showQuotesMenu = ref(false);
+const showNotifications = ref(false);
 
 const page = usePage();
 const user = page.props.auth?.user;
+const notifications = computed(() => page.props.notifications);
 const orderTypes = [
     { label: "Digitizing", value: "digitizing" },
     { label: "Vector", value: "vector" },
@@ -38,6 +40,44 @@ const currentQuoteType = computed(() => {
     const type = queryParams.value.type;
     return type && type !== "all" ? type : null;
 });
+
+const markAllRead = () => {
+    router.post(route("notifications.mark-all-read"), {}, { preserveScroll: true });
+    showNotifications.value = false;
+};
+
+const markReadAndNavigate = (notification) => {
+    showNotifications.value = false;
+
+    // Build the target URL using route() helper to avoid host mismatch
+    const orderId = notification.data?.order_id;
+    const commentId = notification.data?.comment_id;
+    const isClient = user?.is_client;
+
+    let targetUrl = orderId
+        ? isClient
+            ? route("client.orders.show", orderId)
+            : route("orders.show", orderId)
+        : null;
+
+    if (targetUrl && commentId) {
+        targetUrl += `?comment=${commentId}`;
+    }
+
+    // Mark as read then navigate — use router.post with onFinish to navigate after
+    router.post(
+        route("notifications.mark-read", notification.id),
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                if (targetUrl) {
+                    router.visit(targetUrl);
+                }
+            },
+        }
+    );
+};
 
 const logoutForm = useForm({});
 
@@ -390,6 +430,71 @@ const toggleReportsMenu = () => {
                     </div>
 
                     <div class="flex items-center gap-4">
+                        <!-- Notification Bell -->
+                        <div v-if="user" class="relative">
+                            <button
+                                @click="showNotifications = !showNotifications"
+                                class="relative rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                            >
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                                <span
+                                    v-if="notifications?.unread_count > 0"
+                                    class="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+                                >
+                                    {{ notifications.unread_count > 99 ? '99+' : notifications.unread_count }}
+                                </span>
+                            </button>
+
+                            <!-- Notification Backdrop -->
+                            <div
+                                v-show="showNotifications"
+                                @click="showNotifications = false"
+                                class="fixed inset-0 z-10"
+                            ></div>
+
+                            <!-- Notification Dropdown -->
+                            <div
+                                v-show="showNotifications"
+                                class="absolute right-0 z-20 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-xl"
+                            >
+                                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                                    <h3 class="text-sm font-semibold text-slate-900">Notifications</h3>
+                                    <button
+                                        v-if="notifications?.unread_count > 0"
+                                        @click="markAllRead"
+                                        class="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                                    >
+                                        Mark all read
+                                    </button>
+                                </div>
+                                <div class="max-h-80 overflow-y-auto">
+                                    <div
+                                        v-if="notifications?.items?.length > 0"
+                                    >
+                                        <button
+                                            v-for="notification in notifications.items"
+                                            :key="notification.id"
+                                            @click="markReadAndNavigate(notification)"
+                                            class="block w-full px-4 py-3 text-left transition hover:bg-slate-50 border-b border-slate-50 last:border-0"
+                                        >
+                                            <p class="text-sm text-slate-900">
+                                                <span class="font-medium">{{ notification.data.commenter_name }}</span>
+                                                commented on
+                                                <span class="font-medium">{{ notification.data.order_number }}</span>
+                                            </p>
+                                            <p class="mt-0.5 text-xs text-slate-500 line-clamp-2">{{ notification.data.comment_preview }}</p>
+                                            <p class="mt-1 text-xs text-slate-400">{{ notification.created_at }}</p>
+                                        </button>
+                                    </div>
+                                    <div v-else class="px-4 py-6 text-center">
+                                        <p class="text-sm text-slate-500">No new notifications</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="hidden sm:flex sm:items-center sm:gap-3">
                             <div class="text-right">
                                 <p class="text-sm font-semibold text-slate-900">{{ user?.name }}</p>

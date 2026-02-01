@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Button from '@/Components/Button.vue';
@@ -21,6 +21,24 @@ const props = defineProps({
 
 const newComment = ref('');
 const submitting = ref(false);
+const highlightedCommentId = ref(null);
+
+onMounted(() => {
+    const params = new URLSearchParams(window.location.search);
+    const commentId = params.get('comment');
+    if (commentId) {
+        highlightedCommentId.value = parseInt(commentId);
+        nextTick(() => {
+            const el = document.getElementById(`comment-${commentId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    highlightedCommentId.value = null;
+                }, 3000);
+            }
+        });
+    }
+});
 
 const submitComment = () => {
     if (!newComment.value.trim()) return;
@@ -191,8 +209,9 @@ const formatFileSize = (bytes) => {
                     <a
                         v-if="downloadInputZipUrl && inputFiles.length"
                         :href="downloadInputZipUrl"
-                        class="inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                        class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200 hover:bg-indigo-100 transition"
                     >
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                         Download All
                     </a>
                 </div>
@@ -233,8 +252,9 @@ const formatFileSize = (bytes) => {
                     <a
                         v-if="downloadOutputZipUrl && outputFiles.length"
                         :href="downloadOutputZipUrl"
-                        class="inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                        class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200 hover:bg-indigo-100 transition"
                     >
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                         Download All
                     </a>
                 </div>
@@ -276,7 +296,13 @@ const formatFileSize = (bytes) => {
                 <div class="px-6 py-5 space-y-4">
                     <!-- Comment List -->
                     <div v-if="comments.length > 0" class="space-y-3 mb-4">
-                        <div v-for="comment in comments" :key="comment.id" class="border-l-2 border-indigo-200 pl-4">
+                        <div
+                            v-for="comment in comments"
+                            :key="comment.id"
+                            :id="`comment-${comment.id}`"
+                            class="border-l-2 border-indigo-200 pl-4 rounded-r-md transition-all duration-700"
+                            :class="highlightedCommentId === comment.id ? 'bg-indigo-50 ring-2 ring-indigo-300 !border-indigo-400' : ''"
+                        >
                             <div class="flex items-start justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-slate-900">{{ comment.user.name }}</p>

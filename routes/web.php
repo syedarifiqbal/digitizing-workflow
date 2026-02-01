@@ -62,6 +62,20 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:6,1')
         ->name('verification.send');
 
+    // Notification routes (no verified middleware needed)
+    Route::post('/notifications/mark-all-read', function (\Illuminate\Http\Request $request) {
+        $request->user()->unreadNotifications->markAsRead();
+        return back();
+    })->name('notifications.mark-all-read');
+
+    Route::post('/notifications/{notification}/mark-read', function (\Illuminate\Http\Request $request, string $notification) {
+        $request->user()->notifications()->where('id', $notification)->update(['read_at' => now()]);
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+        return back();
+    })->name('notifications.mark-read');
+
     Route::middleware('verified')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/settings', [TenantSettingsController::class, 'edit'])->name('settings.edit');

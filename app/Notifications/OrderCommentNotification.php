@@ -5,15 +5,11 @@ namespace App\Notifications;
 use App\Models\Order;
 use App\Models\OrderComment;
 use App\Models\User;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class OrderCommentNotification extends Notification implements ShouldQueue
+class OrderCommentNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public Order $order,
         public OrderComment $comment,
@@ -22,7 +18,7 @@ class OrderCommentNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['database', 'mail'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -46,7 +42,6 @@ class OrderCommentNotification extends Notification implements ShouldQueue
 
     private function getOrderUrl(object $notifiable): string
     {
-        // If the notifiable is a client user, link to the client portal
         if ($notifiable->client_id) {
             return route('client.orders.show', $this->order->id);
         }
@@ -59,8 +54,12 @@ class OrderCommentNotification extends Notification implements ShouldQueue
         return [
             'order_id' => $this->order->id,
             'order_number' => $this->order->order_number,
+            'order_title' => $this->order->title,
             'comment_id' => $this->comment->id,
             'commenter_id' => $this->commenter->id,
+            'commenter_name' => $this->commenter->name,
+            'comment_preview' => \Illuminate\Support\Str::limit($this->comment->body, 100),
+            'url' => $this->getOrderUrl($notifiable),
         ];
     }
 }
