@@ -66,6 +66,7 @@ class RegisterTenantAction
             'auto_submit_on_upload' => true,
             'auto_review_on_submit' => false,
             'notify_on_assignment' => true,
+            'notify_on_comment' => true,
             'api_enabled' => false,
             'api_key_hash' => null,
             'api_key_last_four' => null,

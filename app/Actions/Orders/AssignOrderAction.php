@@ -51,13 +51,9 @@ class AssignOrderAction
             return $assignment;
         });
 
-        // Send notification if enabled in tenant settings
-        $notifyOnAssignment = $order->tenant->getSetting('notify_on_assignment', true);
-
-        if ($notifyOnAssignment) {
-            $order->load('client');
-            $designer->notify(new OrderAssignedNotification($order, $assignedBy));
-        }
+        // Always send notification — the notification's via() method controls whether email is included
+        $order->load('client');
+        $designer->notify(new OrderAssignedNotification($order, $assignedBy));
 
         return $assignment;
     }

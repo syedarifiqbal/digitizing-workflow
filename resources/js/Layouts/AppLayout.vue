@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, onMounted, onUnmounted } from "vue";
 import { Link, router, usePage, useForm } from "@inertiajs/vue3";
 
 const showMobileMenu = ref(false);
@@ -11,7 +11,37 @@ const showNotifications = ref(false);
 
 const page = usePage();
 const user = page.props.auth?.user;
-const notifications = computed(() => page.props.notifications);
+const polledNotifications = ref(null);
+const notifications = computed(() => polledNotifications.value ?? page.props.notifications);
+
+let pollInterval = null;
+
+const fetchNotifications = async () => {
+    try {
+        const response = await fetch(route("notifications.poll"), {
+            headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+            credentials: "same-origin",
+        });
+        if (response.ok) {
+            polledNotifications.value = await response.json();
+        }
+    } catch {
+        // silently ignore polling errors
+    }
+};
+
+onMounted(() => {
+    if (user) {
+        pollInterval = setInterval(fetchNotifications, 10000);
+    }
+});
+
+onUnmounted(() => {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
+});
 const orderTypes = [
     { label: "Digitizing", value: "digitizing" },
     { label: "Vector", value: "vector" },
@@ -479,12 +509,24 @@ const toggleReportsMenu = () => {
                                             @click="markReadAndNavigate(notification)"
                                             class="block w-full px-4 py-3 text-left transition hover:bg-slate-50 border-b border-slate-50 last:border-0"
                                         >
-                                            <p class="text-sm text-slate-900">
-                                                <span class="font-medium">{{ notification.data.commenter_name }}</span>
-                                                commented on
-                                                <span class="font-medium">{{ notification.data.order_number }}</span>
-                                            </p>
-                                            <p class="mt-0.5 text-xs text-slate-500 line-clamp-2">{{ notification.data.comment_preview }}</p>
+                                            <template v-if="notification.data.commenter_name">
+                                                <p class="text-sm text-slate-900">
+                                                    <span class="font-medium">{{ notification.data.commenter_name }}</span>
+                                                    commented on
+                                                    <span class="font-medium">{{ notification.data.order_number }}</span>
+                                                </p>
+                                                <p class="mt-0.5 text-xs text-slate-500 line-clamp-2">{{ notification.data.comment_preview }}</p>
+                                            </template>
+                                            <template v-else-if="notification.data.assigned_by">
+                                                <p class="text-sm text-slate-900">
+                                                    You've been assigned to order
+                                                    <span class="font-medium">{{ notification.data.order_number }}</span>
+                                                </p>
+                                                <p v-if="notification.data.order_title" class="mt-0.5 text-xs text-slate-500 line-clamp-2">{{ notification.data.order_title }}</p>
+                                            </template>
+                                            <template v-else>
+                                                <p class="text-sm text-slate-900">New notification</p>
+                                            </template>
                                             <p class="mt-1 text-xs text-slate-400">{{ notification.created_at }}</p>
                                         </button>
                                     </div>

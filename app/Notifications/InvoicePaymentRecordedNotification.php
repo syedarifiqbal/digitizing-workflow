@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Invoice;
+use App\Support\TenantMailer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -28,13 +29,16 @@ class InvoicePaymentRecordedNotification extends Notification implements ShouldQ
     public function toMail($notifiable): MailMessage
     {
         $invoice = $this->invoice;
-        $companyName = $invoice->tenant->getSetting('company_details.name', config('app.name'));
+        $tenant = $invoice->tenant;
+        $fromAddress = $tenant->getSetting('mail_from_address') ?: config('mail.from.address');
+        $fromName = $tenant->getSetting('mail_from_name') ?: $tenant->getSetting('company_details.name', config('app.name'));
+        $companyName = $tenant->getSetting('company_details.name', config('app.name'));
         $name = $notifiable->name ?? 'Valued Customer';
         $formattedAmount = number_format($this->amount, 2);
         $formattedBalance = number_format($this->balance, 2);
 
         $mail = (new MailMessage)
-            ->from(config('mail.from.address'), $companyName)
+            ->from($fromAddress, $fromName)
             ->subject("Payment Confirmed: {$invoice->currency} {$formattedAmount} for Invoice {$invoice->invoice_number}")
             ->greeting("Dear {$name},")
             ->line('We are writing to confirm that we have received your payment. Thank you for your promptness.')
@@ -50,6 +54,11 @@ class InvoicePaymentRecordedNotification extends Notification implements ShouldQ
 
         $mail->action('View Invoice', route('client.invoices.show', $invoice->id))
             ->line("Thank you for your business with {$companyName}. We truly appreciate it.");
+
+        $mailer = TenantMailer::configureForTenant($tenant);
+        if ($mailer) {
+            $mail->mailer($mailer);
+        }
 
         return $mail;
     }

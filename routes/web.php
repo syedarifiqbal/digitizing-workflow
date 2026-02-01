@@ -63,6 +63,22 @@ Route::middleware('auth')->group(function () {
         ->name('verification.send');
 
     // Notification routes (no verified middleware needed)
+    Route::get('/notifications/poll', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+        $notifications = $user->unreadNotifications()->latest()->limit(20)->get();
+
+        return response()->json([
+            'unread_count' => $user->unreadNotifications()->count(),
+            'items' => $notifications->map(fn ($n) => [
+                'id' => $n->id,
+                'type' => $n->type,
+                'data' => $n->data,
+                'read_at' => $n->read_at,
+                'created_at' => $n->created_at->diffForHumans(),
+            ])->toArray(),
+        ]);
+    })->name('notifications.poll');
+
     Route::post('/notifications/mark-all-read', function (\Illuminate\Http\Request $request) {
         $request->user()->unreadNotifications->markAsRead();
         return back();
@@ -81,6 +97,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings', [TenantSettingsController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [TenantSettingsController::class, 'update'])->name('settings.update');
         Route::post('/settings/api-key', [ApiKeyController::class, 'store'])->name('settings.api-key.generate');
+        Route::post('/settings/test-email', [TenantSettingsController::class, 'sendTestEmail'])->name('settings.test-email');
         Route::delete('clients/bulk', [ClientController::class, 'bulkDestroy'])->name('clients.bulk-destroy');
         Route::resource('clients', ClientController::class);
         Route::patch('clients/{client}/status', [ClientController::class, 'toggleStatus'])->name('clients.status');

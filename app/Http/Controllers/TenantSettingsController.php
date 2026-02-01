@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\TenantMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -51,6 +53,7 @@ class TenantSettingsController extends Controller
             'date_format' => ['required', 'string', 'in:MM/DD/YYYY,DD/MM/YYYY,YYYY-MM-DD,DD-MM-YYYY,DD.MM.YYYY'],
             'show_order_cards' => ['required', 'boolean'],
             'notify_on_assignment' => ['required', 'boolean'],
+            'notify_on_comment' => ['required', 'boolean'],
             'enable_invoice_bulk_action' => ['required', 'boolean'],
             'api_enabled' => ['required', 'boolean'],
             'invoice_number_prefix' => ['nullable', 'string', 'max:10'],
@@ -64,6 +67,13 @@ class TenantSettingsController extends Controller
             'bank_details' => ['nullable', 'string'],
             'company_logo' => ['nullable', 'image', 'max:2048'],
             'remove_logo' => ['nullable', 'boolean'],
+            'smtp_host' => ['nullable', 'string', 'max:255'],
+            'smtp_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'smtp_username' => ['nullable', 'string', 'max:255'],
+            'smtp_password' => ['nullable', 'string', 'max:255'],
+            'smtp_encryption' => ['nullable', 'string', 'in:,tls,ssl'],
+            'mail_from_address' => ['nullable', 'email', 'max:255'],
+            'mail_from_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         $tenant = $request->user()->tenant;
@@ -96,6 +106,7 @@ class TenantSettingsController extends Controller
             'order_number_prefix' => $validated['order_number_prefix'] ?? '',
             'show_order_cards' => $validated['show_order_cards'],
             'notify_on_assignment' => $validated['notify_on_assignment'],
+            'notify_on_comment' => $validated['notify_on_comment'],
             'enable_invoice_bulk_action' => $validated['enable_invoice_bulk_action'],
             'api_enabled' => $validated['api_enabled'],
             'invoice_number_prefix' => $validated['invoice_number_prefix'] ?? 'INV-',
@@ -109,6 +120,13 @@ class TenantSettingsController extends Controller
             ],
             'bank_details' => $validated['bank_details'] ?? '',
             'company_logo_path' => $logoPath,
+            'smtp_host' => $validated['smtp_host'] ?? '',
+            'smtp_port' => $validated['smtp_port'] ?? null,
+            'smtp_username' => $validated['smtp_username'] ?? '',
+            'smtp_password' => $validated['smtp_password'] ?? '',
+            'smtp_encryption' => $validated['smtp_encryption'] ?? '',
+            'mail_from_address' => $validated['mail_from_address'] ?? '',
+            'mail_from_name' => $validated['mail_from_name'] ?? '',
         ]);
 
         $tenant->update([
@@ -117,6 +135,38 @@ class TenantSettingsController extends Controller
         ]);
 
         return back()->with('success', 'Settings saved.');
+    }
+
+    public function sendTestEmail(Request $request): RedirectResponse
+    {
+        abort_if(! $request->user()?->isAdmin(), 403);
+
+        $tenant = $request->user()->tenant;
+        $fromAddress = $tenant->getSetting('mail_from_address') ?: config('mail.from.address');
+        $fromName = $tenant->getSetting('mail_from_name') ?: $tenant->getSetting('company_details.name', config('app.name'));
+        $toAddress = $request->user()->email;
+
+        $mailerName = TenantMailer::configureForTenant($tenant);
+
+        try {
+            Mail::mailer($mailerName)
+                ->raw(
+                    "This is a test email from your Digitizing Workflow application.\n\n"
+                    . "If you received this message, your email settings are configured correctly.\n\n"
+                    . "Tenant: {$tenant->name}\n"
+                    . "From: {$fromAddress}\n"
+                    . "Mailer: " . ($mailerName ?? 'default'),
+                    function ($message) use ($fromAddress, $fromName, $toAddress, $tenant) {
+                        $message->from($fromAddress, $fromName)
+                            ->to($toAddress)
+                            ->subject("Test Email — {$tenant->name}");
+                    }
+                );
+
+            return back()->with('success', "Test email sent to {$toAddress}.");
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Test email failed: ' . $e->getMessage());
+        }
     }
 
     private function defaultSettings(): array
@@ -137,6 +187,7 @@ class TenantSettingsController extends Controller
             'order_number_prefix' => '',
             'show_order_cards' => false,
             'notify_on_assignment' => true,
+            'notify_on_comment' => true,
             'enable_invoice_bulk_action' => true,
             'api_enabled' => false,
             'api_key_hash' => null,
@@ -152,6 +203,13 @@ class TenantSettingsController extends Controller
             ],
             'bank_details' => '',
             'company_logo_path' => null,
+            'smtp_host' => '',
+            'smtp_port' => null,
+            'smtp_username' => '',
+            'smtp_password' => '',
+            'smtp_encryption' => '',
+            'mail_from_address' => '',
+            'mail_from_name' => '',
         ];
     }
 }

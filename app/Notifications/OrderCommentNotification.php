@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Order;
 use App\Models\OrderComment;
 use App\Models\User;
+use App\Support\TenantMailer;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -18,18 +19,28 @@ class OrderCommentNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        $channels = ['database'];
+
+        if ($this->order->tenant->getSetting('notify_on_comment', true)) {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         $order = $this->order;
-        $companyName = $order->tenant->getSetting('company_details.name', config('app.name'));
+        $tenant = $order->tenant;
+        $fromAddress = $tenant->getSetting('mail_from_address') ?: config('mail.from.address');
+        $fromName = $tenant->getSetting('mail_from_name') ?: $tenant->getSetting('company_details.name', config('app.name'));
         $name = $notifiable->name ?? 'there';
         $preview = \Illuminate\Support\Str::limit($this->comment->body, 200);
 
-        return (new MailMessage)
-            ->from(config('mail.from.address'), $companyName)
+        $mailer = TenantMailer::configureForTenant($tenant);
+
+        $mail = (new MailMessage)
+            ->from($fromAddress, $fromName)
             ->subject("New Comment on Order {$order->order_number} — {$order->title}")
             ->greeting("Dear {$name},")
             ->line("{$this->commenter->name} has added a new comment on order **{$order->order_number}**.")
@@ -38,6 +49,12 @@ class OrderCommentNotification extends Notification
             ->line("> {$preview}")
             ->action('View Order', $this->getOrderUrl($notifiable))
             ->line('Thank you.');
+
+        if ($mailer) {
+            $mail->mailer($mailer);
+        }
+
+        return $mail;
     }
 
     private function getOrderUrl(object $notifiable): string

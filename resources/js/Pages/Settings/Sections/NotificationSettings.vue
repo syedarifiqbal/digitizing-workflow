@@ -31,6 +31,24 @@ const props = defineProps({
             <p v-if="form.errors.notify_on_assignment" class="mt-1 text-xs text-red-600">
                 {{ form.errors.notify_on_assignment }}
             </p>
+
+            <div class="flex items-start">
+                <input
+                    v-model="form.notify_on_comment"
+                    id="notify_on_comment"
+                    type="checkbox"
+                    class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label class="ml-2 block text-sm text-gray-700" for="notify_on_comment">
+                    Email on new order comments
+                </label>
+            </div>
+            <p class="mt-1.5 text-xs text-gray-400">
+                Send an email notification whenever a new comment is added to an order. Bell notifications always appear regardless of this setting.
+            </p>
+            <p v-if="form.errors.notify_on_comment" class="mt-1 text-xs text-red-600">
+                {{ form.errors.notify_on_comment }}
+            </p>
         </div>
     </div>
 </template>

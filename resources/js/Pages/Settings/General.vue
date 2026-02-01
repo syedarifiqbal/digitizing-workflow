@@ -6,6 +6,7 @@ import GeneralSettings from "@/Pages/Settings/Sections/GeneralSettings.vue";
 import InvoicingSettings from "@/Pages/Settings/Sections/InvoicingSettings.vue";
 import WorkflowSettings from "@/Pages/Settings/Sections/WorkflowSettings.vue";
 import CommissionsSettings from "@/Pages/Settings/Sections/CommissionsSettings.vue";
+import EmailSettings from "@/Pages/Settings/Sections/EmailSettings.vue";
 import NotificationSettings from "@/Pages/Settings/Sections/NotificationSettings.vue";
 import ApiSettings from "@/Pages/Settings/Sections/ApiSettings.vue";
 import Button from "@/Components/Button.vue";
@@ -39,6 +40,7 @@ const form = useForm({
     order_number_prefix: props.settings.order_number_prefix ?? "",
     show_order_cards: props.settings.show_order_cards ?? false,
     notify_on_assignment: props.settings.notify_on_assignment ?? true,
+    notify_on_comment: props.settings.notify_on_comment ?? true,
     enable_invoice_bulk_action: props.settings.enable_invoice_bulk_action ?? true,
     api_enabled: props.settings.api_enabled ?? false,
     invoice_number_prefix: props.settings.invoice_number_prefix ?? "INV-",
@@ -53,6 +55,13 @@ const form = useForm({
     bank_details: props.settings.bank_details ?? "",
     company_logo: null,
     remove_logo: false,
+    smtp_host: props.settings.smtp_host ?? "",
+    smtp_port: props.settings.smtp_port ?? null,
+    smtp_username: props.settings.smtp_username ?? "",
+    smtp_password: props.settings.smtp_password ?? "",
+    smtp_encryption: props.settings.smtp_encryption ?? "",
+    mail_from_address: props.settings.mail_from_address ?? "",
+    mail_from_name: props.settings.mail_from_name ?? "",
 });
 
 const resetTransform = () => {
@@ -92,6 +101,7 @@ const submit = () => {
 
 const page = usePage();
 const successMessage = computed(() => page.props.flash?.success);
+const errorMessage = computed(() => page.props.flash?.error);
 const apiKeyMessage = computed(() => page.props.flash?.api_key);
 const apiKeyLastFour = computed(() => props.settings.api_key_last_four ?? null);
 
@@ -123,6 +133,12 @@ const tabs = [
         label: "Invoicing",
         description: "Defaults, branding, payment instructions.",
         component: InvoicingSettings,
+    },
+    {
+        id: "email",
+        label: "Email",
+        description: "SMTP server and sender identity.",
+        component: EmailSettings,
     },
     {
         id: "notifications",
@@ -182,6 +198,13 @@ const componentProps = computed(() => {
                     class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
                 >
                     {{ successMessage }}
+                </div>
+
+                <div
+                    v-if="errorMessage"
+                    class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                    {{ errorMessage }}
                 </div>
 
                 <form @submit.prevent="submit">

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Invoice;
+use App\Support\TenantMailer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -29,13 +30,16 @@ class InvoiceSentNotification extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         $invoice = $this->invoice;
-        $companyName = $invoice->tenant->getSetting('company_details.name', config('app.name'));
+        $tenant = $invoice->tenant;
+        $fromAddress = $tenant->getSetting('mail_from_address') ?: config('mail.from.address');
+        $fromName = $tenant->getSetting('mail_from_name') ?: $tenant->getSetting('company_details.name', config('app.name'));
+        $companyName = $tenant->getSetting('company_details.name', config('app.name'));
         $name = $notifiable->name ?? 'Valued Customer';
         $dueDate = $invoice->due_date?->format('F j, Y');
         $amount = number_format((float) $invoice->total_amount, 2);
 
         $mail = (new MailMessage)
-            ->from(config('mail.from.address'), $companyName)
+            ->from($fromAddress, $fromName)
             ->subject("Invoice {$invoice->invoice_number} — {$invoice->currency} {$amount} Due {$dueDate}")
             ->greeting("Dear {$name},")
             ->line("Please find below the details for your invoice. We kindly request that payment be made by the due date.");
@@ -62,6 +66,11 @@ class InvoiceSentNotification extends Notification implements ShouldQueue
 
         if ($this->pdfData) {
             $mail->attachData($this->pdfData, $this->pdfFilename ?? 'invoice.pdf', ['mime' => 'application/pdf']);
+        }
+
+        $mailer = TenantMailer::configureForTenant($tenant);
+        if ($mailer) {
+            $mail->mailer($mailer);
         }
 
         return $mail;

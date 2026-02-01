@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Order;
 use App\Models\OrderFile;
+use App\Support\TenantMailer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -31,11 +32,14 @@ class OrderDeliveredNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $order = $this->order;
-        $companyName = $order->tenant->getSetting('company_details.name', config('app.name'));
+        $tenant = $order->tenant;
+        $fromAddress = $tenant->getSetting('mail_from_address') ?: config('mail.from.address');
+        $fromName = $tenant->getSetting('mail_from_name') ?: $tenant->getSetting('company_details.name', config('app.name'));
+        $companyName = $tenant->getSetting('company_details.name', config('app.name'));
         $name = $notifiable->name ?? $order->client?->name ?? 'Valued Customer';
 
         $mail = (new MailMessage)
-            ->from(config('mail.from.address'), $companyName)
+            ->from($fromAddress, $fromName)
             ->subject("Your Order {$order->order_number} Has Been Delivered — {$order->title}")
             ->greeting("Dear {$name},")
             ->line("We are pleased to inform you that your order has been completed and is now ready for your review.");
@@ -96,6 +100,11 @@ class OrderDeliveredNotification extends Notification implements ShouldQueue
                     ]);
                 }
             }
+        }
+
+        $mailer = TenantMailer::configureForTenant($tenant);
+        if ($mailer) {
+            $mail->mailer($mailer);
         }
 
         return $mail;

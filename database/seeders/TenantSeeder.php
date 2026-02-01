@@ -28,6 +28,7 @@ class TenantSeeder extends Seeder
                 'auto_submit_on_upload' => true,
                 'auto_review_on_submit' => false,
                 'notify_on_assignment' => true,
+                'notify_on_comment' => true,
                 'currency' => 'USD',
                 'date_format' => 'M d, Y',
                 'show_order_cards' => false,

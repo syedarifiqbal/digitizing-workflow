@@ -78,6 +78,7 @@ class TenantSettingsTest extends TestCase
             'date_format' => 'MM/DD/YYYY',
             'show_order_cards' => false,
             'notify_on_assignment' => true,
+            'notify_on_comment' => true,
             'enable_invoice_bulk_action' => true,
             'api_enabled' => false,
             'invoice_number_prefix' => 'INV-',
@@ -92,6 +93,13 @@ class TenantSettingsTest extends TestCase
             'bank_details' => "Bank: Sample Bank\nAccount: 123456",
             'company_logo' => null,
             'remove_logo' => false,
+            'smtp_host' => '',
+            'smtp_port' => null,
+            'smtp_username' => '',
+            'smtp_password' => '',
+            'smtp_encryption' => '',
+            'mail_from_address' => null,
+            'mail_from_name' => '',
         ], $overrides);
     }
 }
