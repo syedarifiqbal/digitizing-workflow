@@ -20,7 +20,6 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $tenantId = $user->tenant_id;
 
         // Redirect clients to their portal dashboard
         if ($user->hasRole('Client')) {
@@ -32,7 +31,7 @@ class DashboardController extends Controller
 
         // Fetch stats based on role
         $stats = match ($role) {
-            'admin', 'manager' => $this->getAdminStats($tenantId),
+            'admin', 'manager' => $this->getAdminStats(),
             'designer' => $this->getDesignerStats($user),
             'sales' => $this->getSalesStats($user),
             default => [],
@@ -62,7 +61,7 @@ class DashboardController extends Controller
         return 'admin'; // Fallback
     }
 
-    private function getAdminStats(int $tenantId): array
+    private function getAdminStats(): array
     {
         $now = Carbon::now();
         $startOfDay = $now->copy()->startOfDay();
@@ -73,19 +72,19 @@ class DashboardController extends Controller
         $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
 
         // Order stats
-        $orderStats = $this->getOrderStats($tenantId, $startOfDay, $startOfMonth);
+        $orderStats = $this->getOrderStats($startOfDay, $startOfMonth);
 
         // Revenue stats
-        $revenueStats = $this->getRevenueStats($tenantId, $startOfDay, $startOfWeek, $startOfMonth, $startOfLastMonth, $endOfLastMonth, $startOfYear);
+        $revenueStats = $this->getRevenueStats($startOfDay, $startOfWeek, $startOfMonth, $startOfLastMonth, $endOfLastMonth, $startOfYear);
 
         // Client stats
         $clientStats = [
-            'total' => Client::where('tenant_id', $tenantId)->count(),
-            'active' => Client::where('tenant_id', $tenantId)->where('is_active', true)->count(),
+            'total' => Client::count(),
+            'active' => Client::where('is_active', true)->count(),
         ];
 
         // Recent orders
-        $recentOrders = Order::where('tenant_id', $tenantId)
+        $recentOrders = Order::query()
             ->select('id', 'order_number', 'title', 'status', 'created_at')
             ->orderByDesc('created_at')
             ->limit(5)
@@ -99,13 +98,13 @@ class DashboardController extends Controller
             ]);
 
         // Top designers this month
-        $topDesigners = $this->getTopDesigners($tenantId, $startOfMonth);
+        $topDesigners = $this->getTopDesigners($startOfMonth);
 
         // Commission stats
-        $commissionStats = $this->getCommissionStats($tenantId, $startOfMonth);
+        $commissionStats = $this->getCommissionStats($startOfMonth);
 
         // Invoice stats
-        $invoiceStats = $this->getInvoiceStats($tenantId, $startOfMonth);
+        $invoiceStats = $this->getInvoiceStats($startOfMonth);
 
         return [
             'orders' => $orderStats,
@@ -118,20 +117,19 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getOrderStats(int $tenantId, Carbon $startOfDay, Carbon $startOfMonth): array
+    private function getOrderStats(Carbon $startOfDay, Carbon $startOfMonth): array
     {
-        $baseQuery = Order::where('tenant_id', $tenantId);
+        $baseQuery = Order::query();
 
         // Count by status
-        $byStatus = Order::where('tenant_id', $tenantId)
+        $byStatus = Order::query()
             ->select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
             ->pluck('count', 'status')
             ->toArray();
 
         // Needs attention: submitted (awaiting review)
-        $needsAttention = Order::where('tenant_id', $tenantId)
-            ->whereIn('status', [
+        $needsAttention = Order::whereIn('status', [
                 OrderStatus::SUBMITTED,
                 OrderStatus::IN_REVIEW,
             ])
@@ -151,35 +149,30 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getRevenueStats(int $tenantId, Carbon $startOfDay, Carbon $startOfWeek, Carbon $startOfMonth, Carbon $startOfLastMonth, Carbon $endOfLastMonth, Carbon $startOfYear): array
+    private function getRevenueStats(Carbon $startOfDay, Carbon $startOfWeek, Carbon $startOfMonth, Carbon $startOfLastMonth, Carbon $endOfLastMonth, Carbon $startOfYear): array
     {
         $deliveredStatuses = [OrderStatus::DELIVERED, OrderStatus::CLOSED];
 
         return [
-            'today' => Order::where('tenant_id', $tenantId)
-                ->whereIn('status', $deliveredStatuses)
+            'today' => Order::whereIn('status', $deliveredStatuses)
                 ->where('delivered_at', '>=', $startOfDay)
                 ->sum('price') ?? 0,
-            'this_week' => Order::where('tenant_id', $tenantId)
-                ->whereIn('status', $deliveredStatuses)
+            'this_week' => Order::whereIn('status', $deliveredStatuses)
                 ->where('delivered_at', '>=', $startOfWeek)
                 ->sum('price') ?? 0,
-            'this_month' => Order::where('tenant_id', $tenantId)
-                ->whereIn('status', $deliveredStatuses)
+            'this_month' => Order::whereIn('status', $deliveredStatuses)
                 ->where('delivered_at', '>=', $startOfMonth)
                 ->sum('price') ?? 0,
-            'last_month' => Order::where('tenant_id', $tenantId)
-                ->whereIn('status', $deliveredStatuses)
+            'last_month' => Order::whereIn('status', $deliveredStatuses)
                 ->whereBetween('delivered_at', [$startOfLastMonth, $endOfLastMonth])
                 ->sum('price') ?? 0,
-            'this_year' => Order::where('tenant_id', $tenantId)
-                ->whereIn('status', $deliveredStatuses)
+            'this_year' => Order::whereIn('status', $deliveredStatuses)
                 ->where('delivered_at', '>=', $startOfYear)
                 ->sum('price') ?? 0,
         ];
     }
 
-    private function getTopDesigners(int $tenantId, Carbon $startOfMonth): array
+    private function getTopDesigners(Carbon $startOfMonth): array
     {
         // Get designers with completed orders this month
         $designers = User::whereHas('roles', fn ($q) => $q->where('name', 'Designer'))
@@ -192,10 +185,9 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        return $designers->map(function ($designer) use ($tenantId, $startOfMonth) {
+        return $designers->map(function ($designer) use ($startOfMonth) {
             // Get earnings for this designer this month
-            $earnings = Commission::where('tenant_id', $tenantId)
-                ->where('user_id', $designer->id)
+            $earnings = Commission::where('user_id', $designer->id)
                 ->where('role_type', RoleType::DESIGNER)
                 ->where('created_at', '>=', $startOfMonth)
                 ->sum(DB::raw('base_amount + extra_amount'));
@@ -209,9 +201,9 @@ class DashboardController extends Controller
         })->toArray();
     }
 
-    private function getCommissionStats(int $tenantId, Carbon $startOfMonth): array
+    private function getCommissionStats(Carbon $startOfMonth): array
     {
-        $baseQuery = Commission::where('tenant_id', $tenantId);
+        $baseQuery = Commission::query();
 
         return [
             'unpaid' => (clone $baseQuery)
@@ -232,7 +224,7 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getInvoiceStats(int $tenantId, Carbon $startOfMonth): array
+    private function getInvoiceStats(Carbon $startOfMonth): array
     {
         // Check if Invoice model exists (invoicing may not be implemented yet)
         if (! class_exists(Invoice::class)) {
@@ -246,7 +238,7 @@ class DashboardController extends Controller
         }
 
         try {
-            $baseQuery = Invoice::where('tenant_id', $tenantId);
+            $baseQuery = Invoice::query();
 
             return [
                 'draft_count' => (clone $baseQuery)->where('status', InvoiceStatus::DRAFT)->count(),
@@ -274,7 +266,6 @@ class DashboardController extends Controller
 
     private function getDesignerStats(User $user): array
     {
-        $tenantId = $user->tenant_id;
         $userId = $user->id;
         $now = Carbon::now();
         $startOfMonth = $now->copy()->startOfMonth();
@@ -282,17 +273,16 @@ class DashboardController extends Controller
         $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
 
         // Order stats for this designer
-        $orderStats = $this->getDesignerOrderStats($tenantId, $userId, $startOfMonth);
+        $orderStats = $this->getDesignerOrderStats($userId, $startOfMonth);
 
         // Earnings stats
-        $earningsStats = $this->getDesignerEarningsStats($tenantId, $userId, $startOfMonth);
+        $earningsStats = $this->getDesignerEarningsStats($userId, $startOfMonth);
 
         // Performance stats
-        $performanceStats = $this->getDesignerPerformanceStats($tenantId, $userId, $startOfMonth, $startOfLastMonth, $endOfLastMonth);
+        $performanceStats = $this->getDesignerPerformanceStats($userId, $startOfMonth, $startOfLastMonth, $endOfLastMonth);
 
         // Orders needing action (assigned)
-        $actionRequired = Order::where('tenant_id', $tenantId)
-            ->where('designer_id', $userId)
+        $actionRequired = Order::where('designer_id', $userId)
             ->where('status', OrderStatus::ASSIGNED)
             ->orderBy('priority', 'desc') // Rush first
             ->orderBy('created_at', 'asc')
@@ -311,8 +301,7 @@ class DashboardController extends Controller
             });
 
         // Current work (in progress, submitted, in review)
-        $currentWork = Order::where('tenant_id', $tenantId)
-            ->where('designer_id', $userId)
+        $currentWork = Order::where('designer_id', $userId)
             ->whereIn('status', [OrderStatus::IN_PROGRESS, OrderStatus::SUBMITTED, OrderStatus::IN_REVIEW])
             ->orderBy('priority', 'desc')
             ->orderBy('due_at', 'asc')
@@ -328,16 +317,14 @@ class DashboardController extends Controller
             ]);
 
         // Recent completions with earnings
-        $recentCompletions = Order::where('tenant_id', $tenantId)
-            ->where('designer_id', $userId)
+        $recentCompletions = Order::where('designer_id', $userId)
             ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
             ->whereNotNull('delivered_at')
             ->orderByDesc('delivered_at')
             ->limit(5)
             ->get()
-            ->map(function ($order) use ($tenantId, $userId) {
-                $earnings = Commission::where('tenant_id', $tenantId)
-                    ->where('order_id', $order->id)
+            ->map(function ($order) use ($userId) {
+                $earnings = Commission::where('order_id', $order->id)
                     ->where('user_id', $userId)
                     ->where('role_type', RoleType::DESIGNER)
                     ->sum(DB::raw('base_amount + extra_amount'));
@@ -361,9 +348,9 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getDesignerOrderStats(int $tenantId, int $userId, Carbon $startOfMonth): array
+    private function getDesignerOrderStats(int $userId, Carbon $startOfMonth): array
     {
-        $baseQuery = Order::where('tenant_id', $tenantId)->where('designer_id', $userId);
+        $baseQuery = Order::where('designer_id', $userId);
 
         // Count active orders (assigned through in_review)
         $activeStatuses = [
@@ -387,10 +374,9 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getDesignerEarningsStats(int $tenantId, int $userId, Carbon $startOfMonth): array
+    private function getDesignerEarningsStats(int $userId, Carbon $startOfMonth): array
     {
-        $baseQuery = Commission::where('tenant_id', $tenantId)
-            ->where('user_id', $userId)
+        $baseQuery = Commission::where('user_id', $userId)
             ->where('role_type', RoleType::DESIGNER);
 
         $thisMonth = (clone $baseQuery)
@@ -418,29 +404,25 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getDesignerPerformanceStats(int $tenantId, int $userId, Carbon $startOfMonth, Carbon $startOfLastMonth, Carbon $endOfLastMonth): array
+    private function getDesignerPerformanceStats(int $userId, Carbon $startOfMonth, Carbon $startOfLastMonth, Carbon $endOfLastMonth): array
     {
         $completedStatuses = [OrderStatus::DELIVERED, OrderStatus::CLOSED];
 
-        $ordersThisMonth = Order::where('tenant_id', $tenantId)
-            ->where('designer_id', $userId)
+        $ordersThisMonth = Order::where('designer_id', $userId)
             ->whereIn('status', $completedStatuses)
             ->where('delivered_at', '>=', $startOfMonth)
             ->count();
 
-        $ordersLastMonth = Order::where('tenant_id', $tenantId)
-            ->where('designer_id', $userId)
+        $ordersLastMonth = Order::where('designer_id', $userId)
             ->whereIn('status', $completedStatuses)
             ->whereBetween('delivered_at', [$startOfLastMonth, $endOfLastMonth])
             ->count();
 
-        $totalCompleted = Order::where('tenant_id', $tenantId)
-            ->where('designer_id', $userId)
+        $totalCompleted = Order::where('designer_id', $userId)
             ->whereIn('status', $completedStatuses)
             ->count();
 
-        $totalEarnings = Commission::where('tenant_id', $tenantId)
-            ->where('user_id', $userId)
+        $totalEarnings = Commission::where('user_id', $userId)
             ->where('role_type', RoleType::DESIGNER)
             ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
 
@@ -462,20 +444,19 @@ class DashboardController extends Controller
         $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
 
         // Order stats for this sales user
-        $orderStats = $this->getSalesOrderStats($tenantId, $userId, $startOfMonth);
+        $orderStats = $this->getSalesOrderStats($userId, $startOfMonth);
 
         // Earnings stats
-        $earningsStats = $this->getSalesEarningsStats($tenantId, $userId, $startOfMonth);
+        $earningsStats = $this->getSalesEarningsStats($userId, $startOfMonth);
 
-        // Client stats
+        // Client stats (needs $tenantId for DB::table query)
         $clientStats = $this->getSalesClientStats($tenantId, $userId, $startOfMonth);
 
         // Performance stats
-        $performanceStats = $this->getSalesPerformanceStats($tenantId, $userId, $startOfMonth, $startOfLastMonth, $endOfLastMonth);
+        $performanceStats = $this->getSalesPerformanceStats($userId, $startOfMonth, $startOfLastMonth, $endOfLastMonth);
 
         // Recent orders
-        $recentOrders = Order::where('tenant_id', $tenantId)
-            ->where('sales_user_id', $userId)
+        $recentOrders = Order::where('sales_user_id', $userId)
             ->with('client:id,name')
             ->orderByDesc('created_at')
             ->limit(5)
@@ -491,10 +472,10 @@ class DashboardController extends Controller
             ]);
 
         // Top clients by order value
-        $topClients = $this->getSalesTopClients($tenantId, $userId);
+        $topClients = $this->getSalesTopClients($userId);
 
         // Recent commissions
-        $recentCommissions = $this->getSalesRecentCommissions($tenantId, $userId);
+        $recentCommissions = $this->getSalesRecentCommissions($userId);
 
         return [
             'orders' => $orderStats,
@@ -507,13 +488,12 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getSalesOrderStats(int $tenantId, int $userId, Carbon $startOfMonth): array
+    private function getSalesOrderStats(int $userId, Carbon $startOfMonth): array
     {
-        $baseQuery = Order::where('tenant_id', $tenantId)->where('sales_user_id', $userId);
+        $baseQuery = Order::where('sales_user_id', $userId);
 
         // Count by status
-        $byStatus = Order::where('tenant_id', $tenantId)
-            ->where('sales_user_id', $userId)
+        $byStatus = Order::where('sales_user_id', $userId)
             ->select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
             ->pluck('count', 'status')
@@ -541,10 +521,9 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getSalesEarningsStats(int $tenantId, int $userId, Carbon $startOfMonth): array
+    private function getSalesEarningsStats(int $userId, Carbon $startOfMonth): array
     {
-        $baseQuery = Commission::where('tenant_id', $tenantId)
-            ->where('user_id', $userId)
+        $baseQuery = Commission::where('user_id', $userId)
             ->where('role_type', RoleType::SALES);
 
         $thisMonth = (clone $baseQuery)
@@ -561,8 +540,7 @@ class DashboardController extends Controller
             ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
 
         // Order value this month (from delivered orders)
-        $orderValueThisMonth = Order::where('tenant_id', $tenantId)
-            ->where('sales_user_id', $userId)
+        $orderValueThisMonth = Order::where('sales_user_id', $userId)
             ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
             ->where('delivered_at', '>=', $startOfMonth)
             ->sum('price') ?? 0;
@@ -578,12 +556,12 @@ class DashboardController extends Controller
     private function getSalesClientStats(int $tenantId, int $userId, Carbon $startOfMonth): array
     {
         // Get unique clients from orders assigned to this sales user
-        $totalClients = Order::where('tenant_id', $tenantId)
-            ->where('sales_user_id', $userId)
+        $totalClients = Order::where('sales_user_id', $userId)
             ->distinct('client_id')
             ->count('client_id');
 
         // New clients this month (first order from client was this month)
+        // Uses DB::table which bypasses global scope — explicit tenant_id required
         $newClientsThisMonth = DB::table('orders')
             ->select('client_id')
             ->where('tenant_id', $tenantId)
@@ -598,9 +576,9 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getSalesPerformanceStats(int $tenantId, int $userId, Carbon $startOfMonth, Carbon $startOfLastMonth, Carbon $endOfLastMonth): array
+    private function getSalesPerformanceStats(int $userId, Carbon $startOfMonth, Carbon $startOfLastMonth, Carbon $endOfLastMonth): array
     {
-        $baseQuery = Order::where('tenant_id', $tenantId)->where('sales_user_id', $userId);
+        $baseQuery = Order::where('sales_user_id', $userId);
 
         $ordersThisMonth = (clone $baseQuery)
             ->where('created_at', '>=', $startOfMonth)
@@ -612,13 +590,11 @@ class DashboardController extends Controller
 
         $totalOrders = (clone $baseQuery)->count();
 
-        $totalCommission = Commission::where('tenant_id', $tenantId)
-            ->where('user_id', $userId)
+        $totalCommission = Commission::where('user_id', $userId)
             ->where('role_type', RoleType::SALES)
             ->sum(DB::raw('base_amount + extra_amount')) ?? 0;
 
-        $totalSalesValue = Order::where('tenant_id', $tenantId)
-            ->where('sales_user_id', $userId)
+        $totalSalesValue = Order::where('sales_user_id', $userId)
             ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
             ->sum('price') ?? 0;
 
@@ -631,10 +607,9 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getSalesTopClients(int $tenantId, int $userId): array
+    private function getSalesTopClients(int $userId): array
     {
-        return Order::where('tenant_id', $tenantId)
-            ->where('sales_user_id', $userId)
+        return Order::where('sales_user_id', $userId)
             ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
             ->select('client_id', DB::raw('COUNT(*) as orders_count'), DB::raw('SUM(price) as total_value'))
             ->groupBy('client_id')
@@ -651,10 +626,9 @@ class DashboardController extends Controller
             ->toArray();
     }
 
-    private function getSalesRecentCommissions(int $tenantId, int $userId): array
+    private function getSalesRecentCommissions(int $userId): array
     {
-        return Commission::where('tenant_id', $tenantId)
-            ->where('user_id', $userId)
+        return Commission::where('user_id', $userId)
             ->where('role_type', RoleType::SALES)
             ->with(['order:id,order_number,client_id,price', 'order.client:id,name'])
             ->orderByDesc('created_at')

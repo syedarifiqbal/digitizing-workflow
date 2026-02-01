@@ -280,7 +280,7 @@ class InvoiceController extends Controller
         $total = max($subtotal + $taxAmount - $discount, 0);
 
         DB::transaction(function () use ($items, $data, $tenantId, $user, $taxRate, $taxAmount, $discount, $total, $ordersById, $subtotal) {
-            $nextSequence = (int) Invoice::where('tenant_id', $tenantId)->max('sequence') + 1;
+            $nextSequence = (int) Invoice::max('sequence') + 1;
             $prefix = $user->tenant?->getSetting('invoice_number_prefix', 'INV-') ?? 'INV-';
             $invoiceNumber = sprintf('%s%05d', $prefix, $nextSequence);
 
@@ -815,7 +815,7 @@ class InvoiceController extends Controller
         $invoiceId = $data['invoice_id'] ?? null;
 
         if ($invoiceId) {
-            $invoice = Invoice::where('tenant_id', $tenantId)->findOrFail($invoiceId);
+            $invoice = Invoice::findOrFail($invoiceId);
             $this->authorize('update', $invoice);
             if ($invoice->client_id !== $clientId) {
                 throw ValidationException::withMessages([
@@ -891,7 +891,6 @@ class InvoiceController extends Controller
         $tenantId = $request->user()->tenant_id;
 
         $query = Invoice::query()
-            ->where('tenant_id', $tenantId)
             ->when($filters['status'] ?? null, function ($q, $status) {
                 if ($status !== 'all') {
                     $q->where('status', $status);
@@ -917,7 +916,7 @@ class InvoiceController extends Controller
 
         $agingBuckets = $this->calculateAging($tenantId);
 
-        $clients = Client::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name'])->map(fn (Client $c) => [
+        $clients = Client::orderBy('name')->get(['id', 'name'])->map(fn (Client $c) => [
             'label' => $c->name,
             'value' => (string) $c->id,
         ])->prepend(['label' => 'All Clients', 'value' => 'all']);
@@ -949,7 +948,6 @@ class InvoiceController extends Controller
 
         $invoices = Invoice::query()
             ->with('client:id,name,company')
-            ->where('tenant_id', $tenantId)
             ->when($filters['status'] ?? null, function ($q, $status) {
                 if ($status !== 'all') {
                     $q->where('status', $status);
@@ -1004,8 +1002,7 @@ class InvoiceController extends Controller
 
     private function calculateAging(int $tenantId): array
     {
-        $outstanding = Invoice::where('tenant_id', $tenantId)
-            ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
+        $outstanding = Invoice::whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
             ->with('client:id,name')
             ->get();
 

@@ -32,7 +32,6 @@ class CommissionRuleController extends Controller
         $tenantId = $user->tenant_id;
 
         $rules = CommissionRule::query()
-            ->where('tenant_id', $tenantId)
             ->where('role_type', $roleType)
             ->with('user:id,name,email')
             ->latest()
@@ -54,7 +53,6 @@ class CommissionRuleController extends Controller
             ]);
 
         $availableUsers = User::query()
-            ->where('tenant_id', $tenantId)
             ->whereHas('roles', fn ($q) => $q->where('name', $roleName))
             ->orderBy('name')
             ->get(['id', 'name', 'email'])
@@ -100,8 +98,7 @@ class CommissionRuleController extends Controller
         ]);
 
         // Check uniqueness: one rule per user per role type
-        $exists = CommissionRule::where('tenant_id', $user->tenant_id)
-            ->where('user_id', $validated['user_id'])
+        $exists = CommissionRule::where('user_id', $validated['user_id'])
             ->where('role_type', $validated['role_type'])
             ->exists();
 

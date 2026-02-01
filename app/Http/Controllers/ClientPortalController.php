@@ -30,7 +30,6 @@ class ClientPortalController extends Controller
 
         // Recent orders (last 5)
         $recentOrders = Order::query()
-            ->where('tenant_id', $user->tenant_id)
             ->where('client_id', $client->id)
             ->with(['designer:id,name', 'sales:id,name'])
             ->orderBy('created_at', 'desc')
@@ -52,7 +51,6 @@ class ClientPortalController extends Controller
 
         // Orders needing attention (revision requested or delivered)
         $ordersNeedingAttention = Order::query()
-            ->where('tenant_id', $user->tenant_id)
             ->where('client_id', $client->id)
             ->whereIn('status', [OrderStatus::DELIVERED])
             ->with(['designer:id,name', 'sales:id,name'])
@@ -73,11 +71,9 @@ class ClientPortalController extends Controller
 
         // Order statistics
         $stats = [
-            'total' => Order::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'total' => Order::where('client_id', $client->id)
                 ->count(),
-            'in_progress' => Order::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'in_progress' => Order::where('client_id', $client->id)
                 ->whereIn('status', [
                     OrderStatus::RECEIVED,
                     OrderStatus::ASSIGNED,
@@ -86,28 +82,23 @@ class ClientPortalController extends Controller
                     OrderStatus::IN_REVIEW,
                 ])
                 ->count(),
-            'delivered' => Order::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'delivered' => Order::where('client_id', $client->id)
                 ->where('status', OrderStatus::DELIVERED)
                 ->count(),
-            'completed' => Order::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'completed' => Order::where('client_id', $client->id)
                 ->where('status', OrderStatus::CLOSED)
                 ->count(),
         ];
 
         // Invoice statistics
         $invoiceStats = [
-            'unpaid_count' => Invoice::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'unpaid_count' => Invoice::where('client_id', $client->id)
                 ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
                 ->count(),
-            'total_due' => Invoice::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'total_due' => Invoice::where('client_id', $client->id)
                 ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
                 ->sum('total_amount'),
-            'overdue_count' => Invoice::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'overdue_count' => Invoice::where('client_id', $client->id)
                 ->where('status', InvoiceStatus::OVERDUE)
                 ->count(),
         ];
@@ -133,7 +124,6 @@ class ClientPortalController extends Controller
         $filters = $request->only(['search', 'status', 'priority']);
 
         $orders = Order::query()
-            ->where('tenant_id', $user->tenant_id)
             ->where('client_id', $client->id)
             ->with(['designer:id,name', 'sales:id,name'])
             ->when($filters['search'] ?? null, function ($query, $search) {
@@ -239,7 +229,7 @@ class ClientPortalController extends Controller
 
         // Generate order number
         $prefix = $tenant->getSetting('order_number_prefix', '');
-        $lastOrder = Order::where('tenant_id', $tenant->id)->latest('id')->first();
+        $lastOrder = Order::latest('id')->first();
         $nextNumber = $lastOrder ? (intval(substr($lastOrder->order_number, strlen($prefix))) + 1) : 1;
         $orderNumber = $prefix . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
         $sequence = ((int) Order::forTenant($tenant->id)->max('sequence')) + 1;
@@ -434,7 +424,6 @@ class ClientPortalController extends Controller
         $filters = $request->only(['status']);
 
         $invoices = Invoice::query()
-            ->where('tenant_id', $user->tenant_id)
             ->where('client_id', $client->id)
             ->whereNot('status', InvoiceStatus::DRAFT) // Clients cannot see draft invoices
             ->when($filters['status'] ?? null, function ($query, $status) {
@@ -459,16 +448,13 @@ class ClientPortalController extends Controller
 
         // Calculate totals for client
         $totals = [
-            'unpaid_count' => Invoice::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'unpaid_count' => Invoice::where('client_id', $client->id)
                 ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
                 ->count(),
-            'total_due' => Invoice::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'total_due' => Invoice::where('client_id', $client->id)
                 ->whereIn('status', [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE])
                 ->sum('total_amount'),
-            'overdue_count' => Invoice::where('tenant_id', $user->tenant_id)
-                ->where('client_id', $client->id)
+            'overdue_count' => Invoice::where('client_id', $client->id)
                 ->where('status', InvoiceStatus::OVERDUE)
                 ->count(),
         ];

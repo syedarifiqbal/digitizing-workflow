@@ -24,7 +24,6 @@ class CommissionController extends Controller
 
         $query = Commission::query()
             ->with(['user:id,name', 'order:id,order_number,title'])
-            ->where('tenant_id', $tenantId)
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->whereHas('user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
@@ -129,7 +128,6 @@ class CommissionController extends Controller
 
         $query = Commission::query()
             ->with(['order:id,order_number,title,type'])
-            ->where('tenant_id', $user->tenant_id)
             ->where('user_id', $user->id)
             ->where('role_type', $roleType)
             ->when(isset($filters['is_paid']), function ($query) use ($filters) {
@@ -229,9 +227,7 @@ class CommissionController extends Controller
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $commissions = Commission::where('tenant_id', $request->user()->tenant_id)
-            ->whereIn('id', $validated['ids'])
-            ->get();
+        $commissions = Commission::whereIn('id', $validated['ids'])->get();
 
         foreach ($commissions as $commission) {
             $this->authorize('update', $commission);
@@ -269,7 +265,6 @@ class CommissionController extends Controller
 
         $commissions = Commission::query()
             ->with(['user:id,name', 'order:id,order_number,title'])
-            ->where('tenant_id', $tenantId)
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->whereHas('user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
@@ -314,7 +309,6 @@ class CommissionController extends Controller
 
         $commissions = Commission::query()
             ->with(['order:id,order_number,title'])
-            ->where('tenant_id', $user->tenant_id)
             ->where('user_id', $user->id)
             ->where('role_type', $roleType)
             ->when(isset($filters['is_paid']), function ($query) use ($filters) {
@@ -408,7 +402,6 @@ class CommissionController extends Controller
         $roleName = $roleType === RoleType::SALES->value ? 'Sales' : 'Designer';
 
         $users = User::query()
-            ->where('tenant_id', $request->user()->tenant_id)
             ->whereHas('roles', fn ($q) => $q->where('name', $roleName))
             ->orderBy('name')
             ->get(['id', 'name'])

@@ -811,9 +811,7 @@ class OrderController extends Controller
             $validated['file_ids'] ?? []
         );
 
-        $clientUser = User::where('client_id', $order->client_id)
-            ->where('tenant_id', $order->tenant_id)
-            ->first();
+        $clientUser = User::where('client_id', $order->client_id)->first();
 
         $notificationSent = false;
         if ($clientUser) {
@@ -1033,7 +1031,6 @@ class OrderController extends Controller
     private function clientOptions(Request $request)
     {
         return Client::query()
-            ->where('tenant_id', $request->user()->tenant_id)
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
     }
@@ -1041,7 +1038,6 @@ class OrderController extends Controller
     private function designerOptions(Request $request)
     {
         return User::query()
-            ->where('tenant_id', $request->user()->tenant_id)
             ->whereHas('roles', fn ($q) => $q->where('name', 'Designer'))
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -1050,7 +1046,6 @@ class OrderController extends Controller
     private function salesOptions(Request $request)
     {
         return User::query()
-            ->where('tenant_id', $request->user()->tenant_id)
             ->whereHas('roles', fn ($q) => $q->where('name', 'Sales'))
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -1160,7 +1155,6 @@ class OrderController extends Controller
             // Notify client users only for client-visibility comments
             if ($validated['visibility'] === 'client') {
                 $clientUsers = User::where('client_id', $order->client_id)
-                    ->where('tenant_id', $order->tenant_id)
                     ->where('id', '!=', $commenter->id)
                     ->get();
                 foreach ($clientUsers as $clientUser) {
