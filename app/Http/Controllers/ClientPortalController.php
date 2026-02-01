@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
+use App\Http\Controllers\OrderFileController;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Services\InvoicePdfService;
@@ -355,6 +356,12 @@ class ClientPortalController extends Controller
             'inputFiles' => $inputFiles,
             'outputFiles' => $outputFiles,
             'showOutputFiles' => $showOutputFiles,
+            'downloadInputZipUrl' => $order->files->where('type', 'input')->isNotEmpty()
+                ? OrderFileController::signedZipUrl($order, 'input')
+                : null,
+            'downloadOutputZipUrl' => ($showOutputFiles && $order->files->where('type', 'output')->where('is_delivered', true)->isNotEmpty())
+                ? OrderFileController::signedZipUrl($order, 'output')
+                : null,
             'parentOrder' => $order->parent ? [
                 'id' => $order->parent->id,
                 'order_number' => $order->parent->order_number,
@@ -388,13 +395,30 @@ class ClientPortalController extends Controller
             'body' => ['required', 'string', 'max:2000'],
         ]);
 
-        \App\Models\OrderComment::create([
+        $comment = \App\Models\OrderComment::create([
             'tenant_id' => $order->tenant_id,
             'order_id' => $order->id,
             'user_id' => $user->id,
             'visibility' => 'client', // Clients can only create client-visible comments
             'body' => $validated['body'],
         ]);
+
+        // Send comment notifications
+        $notification = new \App\Notifications\OrderCommentNotification($order, $comment, $user);
+
+        // Notify admin/managers of the tenant
+        $admins = \App\Models\User::where('tenant_id', $order->tenant_id)
+            ->whereHas('roles', fn ($q) => $q->whereIn('name', ['Admin', 'Manager']))
+            ->where('id', '!=', $user->id)
+            ->get();
+        foreach ($admins as $admin) {
+            $admin->notify($notification);
+        }
+
+        // Notify designer (if assigned)
+        if ($order->designer && $order->designer_id !== $user->id) {
+            $order->designer->notify($notification);
+        }
 
         return back()->with('success', 'Comment added successfully.');
     }

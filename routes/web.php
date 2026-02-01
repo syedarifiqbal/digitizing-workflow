@@ -85,6 +85,9 @@ Route::middleware('auth')->group(function () {
         Route::get('orders/files/{file}/download', [OrderFileController::class, 'download'])
             ->name('orders.files.download')
             ->middleware('signed');
+        Route::get('orders/{order}/download-files/{type}', [OrderFileController::class, 'downloadZip'])
+            ->name('orders.files.download-zip')
+            ->middleware('signed');
         Route::delete('orders/files/{file}', [OrderFileController::class, 'destroy'])
             ->name('orders.files.destroy');
         Route::delete('users/bulk', [UserController::class, 'bulkDestroy'])->name('users.bulk-destroy');

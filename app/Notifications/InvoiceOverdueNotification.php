@@ -24,14 +24,24 @@ class InvoiceOverdueNotification extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         $invoice = $this->invoice;
+        $companyName = $invoice->tenant->getSetting('company_details.name', config('app.name'));
+        $name = $notifiable->name ?? 'Valued Customer';
         $balance = max((float) $invoice->total_amount - $invoice->payments()->sum('amount'), 0);
+        $formattedBalance = number_format($balance, 2);
+        $dueDate = $invoice->due_date?->format('F j, Y');
 
-        return (new MailMessage())
-            ->subject("Invoice {$invoice->invoice_number} is overdue")
-            ->greeting('Hello!')
-            ->line('This is a friendly reminder that invoice ' . $invoice->invoice_number . ' is now overdue.')
-            ->line('Outstanding balance: ' . $invoice->currency . ' ' . number_format($balance, 2))
-            ->line('Please arrange payment at your earliest convenience or reach out if you need assistance.')
-            ->line('Thank you.');
+        return (new MailMessage)
+            ->from(config('mail.from.address'), $companyName)
+            ->subject("Payment Reminder: Invoice {$invoice->invoice_number} is Overdue")
+            ->greeting("Dear {$name},")
+            ->line("This is a reminder that payment for the following invoice is now past due. We kindly request your prompt attention to this matter.")
+            ->line('**Invoice Details:**')
+            ->line("- **Invoice Number:** {$invoice->invoice_number}")
+            ->line("- **Outstanding Balance:** {$invoice->currency} {$formattedBalance}")
+            ->line("- **Original Due Date:** {$dueDate}")
+            ->line('')
+            ->line('Please arrange payment at your earliest convenience. If you have already submitted payment, please disregard this notice.')
+            ->action('View Invoice', route('client.invoices.show', $invoice->id))
+            ->line("If you have any questions or need assistance, please do not hesitate to contact us. Thank you for your attention to this matter.");
     }
 }

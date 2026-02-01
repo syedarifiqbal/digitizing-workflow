@@ -14,7 +14,6 @@ class OrderStatusEnumTest extends TestCase
         $this->assertEquals('in_progress', OrderStatus::IN_PROGRESS->value);
         $this->assertEquals('submitted', OrderStatus::SUBMITTED->value);
         $this->assertEquals('in_review', OrderStatus::IN_REVIEW->value);
-        $this->assertEquals('revision_requested', OrderStatus::REVISION_REQUESTED->value);
         $this->assertEquals('approved', OrderStatus::APPROVED->value);
         $this->assertEquals('delivered', OrderStatus::DELIVERED->value);
         $this->assertEquals('closed', OrderStatus::CLOSED->value);
@@ -28,7 +27,6 @@ class OrderStatusEnumTest extends TestCase
         $this->assertEquals('In Progress', OrderStatus::IN_PROGRESS->label());
         $this->assertEquals('Submitted', OrderStatus::SUBMITTED->label());
         $this->assertEquals('In Review', OrderStatus::IN_REVIEW->label());
-        $this->assertEquals('Revision Requested', OrderStatus::REVISION_REQUESTED->label());
         $this->assertEquals('Approved', OrderStatus::APPROVED->label());
         $this->assertEquals('Delivered', OrderStatus::DELIVERED->label());
         $this->assertEquals('Closed', OrderStatus::CLOSED->label());

@@ -28,6 +28,8 @@ const props = defineProps({
     commissions: Array,
     comments: Array,
     invoiceInfo: Object,
+    downloadInputZipUrl: String,
+    downloadOutputZipUrl: String,
 });
 
 const selectedDesigner = ref(props.order?.designer?.id ?? "");
@@ -936,10 +938,17 @@ const priorityBadgeClass = (priority) => {
                         <div
                             class="bg-white shadow-sm rounded-lg border border-gray-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
+                            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                                 <h3 class="text-sm font-semibold text-gray-900">
                                     Input Files
                                 </h3>
+                                <a
+                                    v-if="downloadInputZipUrl && inputFiles?.length"
+                                    :href="downloadInputZipUrl"
+                                    class="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-100"
+                                >
+                                    Download All
+                                </a>
                             </div>
                             <div v-if="inputFiles?.length">
                                 <div
@@ -983,10 +992,17 @@ const priorityBadgeClass = (priority) => {
                             v-if="outputFiles?.length"
                             class="bg-white shadow-sm rounded-lg border border-gray-200"
                         >
-                            <div class="px-5 py-4 border-b border-gray-100">
+                            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                                 <h3 class="text-sm font-semibold text-gray-900">
                                     Output Files
                                 </h3>
+                                <a
+                                    v-if="downloadOutputZipUrl"
+                                    :href="downloadOutputZipUrl"
+                                    class="inline-flex items-center rounded-md bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-100"
+                                >
+                                    Download All
+                                </a>
                             </div>
                             <div>
                                 <div

@@ -28,12 +28,29 @@ class InvoicePaymentRecordedNotification extends Notification implements ShouldQ
     public function toMail($notifiable): MailMessage
     {
         $invoice = $this->invoice;
+        $companyName = $invoice->tenant->getSetting('company_details.name', config('app.name'));
+        $name = $notifiable->name ?? 'Valued Customer';
+        $formattedAmount = number_format($this->amount, 2);
+        $formattedBalance = number_format($this->balance, 2);
 
-        return (new MailMessage())
-            ->subject("Payment received for Invoice {$invoice->invoice_number}")
-            ->greeting('Hello!')
-            ->line('We received a payment of ' . $invoice->currency . ' ' . number_format($this->amount, 2) . ' for your invoice ' . $invoice->invoice_number . '.')
-            ->line('Current balance: ' . $invoice->currency . ' ' . number_format($this->balance, 2))
-            ->line('Thank you for your prompt payment.');
+        $mail = (new MailMessage)
+            ->from(config('mail.from.address'), $companyName)
+            ->subject("Payment Confirmed: {$invoice->currency} {$formattedAmount} for Invoice {$invoice->invoice_number}")
+            ->greeting("Dear {$name},")
+            ->line('We are writing to confirm that we have received your payment. Thank you for your promptness.')
+            ->line('**Payment Details:**')
+            ->line("- **Invoice Number:** {$invoice->invoice_number}")
+            ->line("- **Payment Amount:** {$invoice->currency} {$formattedAmount}")
+            ->line("- **Remaining Balance:** {$invoice->currency} {$formattedBalance}");
+
+        if ($this->balance <= 0) {
+            $mail->line('')
+                ->line('Your invoice has been paid in full. Thank you!');
+        }
+
+        $mail->action('View Invoice', route('client.invoices.show', $invoice->id))
+            ->line("Thank you for your business with {$companyName}. We truly appreciate it.");
+
+        return $mail;
     }
 }

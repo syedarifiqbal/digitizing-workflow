@@ -445,6 +445,12 @@ class OrderController extends Controller
                     'created_at' => $comment->created_at?->toDateTimeString(),
                 ])
                 ->values(),
+            'downloadInputZipUrl' => $order->files->where('type', 'input')->isNotEmpty()
+                ? OrderFileController::signedZipUrl($order, 'input')
+                : null,
+            'downloadOutputZipUrl' => $order->files->where('type', 'output')->isNotEmpty()
+                ? OrderFileController::signedZipUrl($order, 'output')
+                : null,
             'invoiceInfo' => $isPrivileged ? $this->getOrderInvoiceInfo($order, $canAssign) : null,
         ]);
     }
@@ -1133,13 +1139,44 @@ class OrderController extends Controller
             abort(403, 'Only admins and managers can create internal comments.');
         }
 
-        OrderComment::create([
+        $comment = OrderComment::create([
             'tenant_id' => $order->tenant_id,
             'order_id' => $order->id,
             'user_id' => $request->user()->id,
             'visibility' => $validated['visibility'],
             'body' => $validated['body'],
         ]);
+
+        // Send comment notifications
+        $commenter = $request->user();
+        $notification = new \App\Notifications\OrderCommentNotification($order, $comment, $commenter);
+
+        if ($commenter->isAdmin() || $commenter->isManager()) {
+            // Notify designer (if assigned)
+            if ($order->designer && $order->designer_id !== $commenter->id) {
+                $order->designer->notify($notification);
+            }
+
+            // Notify client users only for client-visibility comments
+            if ($validated['visibility'] === 'client') {
+                $clientUsers = User::where('client_id', $order->client_id)
+                    ->where('tenant_id', $order->tenant_id)
+                    ->where('id', '!=', $commenter->id)
+                    ->get();
+                foreach ($clientUsers as $clientUser) {
+                    $clientUser->notify($notification);
+                }
+            }
+        } elseif ($commenter->isDesigner()) {
+            // Notify admin/managers of the tenant
+            $admins = User::where('tenant_id', $order->tenant_id)
+                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['Admin', 'Manager']))
+                ->where('id', '!=', $commenter->id)
+                ->get();
+            foreach ($admins as $admin) {
+                $admin->notify($notification);
+            }
+        }
 
         return back()->with('success', 'Comment added successfully.');
     }

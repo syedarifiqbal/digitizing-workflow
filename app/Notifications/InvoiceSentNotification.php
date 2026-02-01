@@ -29,22 +29,41 @@ class InvoiceSentNotification extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         $invoice = $this->invoice;
+        $companyName = $invoice->tenant->getSetting('company_details.name', config('app.name'));
+        $name = $notifiable->name ?? 'Valued Customer';
         $dueDate = $invoice->due_date?->format('F j, Y');
+        $amount = number_format((float) $invoice->total_amount, 2);
 
-        $mail = (new MailMessage())
-            ->subject("Invoice {$invoice->invoice_number} is ready")
-            ->greeting('Hello!')
-            ->line("We've sent you invoice {$invoice->invoice_number} totaling {$invoice->currency} " . number_format((float) $invoice->total_amount, 2) . '.')
-            ->line($dueDate ? "Payment is due on {$dueDate}." : 'Please review and settle the invoice at your earliest convenience.');
+        $mail = (new MailMessage)
+            ->from(config('mail.from.address'), $companyName)
+            ->subject("Invoice {$invoice->invoice_number} — {$invoice->currency} {$amount} Due {$dueDate}")
+            ->greeting("Dear {$name},")
+            ->line("Please find below the details for your invoice. We kindly request that payment be made by the due date.");
+
+        $mail->line('**Invoice Details:**')
+            ->line("- **Invoice Number:** {$invoice->invoice_number}")
+            ->line("- **Amount:** {$invoice->currency} {$amount}")
+            ->line("- **Currency:** {$invoice->currency}");
+
+        if ($dueDate) {
+            $mail->line("- **Due Date:** {$dueDate}");
+        }
 
         if ($this->message) {
-            $mail->line($this->message);
+            $mail->line('')
+                ->line('**Additional Notes:**')
+                ->line($this->message);
         }
+
+        $mail->line('')
+            ->line('Please review the invoice and arrange payment at your earliest convenience.')
+            ->action('View Invoice', route('client.invoices.show', $invoice->id))
+            ->line("Thank you for your business with {$companyName}.");
 
         if ($this->pdfData) {
             $mail->attachData($this->pdfData, $this->pdfFilename ?? 'invoice.pdf', ['mime' => 'application/pdf']);
         }
 
-        return $mail->line('Thank you for your business!');
+        return $mail;
     }
 }

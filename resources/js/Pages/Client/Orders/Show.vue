@@ -12,6 +12,8 @@ const props = defineProps({
     inputFiles: Array,
     outputFiles: Array,
     showOutputFiles: Boolean,
+    downloadInputZipUrl: String,
+    downloadOutputZipUrl: String,
     parentOrder: Object,
     revisionOrders: Array,
     comments: Array,
@@ -184,8 +186,15 @@ const formatFileSize = (bytes) => {
 
             <!-- Input Files -->
             <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
-                <div class="border-b border-slate-200 px-6 py-4">
+                <div class="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                     <h3 class="text-sm font-semibold text-slate-900">Input Files</h3>
+                    <a
+                        v-if="downloadInputZipUrl && inputFiles.length"
+                        :href="downloadInputZipUrl"
+                        class="inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                    >
+                        Download All
+                    </a>
                 </div>
                 <div class="px-6 py-5">
                     <div v-if="inputFiles.length === 0" class="text-sm text-slate-500">
@@ -219,8 +228,15 @@ const formatFileSize = (bytes) => {
 
             <!-- Output Files -->
             <div v-if="showOutputFiles" class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
-                <div class="border-b border-slate-200 px-6 py-4">
+                <div class="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                     <h3 class="text-sm font-semibold text-slate-900">Deliverable Files</h3>
+                    <a
+                        v-if="downloadOutputZipUrl && outputFiles.length"
+                        :href="downloadOutputZipUrl"
+                        class="inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                    >
+                        Download All
+                    </a>
                 </div>
                 <div class="px-6 py-5">
                     <div v-if="outputFiles.length === 0" class="text-sm text-slate-500">

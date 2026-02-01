@@ -26,17 +26,32 @@ class OrderAssignedNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->subject("New Order Assigned: {$this->order->order_number}")
-            ->greeting("Hi {$notifiable->name},")
-            ->line("You have been assigned a new order.")
-            ->line("**Order:** {$this->order->order_number}")
-            ->line("**Title:** {$this->order->title}")
-            ->line("**Priority:** " . ucfirst($this->order->priority->value))
-            ->line("**Client:** {$this->order->client->name}")
-            ->when($this->order->due_at, fn ($mail) => $mail->line("**Due:** {$this->order->due_at->format('M d, Y')}"))
-            ->action('View Order', url("/orders/{$this->order->id}"))
-            ->line("Assigned by: {$this->assignedBy->name}");
+        $order = $this->order;
+        $companyName = $order->tenant->getSetting('company_details.name', config('app.name'));
+
+        $mail = (new MailMessage)
+            ->from(config('mail.from.address'), $companyName)
+            ->subject("New Order Assignment: {$order->order_number} — {$order->title}")
+            ->greeting("Dear {$notifiable->name},")
+            ->line('A new order has been assigned to you. Please review the details below and begin work at your earliest convenience.');
+
+        $mail->line('**Order Details:**')
+            ->line("- **Order Number:** {$order->order_number}")
+            ->line("- **Title:** {$order->title}")
+            ->line('- **Type:** ' . ucwords(str_replace('_', ' ', $order->type->value)))
+            ->line('- **Priority:** ' . ucwords($order->priority->value))
+            ->line("- **Client:** {$order->client->name}");
+
+        if ($order->due_at) {
+            $mail->line("- **Due Date:** {$order->due_at->format('M d, Y')}");
+        }
+
+        $mail->line('')
+            ->line("Assigned by: {$this->assignedBy->name}")
+            ->action('View Order', url("/orders/{$order->id}"))
+            ->line("Thank you for your continued dedication.");
+
+        return $mail;
     }
 
     public function toArray(object $notifiable): array

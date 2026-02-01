@@ -62,18 +62,12 @@ class ClientPortalTest extends TestCase
             ->delivered()
             ->create();
 
-        // Create revision requested order (needs attention)
-        Order::factory()
-            ->for($this->tenant)
-            ->for($this->client, 'client')
-            ->create(['status' => OrderStatus::REVISION_REQUESTED]);
-
         $response = $this->actingAs($this->clientUser)
             ->get(route('client.dashboard'));
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
-            ->has('ordersNeedingAttention', 2)
+            ->has('ordersNeedingAttention', 1)
         );
     }
 
@@ -206,24 +200,9 @@ class ClientPortalTest extends TestCase
         );
     }
 
-    public function test_client_sees_output_files_only_after_submission(): void
+    public function test_client_sees_output_files_only_after_delivery(): void
     {
-        // Order in progress - should not show output files
-        $inProgressOrder = Order::factory()
-            ->for($this->tenant)
-            ->for($this->client, 'client')
-            ->inProgress()
-            ->create();
-
-        $response = $this->actingAs($this->clientUser)
-            ->get(route('client.orders.show', $inProgressOrder));
-
-        $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page
-            ->where('showOutputFiles', false)
-        );
-
-        // Submitted order - should show output files
+        // Submitted order - should NOT show output files to client
         $submittedOrder = Order::factory()
             ->for($this->tenant)
             ->for($this->client, 'client')
@@ -232,6 +211,21 @@ class ClientPortalTest extends TestCase
 
         $response = $this->actingAs($this->clientUser)
             ->get(route('client.orders.show', $submittedOrder));
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->where('showOutputFiles', false)
+        );
+
+        // Delivered order - should show output files (only is_delivered = true)
+        $deliveredOrder = Order::factory()
+            ->for($this->tenant)
+            ->for($this->client, 'client')
+            ->delivered()
+            ->create();
+
+        $response = $this->actingAs($this->clientUser)
+            ->get(route('client.orders.show', $deliveredOrder));
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page

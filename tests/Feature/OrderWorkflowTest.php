@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Models\Client;
 use App\Models\Order;
-use App\Models\OrderRevision;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -84,57 +83,46 @@ class OrderWorkflowTest extends TestCase
         $this->assertEquals(OrderStatus::RECEIVED, $this->order->fresh()->status);
     }
 
-    public function test_revision_loop_allows_designer_to_resubmit_work(): void
+    public function test_revision_order_is_created_from_delivered_order(): void
     {
+        // Transition order to DELIVERED via admin
         $this->order->update([
-            'status' => OrderStatus::SUBMITTED,
-            'submitted_at' => now(),
+            'status' => OrderStatus::DELIVERED,
+            'delivered_at' => now(),
         ]);
 
-        $revisionResponse = $this->actingAs($this->admin)
-            ->post(route('orders.request-revision', $this->order), [
-                'notes' => 'Need a cleaner outline.',
+        // Create an input file for the parent order
+        $this->order->files()->create([
+            'tenant_id' => $this->tenant->id,
+            'uploaded_by_user_id' => $this->admin->id,
+            'type' => 'input',
+            'disk' => 'local',
+            'path' => "orders/{$this->order->id}/test-file.png",
+            'original_name' => 'test-file.png',
+            'mime_type' => 'image/png',
+            'size' => 1024,
+        ]);
+
+        // Store a fake file so the copy works
+        Storage::disk('local')->put("orders/{$this->order->id}/test-file.png", 'fake content');
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('orders.create-revision', $this->order), [
+                'notes' => 'Please fix the outline on the left side.',
             ]);
 
-        $revisionResponse->assertRedirect();
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
 
-        $orderAfterRevision = $this->order->fresh();
-        $this->assertEquals(OrderStatus::REVISION_REQUESTED, $orderAfterRevision->status);
-        $this->assertDatabaseCount('order_revisions', 1);
+        // Assert new revision order was created
+        $revisionOrder = Order::where('parent_order_id', $this->order->id)->first();
+        $this->assertNotNull($revisionOrder);
+        $this->assertStringContainsString('-R1', $revisionOrder->order_number);
+        $this->assertEquals(OrderStatus::RECEIVED, $revisionOrder->status);
+        $this->assertNull($revisionOrder->designer_id);
+        $this->assertEquals($this->order->client_id, $revisionOrder->client_id);
 
-        // Designer moves order back to in progress
-        $this->actingAs($this->designer)
-            ->patch(route('orders.status', $this->order), [
-                'status' => OrderStatus::IN_PROGRESS->value,
-            ])
-            ->assertRedirect();
-
-        $this->assertEquals(
-            OrderStatus::IN_PROGRESS,
-            $this->order->fresh()->status,
-            'Order should be back in progress before resubmission.'
-        );
-
-        $file = UploadedFile::fake()->image('updated-design.png');
-        $orderForSubmission = $this->order->fresh();
-        $this->assertInstanceOf(OrderStatus::class, $orderForSubmission->status);
-        $this->assertEquals(OrderStatus::IN_PROGRESS, $orderForSubmission->status);
-
-        $submitResponse = $this->actingAs($this->designer)
-            ->post(route('orders.submit-work', $orderForSubmission), [
-                'files' => [$file],
-                'notes' => 'Revision complete',
-            ]);
-
-        $submitResponse->assertRedirect();
-        $submitResponse->assertSessionHasNoErrors();
-        $submitResponse->assertSessionHas('success');
-
-        $orderAfterSubmission = $this->order->fresh();
-        $this->assertEquals(OrderStatus::SUBMITTED, $orderAfterSubmission->status);
-
-        $revision = OrderRevision::latest()->first();
-        $this->assertEquals('resolved', $revision->status);
-        $this->assertNotNull($revision->resolved_at);
+        // Assert input files were copied
+        $this->assertCount(1, $revisionOrder->files()->where('type', 'input')->get());
     }
 }

@@ -27,7 +27,7 @@ class CreateRevisionOrderAction
                 'parent_order_id' => $parentOrder->id,
                 'client_id' => $parentOrder->client_id,
                 'created_by' => $createdBy->id,
-                'designer_id' => $parentOrder->designer_id,
+                'designer_id' => null,
                 'sales_user_id' => $parentOrder->sales_user_id,
                 'order_number' => $orderNumber,
                 'po_number' => $parentOrder->po_number,
