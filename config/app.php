@@ -30,6 +30,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Default Tenant Context
+    |--------------------------------------------------------------------------
+    |
+    | This value is used to force the application to run under a specific tenant
+    | context. When a TENANT_ID is provided, the application will treat the
+    | request as tenant-scoped and bypass all public routes.
+    |
+    | In this mode:
+    | - All public (non-authenticated / non-tenant) routes are skipped.
+    | - Users are redirected directly to the tenant login page.
+    | - The provided tenant ID is automatically set as the default tenant
+    |   for the current request lifecycle.
+    |
+    | This is useful for installing or running the SaaS application for a
+    | single, dedicated tenant (for example: white-label, private deployment,
+    | or tenant-specific environments).
+    |
+    | Set this value in your ".env" file. If set to false or null, the application
+    | will operate in normal multi-tenant mode with public routes enabled.
+    |
+    */
+
+    'forced_tenant_id' => env('FORCED_TENANT_ID', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
     |

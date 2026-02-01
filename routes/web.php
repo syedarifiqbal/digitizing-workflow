@@ -24,22 +24,27 @@ use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\TenantSettingsController;
 use App\Http\Controllers\WebhookLogController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\ForceTenantContext;
 use Illuminate\Support\Facades\Route;
 
 // Public marketing pages
-Route::get('/', [PublicController::class, 'home'])->name('home');
-Route::get('/features', [PublicController::class, 'features'])->name('features');
-Route::get('/pricing', [PublicController::class, 'pricing'])->name('pricing');
-Route::get('/contact', [PublicController::class, 'contact'])->name('contact');
-
-// Public form submissions
-Route::post('/newsletter', [NewsletterController::class, 'store'])->name('newsletter.store');
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::middleware([ForceTenantContext::class])->group(function () {
+    Route::get('/', [PublicController::class, 'home'])->name('home');
+    Route::get('/features', [PublicController::class, 'features'])->name('features');
+    Route::get('/pricing', [PublicController::class, 'pricing'])->name('pricing');
+    Route::get('/contact', [PublicController::class, 'contact'])->name('contact');
+    
+    // Public form submissions
+    Route::post('/newsletter', [NewsletterController::class, 'store'])->name('newsletter.store');
+    Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+});
 
 // Guest routes
 Route::middleware('guest')->group(function () {
-    Route::get('/register', [RegisterController::class, 'create'])->name('register');
-    Route::post('/register', [RegisterController::class, 'store']);
+    if (! config('app.forced_tenant_id')) {
+        Route::get('/register', [RegisterController::class, 'create'])->name('register');
+        Route::post('/register', [RegisterController::class, 'store']);
+    }
 
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store']);
@@ -177,3 +182,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/client/invoices/{invoice}/pdf', [ClientPortalController::class, 'downloadInvoicePdf'])->name('client.invoices.pdf');
     });
 });
+
+// In forced-tenant mode, redirect root to login so route('home') doesn't break
+if (config('app.forced_tenant_id')) {
+    Route::get('/', fn () => redirect()->route('login'))->name('home');
+}
