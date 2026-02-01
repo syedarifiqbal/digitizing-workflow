@@ -16,7 +16,6 @@ export function useDashboard() {
         in_progress: 'bg-purple-50 text-purple-700 ring-purple-600/20',
         submitted: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
         in_review: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
-        revision_requested: 'bg-orange-50 text-orange-700 ring-orange-600/20',
         approved: 'bg-teal-50 text-teal-700 ring-teal-600/20',
         delivered: 'bg-green-50 text-green-700 ring-green-600/20',
         closed: 'bg-slate-100 text-slate-700 ring-slate-600/20',

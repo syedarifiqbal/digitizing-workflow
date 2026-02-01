@@ -279,16 +279,27 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['client', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'revisions.requestedBy', 'commissions.user', 'comments.user']);
+        $order->load(['client', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'commissions.user', 'comments.user', 'parent', 'revisionOrders']);
 
         $user = $request->user();
         $canAssign = $user->isAdmin() || $user->isManager();
+        $isPrivileged = $user->isAdmin() || $user->isManager();
+
+        // Build client data based on role - designers/sales only see client name
+        $clientData = $isPrivileged ? [
+            'id' => $order->client->id,
+            'name' => $order->client->name,
+            'email' => $order->client->email,
+        ] : [
+            'id' => $order->client->id,
+            'name' => $order->client->name,
+        ];
 
         return Inertia::render('Orders/Show', [
             'order' => [
                 'id' => $order->id,
                 'order_number' => $order->order_number,
-                'po_number' => $order->po_number,
+                'po_number' => $isPrivileged ? $order->po_number : null,
                 'title' => $order->title,
                 'type' => $order->type->value,
                 'status' => $order->status->value,
@@ -304,16 +315,12 @@ class OrderController extends Controller
                 'backing' => $order->backing,
                 'merrow_border' => $order->merrow_border,
                 'fabric' => $order->fabric,
-                'shipping_address' => $order->shipping_address,
+                'shipping_address' => $isPrivileged ? $order->shipping_address : null,
                 'need_by' => $order->need_by?->format('Y-m-d'),
                 'color_type' => $order->color_type,
                 'vector_order_type' => $order->vector_order_type,
                 'required_format' => $order->required_format,
-                'client' => [
-                    'id' => $order->client->id,
-                    'name' => $order->client->name,
-                    'email' => $order->client->email,
-                ],
+                'client' => $clientData,
                 'designer' => $order->designer ? [
                     'id' => $order->designer->id,
                     'name' => $order->designer->name,
@@ -322,10 +329,18 @@ class OrderController extends Controller
                     'id' => $order->sales->id,
                     'name' => $order->sales->name,
                 ] : null,
-                'price_amount' => $order->price_amount,
+                'price_amount' => $isPrivileged ? $order->price_amount : null,
                 'currency' => $order->currency,
                 'due_at' => optional($order->due_at)?->toDateTimeString(),
                 'created_at' => $order->created_at?->toDateTimeString(),
+                'submitted_width' => $order->submitted_width,
+                'submitted_height' => $order->submitted_height,
+                'submitted_stitch_count' => $order->submitted_stitch_count,
+                'parent_order_id' => $order->parent_order_id,
+                'parent_order' => $order->parent ? [
+                    'id' => $order->parent->id,
+                    'order_number' => $order->parent->order_number,
+                ] : null,
             ],
             'inputFiles' => $order->files->where('type', 'input')->values()->map(fn ($file) => [
                 'id' => $file->id,
@@ -341,7 +356,6 @@ class OrderController extends Controller
             'outputFiles' => in_array($order->status, [
                 OrderStatus::SUBMITTED,
                 OrderStatus::IN_REVIEW,
-                OrderStatus::REVISION_REQUESTED,
                 OrderStatus::APPROVED,
                 OrderStatus::DELIVERED,
                 OrderStatus::CLOSED,
@@ -349,6 +363,7 @@ class OrderController extends Controller
                 'id' => $file->id,
                 'original_name' => $file->original_name,
                 'size' => $file->size,
+                'is_delivered' => (bool) $file->is_delivered,
                 'uploaded_at' => $file->created_at?->toDateTimeString(),
                 'download_url' => URL::temporarySignedRoute(
                     'orders.files.download',
@@ -371,7 +386,6 @@ class OrderController extends Controller
                 ))
                 ->reject(fn ($status) => in_array($status, [
                     OrderStatus::SUBMITTED,
-                    OrderStatus::REVISION_REQUESTED,
                     OrderStatus::DELIVERED,
                     OrderStatus::CANCELLED,
                 ]))
@@ -381,16 +395,14 @@ class OrderController extends Controller
                     'style' => $this->workflowService->getTransitionStyle($status),
                 ])
                 ->values(),
-            'canRequestRevision' => $canAssign && in_array($order->status, [OrderStatus::SUBMITTED, OrderStatus::IN_REVIEW]),
+            'canCreateRevision' => $canAssign && in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED]),
             'canDeliver' => $canAssign && $order->status === OrderStatus::APPROVED,
             'canCancel' => $canAssign && $this->workflowService->canTransitionTo($order->status, OrderStatus::CANCELLED),
-            'revisions' => $order->revisions->map(fn ($rev) => [
+            'revisionOrders' => $order->revisionOrders->map(fn ($rev) => [
                 'id' => $rev->id,
-                'notes' => $rev->notes,
-                'status' => $rev->status,
-                'requested_by' => $rev->requestedBy?->name,
+                'order_number' => $rev->order_number,
+                'status' => $rev->status->value,
                 'created_at' => $rev->created_at?->toDateTimeString(),
-                'resolved_at' => $rev->resolved_at?->toDateTimeString(),
             ]),
             'canSubmitWork' => $order->status === OrderStatus::IN_PROGRESS
                 && $user->isDesigner()
@@ -400,24 +412,26 @@ class OrderController extends Controller
             'timeline' => $this->buildTimeline($order),
             'enableDesignerTips' => $order->tenant->getSetting('enable_designer_tips', false),
             'currency' => $order->tenant->getSetting('currency', 'USD'),
-            'commissions' => $order->commissions->map(fn ($commission) => [
-                'id' => $commission->id,
-                'user' => $commission->user ? [
-                    'id' => $commission->user->id,
-                    'name' => $commission->user->name,
-                ] : null,
-                'role_type' => $commission->role_type->value,
-                'role_label' => $commission->role_type->label(),
-                'base_amount' => $commission->base_amount,
-                'extra_amount' => $commission->extra_amount,
-                'total_amount' => $commission->total_amount,
-                'currency' => $commission->currency,
-                'earned_on_status' => $commission->earned_on_status,
-                'earned_at' => $commission->earned_at?->toDateTimeString(),
-                'is_paid' => $commission->is_paid,
-                'paid_at' => $commission->paid_at?->toDateTimeString(),
-                'notes' => $commission->notes,
-            ]),
+            'commissions' => $isPrivileged
+                ? $order->commissions->map(fn ($commission) => [
+                    'id' => $commission->id,
+                    'user' => $commission->user ? [
+                        'id' => $commission->user->id,
+                        'name' => $commission->user->name,
+                    ] : null,
+                    'role_type' => $commission->role_type->value,
+                    'role_label' => $commission->role_type->label(),
+                    'base_amount' => $commission->base_amount,
+                    'extra_amount' => $commission->extra_amount,
+                    'total_amount' => $commission->total_amount,
+                    'currency' => $commission->currency,
+                    'earned_on_status' => $commission->earned_on_status,
+                    'earned_at' => $commission->earned_at?->toDateTimeString(),
+                    'is_paid' => $commission->is_paid,
+                    'paid_at' => $commission->paid_at?->toDateTimeString(),
+                    'notes' => $commission->notes,
+                ])
+                : [],
             'comments' => $order->comments
                 ->when($user->hasRole('Client'), fn ($comments) => $comments->where('visibility', 'client'))
                 ->map(fn ($comment) => [
@@ -431,7 +445,7 @@ class OrderController extends Controller
                     'created_at' => $comment->created_at?->toDateTimeString(),
                 ])
                 ->values(),
-            'invoiceInfo' => $this->getOrderInvoiceInfo($order, $canAssign),
+            'invoiceInfo' => $isPrivileged ? $this->getOrderInvoiceInfo($order, $canAssign) : null,
         ]);
     }
 
@@ -686,7 +700,7 @@ class OrderController extends Controller
         }
     }
 
-    public function requestRevision(Request $request, Order $order, \App\Actions\Orders\RequestRevisionAction $action): RedirectResponse
+    public function createRevision(Request $request, Order $order, \App\Actions\Orders\CreateRevisionOrderAction $action): RedirectResponse
     {
         $this->authorize('update', $order);
 
@@ -697,16 +711,16 @@ class OrderController extends Controller
         $user = $request->user();
 
         if (! ($user->isAdmin() || $user->isManager())) {
-            abort(403, 'Only admins and managers can request revisions.');
+            abort(403, 'Only admins and managers can create revision orders.');
         }
 
-        if (! in_array($order->status, [OrderStatus::SUBMITTED, OrderStatus::IN_REVIEW])) {
-            return back()->withErrors(['status' => 'Revisions can only be requested for submitted or in-review orders.']);
+        if (! in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED])) {
+            return back()->withErrors(['status' => 'Revision orders can only be created for delivered or closed orders.']);
         }
 
-        $action->execute($order, $user, $validated['notes'] ?? null);
+        $revisionOrder = $action->execute($order, $user, $validated['notes'] ?? null);
 
-        return back()->with('success', 'Revision requested.');
+        return redirect()->route('orders.show', $revisionOrder)->with('success', 'Revision order created.');
     }
 
     public function cancelOrder(Request $request, Order $order, TransitionOrderStatusAction $action): RedirectResponse
@@ -759,6 +773,13 @@ class OrderController extends Controller
         $designerTip = null;
         if (isset($validated['designer_tip']) && $validated['designer_tip'] > 0) {
             $designerTip = (float) $validated['designer_tip'];
+        }
+
+        // Mark selected files as delivered
+        if (! empty($validated['file_ids'])) {
+            \App\Models\OrderFile::where('order_id', $order->id)
+                ->whereIn('id', $validated['file_ids'])
+                ->update(['is_delivered' => true]);
         }
 
         // Transition to delivered
@@ -836,6 +857,9 @@ class OrderController extends Controller
             'files' => ['required', 'array', 'min:1'],
             'files.*' => $fileRules,
             'notes' => ['nullable', 'string', 'max:1000'],
+            'submitted_width' => ['nullable', 'string', 'max:50'],
+            'submitted_height' => ['nullable', 'string', 'max:50'],
+            'submitted_stitch_count' => ['nullable', 'integer', 'min:0'],
         ]);
 
         try {
@@ -843,7 +867,10 @@ class OrderController extends Controller
                 $order,
                 $request->file('files', []),
                 $request->user(),
-                $validated['notes'] ?? null
+                $validated['notes'] ?? null,
+                $validated['submitted_width'] ?? null,
+                $validated['submitted_height'] ?? null,
+                isset($validated['submitted_stitch_count']) ? (int) $validated['submitted_stitch_count'] : null
             );
 
             return back()->with('success', 'Work submitted successfully.');

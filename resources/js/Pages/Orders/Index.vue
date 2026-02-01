@@ -852,8 +852,6 @@ const orderColumns = [
                                     row.status === 'delivered' ||
                                     row.status === 'approved'
                                         ? 'bg-green-100 text-green-800'
-                                        : row.status === 'revision_requested'
-                                        ? 'bg-yellow-100 text-yellow-800'
                                         : 'bg-gray-100 text-gray-800',
                                 ]"
                             >

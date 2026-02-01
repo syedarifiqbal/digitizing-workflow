@@ -35,7 +35,6 @@ class SalesController extends Controller
             'in_progress' => (clone $baseQuery)->where('status', OrderStatus::IN_PROGRESS)->count(),
             'submitted' => (clone $baseQuery)->where('status', OrderStatus::SUBMITTED)->count(),
             'in_review' => (clone $baseQuery)->where('status', OrderStatus::IN_REVIEW)->count(),
-            'revision_requested' => (clone $baseQuery)->where('status', OrderStatus::REVISION_REQUESTED)->count(),
             'approved' => (clone $baseQuery)->where('status', OrderStatus::APPROVED)->count(),
             'delivered' => (clone $baseQuery)->where('status', OrderStatus::DELIVERED)->count(),
             'closed' => (clone $baseQuery)->where('status', OrderStatus::CLOSED)->count(),

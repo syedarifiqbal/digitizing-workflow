@@ -22,21 +22,27 @@ class SubmitWorkAction
     /**
      * @param  array<UploadedFile>  $files
      */
-    public function execute(Order $order, array $files, User $submittedBy, ?string $notes = null): Order
-    {
-        return DB::transaction(function () use ($order, $files, $submittedBy, $notes) {
+    public function execute(
+        Order $order,
+        array $files,
+        User $submittedBy,
+        ?string $notes = null,
+        ?string $submittedWidth = null,
+        ?string $submittedHeight = null,
+        ?int $submittedStitchCount = null
+    ): Order {
+        return DB::transaction(function () use ($order, $files, $submittedBy, $notes, $submittedWidth, $submittedHeight, $submittedStitchCount) {
             // Upload output files
             foreach ($files as $file) {
                 $this->fileStorageService->storeOrderFile($order, $file, 'output');
             }
 
-            // Resolve any open revisions
-            $order->revisions()
-                ->where('status', 'open')
-                ->update([
-                    'status' => 'resolved',
-                    'resolved_at' => now(),
-                ]);
+            // Save submitted dimension/stitch fields
+            $order->update([
+                'submitted_width' => $submittedWidth,
+                'submitted_height' => $submittedHeight,
+                'submitted_stitch_count' => $submittedStitchCount,
+            ]);
 
             $previousStatus = $order->status;
             $tenant = $order->tenant;

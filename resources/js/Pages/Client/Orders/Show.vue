@@ -12,7 +12,8 @@ const props = defineProps({
     inputFiles: Array,
     outputFiles: Array,
     showOutputFiles: Boolean,
-    revisions: Array,
+    parentOrder: Object,
+    revisionOrders: Array,
     comments: Array,
 });
 
@@ -43,7 +44,6 @@ const getStatusColor = (status) => {
         in_progress: 'bg-purple-50 text-purple-700 ring-purple-600/20',
         submitted: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
         in_review: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
-        revision_requested: 'bg-orange-50 text-orange-700 ring-orange-600/20',
         approved: 'bg-teal-50 text-teal-700 ring-teal-600/20',
         delivered: 'bg-green-50 text-green-700 ring-green-600/20',
         closed: 'bg-slate-100 text-slate-700 ring-slate-600/20',
@@ -145,14 +145,40 @@ const formatFileSize = (bytes) => {
                 </div>
             </div>
 
-            <!-- Revision Notes -->
-            <div v-if="revisions.length > 0" class="rounded-2xl border border-orange-200 bg-orange-50 p-6">
-                <h3 class="text-sm font-semibold text-orange-900 mb-3">Revision Requested</h3>
-                <div v-for="revision in revisions" :key="revision.id" class="mb-3 last:mb-0">
-                    <p class="text-sm text-orange-800">{{ revision.notes }}</p>
-                    <p class="mt-1 text-xs text-orange-600">
-                        Requested by {{ revision.requested_by?.name }} on {{ formatDate(revision.created_at) }}
-                    </p>
+            <!-- Parent Order Link -->
+            <div v-if="parentOrder" class="rounded-2xl border border-indigo-200 bg-indigo-50 p-6">
+                <h3 class="text-sm font-semibold text-indigo-900 mb-2">Revision of</h3>
+                <Link
+                    :href="route('client.orders.show', parentOrder.id)"
+                    class="text-sm font-medium text-indigo-700 hover:text-indigo-900"
+                >
+                    {{ parentOrder.order_number }}
+                </Link>
+            </div>
+
+            <!-- Revision Orders -->
+            <div v-if="revisionOrders?.length > 0" class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+                <div class="border-b border-slate-200 px-6 py-4">
+                    <h3 class="text-sm font-semibold text-slate-900">Revision Orders</h3>
+                </div>
+                <div class="px-6 py-5">
+                    <ul class="divide-y divide-slate-100">
+                        <li v-for="rev in revisionOrders" :key="rev.id" class="py-3 flex items-center justify-between">
+                            <div>
+                                <Link
+                                    :href="route('client.orders.show', rev.id)"
+                                    class="text-sm font-medium text-indigo-600 hover:text-indigo-900"
+                                >
+                                    {{ rev.order_number }}
+                                </Link>
+                                <p class="text-xs text-slate-500">{{ formatDate(rev.created_at) }}</p>
+                            </div>
+                            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset"
+                                :class="getStatusColor(rev.status)">
+                                {{ rev.status_label }}
+                            </span>
+                        </li>
+                    </ul>
                 </div>
             </div>
 

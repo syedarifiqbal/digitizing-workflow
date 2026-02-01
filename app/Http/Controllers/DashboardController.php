@@ -129,10 +129,9 @@ class DashboardController extends Controller
             ->pluck('count', 'status')
             ->toArray();
 
-        // Needs attention: revision_requested + submitted (awaiting review)
+        // Needs attention: submitted (awaiting review)
         $needsAttention = Order::where('tenant_id', $tenantId)
             ->whereIn('status', [
-                OrderStatus::REVISION_REQUESTED,
                 OrderStatus::SUBMITTED,
                 OrderStatus::IN_REVIEW,
             ])
@@ -292,18 +291,15 @@ class DashboardController extends Controller
         // Performance stats
         $performanceStats = $this->getDesignerPerformanceStats($tenantId, $userId, $startOfMonth, $startOfLastMonth, $endOfLastMonth);
 
-        // Orders needing action (assigned or revision requested)
+        // Orders needing action (assigned)
         $actionRequired = Order::where('tenant_id', $tenantId)
             ->where('designer_id', $userId)
-            ->whereIn('status', [OrderStatus::ASSIGNED, OrderStatus::REVISION_REQUESTED])
-            ->with(['revisions' => fn ($q) => $q->where('status', 'open')->latest()->limit(1)])
-            ->orderByRaw("FIELD(status, 'revision_requested', 'assigned')")
+            ->where('status', OrderStatus::ASSIGNED)
             ->orderBy('priority', 'desc') // Rush first
             ->orderBy('created_at', 'asc')
             ->limit(5)
             ->get()
             ->map(function ($order) {
-                $latestRevision = $order->revisions->first();
                 return [
                     'id' => $order->id,
                     'order_number' => $order->order_number,
@@ -311,7 +307,7 @@ class DashboardController extends Controller
                     'status' => $order->status->value,
                     'priority' => $order->priority->value ?? 'normal',
                     'created_at' => $order->created_at->toIso8601String(),
-                    'revision_notes' => $latestRevision?->notes,
+                    'revision_notes' => null,
                 ];
             });
 
@@ -376,7 +372,6 @@ class DashboardController extends Controller
             OrderStatus::IN_PROGRESS,
             OrderStatus::SUBMITTED,
             OrderStatus::IN_REVIEW,
-            OrderStatus::REVISION_REQUESTED,
         ];
 
         $assigned = (clone $baseQuery)->whereIn('status', $activeStatuses)->count();
@@ -386,7 +381,6 @@ class DashboardController extends Controller
             'assigned' => $assigned,
             'rush' => $rush,
             'in_progress' => (clone $baseQuery)->where('status', OrderStatus::IN_PROGRESS)->count(),
-            'revision_requested' => (clone $baseQuery)->where('status', OrderStatus::REVISION_REQUESTED)->count(),
             'completed_this_month' => (clone $baseQuery)
                 ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
                 ->where('delivered_at', '>=', $startOfMonth)
@@ -533,7 +527,6 @@ class DashboardController extends Controller
             OrderStatus::IN_PROGRESS,
             OrderStatus::SUBMITTED,
             OrderStatus::IN_REVIEW,
-            OrderStatus::REVISION_REQUESTED,
             OrderStatus::APPROVED,
         ];
 

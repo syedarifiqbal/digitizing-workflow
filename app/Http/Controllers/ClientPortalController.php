@@ -53,7 +53,7 @@ class ClientPortalController extends Controller
         $ordersNeedingAttention = Order::query()
             ->where('tenant_id', $user->tenant_id)
             ->where('client_id', $client->id)
-            ->whereIn('status', [OrderStatus::REVISION_REQUESTED, OrderStatus::DELIVERED])
+            ->whereIn('status', [OrderStatus::DELIVERED])
             ->with(['designer:id,name', 'sales:id,name'])
             ->orderBy('updated_at', 'desc')
             ->get(['id', 'order_number', 'title', 'status', 'priority', 'designer_id', 'sales_user_id', 'updated_at'])
@@ -83,7 +83,6 @@ class ClientPortalController extends Controller
                     OrderStatus::IN_PROGRESS,
                     OrderStatus::SUBMITTED,
                     OrderStatus::IN_REVIEW,
-                    OrderStatus::REVISION_REQUESTED,
                 ])
                 ->count(),
             'delivered' => Order::where('tenant_id', $user->tenant_id)
@@ -290,17 +289,14 @@ class ClientPortalController extends Controller
             'sales:id,name',
             'files' => fn ($q) => $q->orderBy('created_at', 'desc'),
             'files.uploader:id,name',
-            'revisions' => fn ($q) => $q->where('status', 'pending')->orderBy('created_at', 'desc'),
-            'revisions.requestedBy:id,name',
             'comments' => fn ($q) => $q->where('visibility', 'client')->latest(),
             'comments.user:id,name',
+            'parent',
+            'revisionOrders',
         ]);
 
-        // Only show output files after submission
+        // Only show delivered output files to client (after delivery)
         $showOutputFiles = in_array($order->status, [
-            OrderStatus::SUBMITTED,
-            OrderStatus::IN_REVIEW,
-            OrderStatus::APPROVED,
             OrderStatus::DELIVERED,
             OrderStatus::CLOSED,
         ]);
@@ -320,7 +316,7 @@ class ClientPortalController extends Controller
         ]);
 
         $outputFiles = $showOutputFiles
-            ? $order->files->where('type', 'output')->map(fn ($file) => [
+            ? $order->files->where('type', 'output')->where('is_delivered', true)->values()->map(fn ($file) => [
                 'id' => $file->id,
                 'filename' => $file->filename,
                 'file_size' => $file->file_size,
@@ -359,12 +355,16 @@ class ClientPortalController extends Controller
             'inputFiles' => $inputFiles,
             'outputFiles' => $outputFiles,
             'showOutputFiles' => $showOutputFiles,
-            'revisions' => $order->revisions->map(fn ($revision) => [
-                'id' => $revision->id,
-                'notes' => $revision->notes,
-                'status' => $revision->status,
-                'requested_by' => $revision->requestedBy ? ['id' => $revision->requestedBy->id, 'name' => $revision->requestedBy->name] : null,
-                'created_at' => $revision->created_at,
+            'parentOrder' => $order->parent ? [
+                'id' => $order->parent->id,
+                'order_number' => $order->parent->order_number,
+            ] : null,
+            'revisionOrders' => $order->revisionOrders->map(fn ($rev) => [
+                'id' => $rev->id,
+                'order_number' => $rev->order_number,
+                'status' => $rev->status->value,
+                'status_label' => $rev->status->label(),
+                'created_at' => $rev->created_at,
             ]),
             'comments' => $order->comments->map(fn ($comment) => [
                 'id' => $comment->id,

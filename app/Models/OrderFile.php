@@ -22,12 +22,14 @@ class OrderFile extends Model
         'original_name',
         'mime_type',
         'size',
+        'is_delivered',
     ];
 
     protected function casts(): array
     {
         return [
             'size' => 'integer',
+            'is_delivered' => 'boolean',
         ];
     }
 

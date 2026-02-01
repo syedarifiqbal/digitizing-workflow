@@ -57,6 +57,10 @@ class Order extends Model
         'submitted_at',
         'approved_at',
         'delivered_at',
+        'submitted_width',
+        'submitted_height',
+        'submitted_stitch_count',
+        'parent_order_id',
     ];
 
     protected function casts(): array
@@ -75,6 +79,7 @@ class Order extends Model
             'invoiced_at' => 'datetime',
             'quantity' => 'integer',
             'num_colors' => 'integer',
+            'submitted_stitch_count' => 'integer',
         ];
     }
 
@@ -108,9 +113,14 @@ class Order extends Model
         return $this->hasMany(OrderFile::class);
     }
 
-    public function revisions(): HasMany
+    public function parent(): BelongsTo
     {
-        return $this->hasMany(OrderRevision::class)->latest();
+        return $this->belongsTo(Order::class, 'parent_order_id');
+    }
+
+    public function revisionOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'parent_order_id')->latest();
     }
 
     public function assignments(): HasMany

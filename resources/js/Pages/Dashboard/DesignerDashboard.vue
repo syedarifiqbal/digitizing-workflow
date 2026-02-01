@@ -41,12 +41,6 @@ const { formatCurrency, getStatusColor, getPriorityClass, formatDate } = useDash
                 gradient="from-yellow-500 to-orange-500"
             />
             <StatCard
-                label="Needs Revision"
-                :value="stats?.orders?.revision_requested ?? 0"
-                :icon="ExclamationTriangleIcon"
-                gradient="from-orange-500 to-red-500"
-            />
-            <StatCard
                 label="Completed (Month)"
                 :value="stats?.orders?.completed_this_month ?? 0"
                 :icon="CheckCircleIcon"

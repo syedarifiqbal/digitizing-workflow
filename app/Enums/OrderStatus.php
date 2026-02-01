@@ -9,7 +9,6 @@ enum OrderStatus: string
     case IN_PROGRESS = 'in_progress';
     case SUBMITTED = 'submitted';
     case IN_REVIEW = 'in_review';
-    case REVISION_REQUESTED = 'revision_requested';
     case APPROVED = 'approved';
     case DELIVERED = 'delivered';
     case CLOSED = 'closed';
@@ -23,7 +22,6 @@ enum OrderStatus: string
             self::IN_PROGRESS => 'In Progress',
             self::SUBMITTED => 'Submitted',
             self::IN_REVIEW => 'In Review',
-            self::REVISION_REQUESTED => 'Revision Requested',
             self::APPROVED => 'Approved',
             self::DELIVERED => 'Delivered',
             self::CLOSED => 'Closed',

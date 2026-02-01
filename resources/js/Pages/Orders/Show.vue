@@ -15,10 +15,10 @@ const props = defineProps({
     designers: Array,
     salesUsers: Array,
     allowedTransitions: Array,
-    canRequestRevision: Boolean,
+    canCreateRevision: Boolean,
     canDeliver: Boolean,
     canCancel: Boolean,
-    revisions: Array,
+    revisionOrders: Array,
     canSubmitWork: Boolean,
     maxUploadMb: Number,
     allowedOutputExtensions: String,
@@ -40,9 +40,13 @@ const submitFiles = ref([]);
 const submitNotes = ref("");
 const fileInput = ref(null);
 
-const showRevisionModal = ref(false);
+const showCreateRevisionModal = ref(false);
 const revisionNotes = ref("");
-const requestingRevision = ref(false);
+const creatingRevision = ref(false);
+
+const submitWidth = ref("");
+const submitHeight = ref("");
+const submitStitchCount = ref("");
 
 const showDeliverModal = ref(false);
 const deliverMessage = ref("");
@@ -135,21 +139,21 @@ const unassignSales = () => {
     });
 };
 
-const submitRevision = () => {
-    requestingRevision.value = true;
+const submitCreateRevision = () => {
+    creatingRevision.value = true;
     router.post(
-        route("orders.request-revision", props.order.id),
+        route("orders.create-revision", props.order.id),
         {
             notes: revisionNotes.value,
         },
         {
             preserveScroll: true,
             onSuccess: () => {
-                showRevisionModal.value = false;
+                showCreateRevisionModal.value = false;
                 revisionNotes.value = "";
             },
             onFinish: () => {
-                requestingRevision.value = false;
+                creatingRevision.value = false;
             },
         }
     );
@@ -320,12 +324,24 @@ const submitWork = () => {
     if (submitNotes.value) {
         formData.append("notes", submitNotes.value);
     }
+    if (submitWidth.value) {
+        formData.append("submitted_width", submitWidth.value);
+    }
+    if (submitHeight.value) {
+        formData.append("submitted_height", submitHeight.value);
+    }
+    if (submitStitchCount.value) {
+        formData.append("submitted_stitch_count", submitStitchCount.value);
+    }
 
     router.post(route("orders.submit-work", props.order.id), formData, {
         preserveScroll: true,
         onSuccess: () => {
             submitFiles.value = [];
             submitNotes.value = "";
+            submitWidth.value = "";
+            submitHeight.value = "";
+            submitStitchCount.value = "";
             if (fileInput.value) {
                 fileInput.value.value = "";
             }
@@ -355,7 +371,6 @@ const statusBadgeClass = (status) => {
         in_progress: "bg-indigo-100 text-indigo-700",
         submitted: "bg-purple-100 text-purple-700",
         in_review: "bg-cyan-100 text-cyan-700",
-        revision_requested: "bg-yellow-100 text-yellow-800",
         approved: "bg-green-100 text-green-700",
         delivered: "bg-emerald-100 text-emerald-700",
         closed: "bg-gray-100 text-gray-600",
@@ -402,6 +417,18 @@ const priorityBadgeClass = (priority) => {
                         </div>
                         <p class="mt-0.5 text-sm text-gray-500">
                             {{ order.title }}
+                        </p>
+                        <p
+                            v-if="order.parent_order"
+                            class="mt-0.5 text-xs text-indigo-600"
+                        >
+                            Revision of:
+                            <Link
+                                :href="route('orders.show', order.parent_order.id)"
+                                class="font-medium hover:text-indigo-900"
+                            >
+                                {{ order.parent_order.order_number }}
+                            </Link>
                         </p>
                     </div>
                 </div>
@@ -549,6 +576,42 @@ const priorityBadgeClass = (priority) => {
                                         </dd>
                                     </div>
                                 </dl>
+
+                                <!-- Submitted Work Details -->
+                                <div
+                                    v-if="order.submitted_width || order.submitted_height || order.submitted_stitch_count"
+                                    class="mt-4 pt-4 border-t border-gray-100"
+                                >
+                                    <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                                        Submitted Work Details
+                                    </h4>
+                                    <dl class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+                                        <div v-if="order.submitted_width">
+                                            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                                Submitted Width
+                                            </dt>
+                                            <dd class="mt-1 text-sm text-gray-900">
+                                                {{ order.submitted_width }}
+                                            </dd>
+                                        </div>
+                                        <div v-if="order.submitted_height">
+                                            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                                Submitted Height
+                                            </dt>
+                                            <dd class="mt-1 text-sm text-gray-900">
+                                                {{ order.submitted_height }}
+                                            </dd>
+                                        </div>
+                                        <div v-if="order.submitted_stitch_count">
+                                            <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                                Stitch Count
+                                            </dt>
+                                            <dd class="mt-1 text-sm text-gray-900">
+                                                {{ order.submitted_stitch_count?.toLocaleString() }}
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </div>
                             </div>
                         </div>
 
@@ -830,63 +893,41 @@ const priorityBadgeClass = (priority) => {
                             </div>
                         </div>
 
-                        <!-- Revision History -->
+                        <!-- Revision Orders -->
                         <div
-                            v-if="revisions?.length"
+                            v-if="revisionOrders?.length"
                             class="bg-white shadow-sm rounded-lg border border-gray-200"
                         >
                             <div class="px-5 py-4 border-b border-gray-100">
                                 <h3 class="text-sm font-semibold text-gray-900">
-                                    Revisions ({{ revisions.length }})
+                                    Revision Orders ({{ revisionOrders.length }})
                                 </h3>
                             </div>
                             <div class="divide-y divide-gray-50">
                                 <div
-                                    v-for="revision in revisions"
-                                    :key="revision.id"
-                                    class="px-5 py-3"
+                                    v-for="rev in revisionOrders"
+                                    :key="rev.id"
+                                    class="px-5 py-3 flex items-center justify-between"
                                 >
-                                    <div
-                                        class="flex items-start justify-between"
-                                    >
-                                        <div class="min-w-0 flex-1">
-                                            <p
-                                                class="text-sm text-gray-700 whitespace-pre-line"
-                                            >
-                                                {{
-                                                    revision.notes ||
-                                                    "No notes provided."
-                                                }}
-                                            </p>
-                                            <p
-                                                class="mt-1 text-xs text-gray-500"
-                                            >
-                                                Requested by
-                                                {{ revision.requested_by }}
-                                                &bull;
-                                                {{
-                                                    formatDate(
-                                                        revision.created_at,
-                                                        true
-                                                    )
-                                                }}
-                                            </p>
-                                        </div>
-                                        <span
-                                            :class="[
-                                                'ml-3 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                                                revision.status === 'resolved'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-yellow-100 text-yellow-700',
-                                            ]"
+                                    <div>
+                                        <Link
+                                            :href="route('orders.show', rev.id)"
+                                            class="text-sm font-medium text-indigo-600 hover:text-indigo-900"
                                         >
-                                            {{
-                                                revision.status === "resolved"
-                                                    ? "Resolved"
-                                                    : "Open"
-                                            }}
-                                        </span>
+                                            {{ rev.order_number }}
+                                        </Link>
+                                        <p class="text-xs text-gray-500">
+                                            {{ formatDate(rev.created_at, true) }}
+                                        </p>
                                     </div>
+                                    <span
+                                        :class="[
+                                            'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize',
+                                            statusBadgeClass(rev.status),
+                                        ]"
+                                    >
+                                        {{ (rev.status || '').split('_').join(' ') }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -954,11 +995,19 @@ const priorityBadgeClass = (priority) => {
                                     class="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0"
                                 >
                                     <div class="min-w-0 flex-1">
-                                        <p
-                                            class="text-sm font-medium text-gray-900 truncate"
-                                        >
-                                            {{ file.original_name }}
-                                        </p>
+                                        <div class="flex items-center gap-2">
+                                            <p
+                                                class="text-sm font-medium text-gray-900 truncate"
+                                            >
+                                                {{ file.original_name }}
+                                            </p>
+                                            <span
+                                                v-if="file.is_delivered"
+                                                class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20"
+                                            >
+                                                Delivered
+                                            </span>
+                                        </div>
                                         <p class="text-xs text-gray-500">
                                             {{ formatSize(file.size) }} &bull;
                                             {{
@@ -1045,6 +1094,52 @@ const priorityBadgeClass = (priority) => {
                                     </div>
                                 </div>
 
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label
+                                            for="submit_width"
+                                            class="block text-xs font-medium text-gray-700"
+                                            >Width</label
+                                        >
+                                        <input
+                                            v-model="submitWidth"
+                                            id="submit_width"
+                                            type="text"
+                                            placeholder='e.g. 3.5"'
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label
+                                            for="submit_height"
+                                            class="block text-xs font-medium text-gray-700"
+                                            >Height</label
+                                        >
+                                        <input
+                                            v-model="submitHeight"
+                                            id="submit_height"
+                                            type="text"
+                                            placeholder='e.g. 2.5"'
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label
+                                            for="submit_stitch_count"
+                                            class="block text-xs font-medium text-gray-700"
+                                            >Stitch Count</label
+                                        >
+                                        <input
+                                            v-model="submitStitchCount"
+                                            id="submit_stitch_count"
+                                            type="number"
+                                            min="0"
+                                            placeholder="e.g. 12000"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label
                                         for="submit_notes"
@@ -1084,7 +1179,7 @@ const priorityBadgeClass = (priority) => {
                         <div
                             v-if="
                                 allowedTransitions?.length ||
-                                canRequestRevision ||
+                                canCreateRevision ||
                                 canDeliver ||
                                 canCancel
                             "
@@ -1127,12 +1222,12 @@ const priorityBadgeClass = (priority) => {
                                         Deliver Order
                                     </button>
                                     <button
-                                        v-if="canRequestRevision"
+                                        v-if="canCreateRevision"
                                         type="button"
-                                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium shadow-sm bg-yellow-500 hover:bg-yellow-600 text-white"
-                                        @click="showRevisionModal = true"
+                                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white"
+                                        @click="showCreateRevisionModal = true"
                                     >
-                                        Request Revision
+                                        Create Revision
                                     </button>
                                     <button
                                         v-if="canCancel"
@@ -1744,30 +1839,31 @@ const priorityBadgeClass = (priority) => {
             </div>
         </div>
 
-        <!-- Revision Request Modal -->
+        <!-- Create Revision Order Modal -->
         <div
-            v-if="showRevisionModal"
+            v-if="showCreateRevisionModal"
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="flex min-h-full items-center justify-center p-4">
                 <div
                     class="fixed inset-0 bg-gray-500/75"
-                    @click="showRevisionModal = false"
+                    @click="showCreateRevisionModal = false"
                 ></div>
                 <div
                     class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
                 >
                     <h3 class="text-lg font-semibold text-gray-900">
-                        Request Revision
+                        Create Revision Order
                     </h3>
                     <p class="mt-1 text-sm text-gray-500">
-                        Provide feedback on what needs to be changed.
+                        A new revision order will be created with all details copied from this order.
                     </p>
                     <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes / Instructions (optional)</label>
                         <textarea
                             v-model="revisionNotes"
                             rows="4"
-                            placeholder="Describe what changes are needed..."
+                            placeholder="Describe what changes are needed for the revision..."
                             class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                         ></textarea>
                     </div>
@@ -1775,20 +1871,20 @@ const priorityBadgeClass = (priority) => {
                         <button
                             type="button"
                             class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                            @click="showRevisionModal = false"
+                            @click="showCreateRevisionModal = false"
                         >
                             Cancel
                         </button>
                         <button
                             type="button"
-                            :disabled="requestingRevision"
-                            class="rounded-md bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 disabled:opacity-50"
-                            @click="submitRevision"
+                            :disabled="creatingRevision"
+                            class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                            @click="submitCreateRevision"
                         >
                             {{
-                                requestingRevision
-                                    ? "Requesting..."
-                                    : "Request Revision"
+                                creatingRevision
+                                    ? "Creating..."
+                                    : "Create Revision Order"
                             }}
                         </button>
                     </div>

@@ -33,7 +33,6 @@ class DesignerController extends Controller
             'assigned' => (clone $baseQuery)->where('status', OrderStatus::ASSIGNED)->count(),
             'in_progress' => (clone $baseQuery)->where('status', OrderStatus::IN_PROGRESS)->count(),
             'submitted' => (clone $baseQuery)->where('status', OrderStatus::SUBMITTED)->count(),
-            'revision_requested' => (clone $baseQuery)->where('status', OrderStatus::REVISION_REQUESTED)->count(),
             'in_review' => (clone $baseQuery)->where('status', OrderStatus::IN_REVIEW)->count(),
             'approved' => (clone $baseQuery)->where('status', OrderStatus::APPROVED)->count(),
             'total' => (clone $baseQuery)->count(),
@@ -56,7 +55,7 @@ class DesignerController extends Controller
             'client' => $order->client?->name,
             'due_at' => optional($order->due_at)?->toDateTimeString(),
             'created_at' => $order->created_at?->toDateTimeString(),
-            'can_start' => $order->status === OrderStatus::ASSIGNED || $order->status === OrderStatus::REVISION_REQUESTED,
+            'can_start' => $order->status === OrderStatus::ASSIGNED,
             'can_submit' => $order->status === OrderStatus::IN_PROGRESS,
         ]);
 

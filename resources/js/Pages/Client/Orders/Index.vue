@@ -45,7 +45,6 @@ const getStatusColor = (status) => {
         in_progress: "bg-purple-50 text-purple-700 ring-purple-600/20",
         submitted: "bg-indigo-50 text-indigo-700 ring-indigo-600/20",
         in_review: "bg-yellow-50 text-yellow-700 ring-yellow-600/20",
-        revision_requested: "bg-orange-50 text-orange-700 ring-orange-600/20",
         approved: "bg-teal-50 text-teal-700 ring-teal-600/20",
         delivered: "bg-green-50 text-green-700 ring-green-600/20",
         closed: "bg-gray-100 text-gray-700 ring-gray-600/20",
@@ -114,7 +113,6 @@ const orderColumns = [
                                 <option value="in_progress">In Progress</option>
                                 <option value="submitted">Submitted</option>
                                 <option value="in_review">In Review</option>
-                                <option value="revision_requested">Revision Requested</option>
                                 <option value="approved">Approved</option>
                                 <option value="delivered">Delivered</option>
                                 <option value="closed">Closed</option>

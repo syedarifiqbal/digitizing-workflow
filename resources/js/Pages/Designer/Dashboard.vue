@@ -14,7 +14,6 @@ const statusTabs = [
     { key: 'assigned', label: 'Assigned' },
     { key: 'in_progress', label: 'In Progress' },
     { key: 'submitted', label: 'Submitted' },
-    { key: 'revision_requested', label: 'Revision' },
     { key: 'in_review', label: 'In Review' },
     { key: 'approved', label: 'Approved' },
 ];
@@ -23,7 +22,6 @@ const statCards = computed(() => [
     { key: 'assigned', label: 'Assigned', value: props.stats.assigned, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
     { key: 'in_progress', label: 'In Progress', value: props.stats.in_progress, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
     { key: 'submitted', label: 'Submitted', value: props.stats.submitted, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-    { key: 'revision_requested', label: 'Revisions', value: props.stats.revision_requested, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
     { key: 'in_review', label: 'In Review', value: props.stats.in_review, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
     { key: 'approved', label: 'Approved', value: props.stats.approved, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
 ]);
@@ -33,7 +31,6 @@ const statusBadge = (status) => {
         assigned: 'bg-blue-100 text-blue-700',
         in_progress: 'bg-yellow-100 text-yellow-700',
         submitted: 'bg-indigo-100 text-indigo-700',
-        revision_requested: 'bg-orange-100 text-orange-700',
         in_review: 'bg-purple-100 text-purple-700',
         approved: 'bg-green-100 text-green-700',
     };
