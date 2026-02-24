@@ -13,11 +13,14 @@ const form = useForm({
     phone: props.client?.phone ?? "",
     company: props.client?.company ?? "",
     notes: props.client?.notes ?? "",
-    status: props.client?.status ?? "active",
+    status: props.client?.is_active ? "active" : "inactive",
 });
 
 const submit = () => {
-    form.put(route("clients.update", props.client.id));
+    form.transform(data => ({
+        ...data,
+        is_active: data.status === "active",
+    })).put(route("clients.update", props.client.id));
 };
 
 const baseInputClasses =

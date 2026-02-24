@@ -15,7 +15,7 @@ const form = useForm({
     email: props.user?.email ?? "",
     phone: props.user?.phone ?? "",
     role: props.user?.role ?? props.roles?.[0] ?? "Admin",
-    is_active: props.user?.is_active ?? "1",
+    is_active: props.user?.is_active ? "1" : "0",
     client_id: props.user?.client_id ?? "",
 });
 
