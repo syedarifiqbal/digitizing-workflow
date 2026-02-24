@@ -102,6 +102,11 @@ class UserController extends Controller
 
         $user->syncRoles([$data['role']]);
 
+        $mailerName = \App\Support\TenantMailer::configureForTenant($request->user()->tenant);
+        if ($mailerName) {
+            config(['mail.default' => $mailerName]);
+        }
+
         Password::sendResetLink(['email' => $user->email]);
 
         return redirect()->route('users.index')->with('success', 'User invited.');

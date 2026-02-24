@@ -39,6 +39,9 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
+            'app' => [
+                'is_single_tenant' => (bool) config('app.forced_tenant_id'),
+            ],
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,

@@ -68,6 +68,6 @@ const handleUpdate = (value) => {
         auto-apply
         :placeholder="placeholder"
         :uid="id"
-        input-class-name="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+        input-class-name="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
     />
 </template>

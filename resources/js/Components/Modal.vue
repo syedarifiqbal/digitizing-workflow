@@ -48,7 +48,7 @@ const onKeydown = (e) => {
             >
                 <div class="flex min-h-full items-center justify-center p-4">
                     <div
-                        class="fixed inset-0 bg-gray-500/75 transition-opacity"
+                        class="fixed inset-0 bg-slate-500/75 transition-opacity"
                         @click="close"
                     ></div>
                     <div

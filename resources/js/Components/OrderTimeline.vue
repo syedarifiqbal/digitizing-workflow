@@ -22,11 +22,11 @@ const getIcon = (type) => {
 
 const getIconColor = (type) => {
     switch (type) {
-        case 'created': return 'bg-gray-400';
+        case 'created': return 'bg-slate-400';
         case 'status_change': return 'bg-indigo-500';
         case 'assigned': return 'bg-green-500';
         case 'unassigned': return 'bg-red-400';
-        default: return 'bg-gray-400';
+        default: return 'bg-slate-400';
     }
 };
 </script>
@@ -38,7 +38,7 @@ const getIconColor = (type) => {
                 <!-- Connector line -->
                 <span
                     v-if="index !== events.length - 1"
-                    class="absolute left-3 top-6 -ml-px h-full w-0.5 bg-gray-200"
+                    class="absolute left-3 top-6 -ml-px h-full w-0.5 bg-slate-200"
                     aria-hidden="true"
                 ></span>
 
@@ -74,16 +74,16 @@ const getIconColor = (type) => {
 
                     <!-- Content -->
                     <div class="min-w-0 flex-1">
-                        <p class="text-sm text-gray-900">
+                        <p class="text-sm text-slate-900">
                             {{ event.description }}
-                            <span v-if="event.user" class="font-medium text-gray-600">
+                            <span v-if="event.user" class="font-medium text-slate-600">
                                 &mdash; {{ event.user }}
                             </span>
                         </p>
-                        <p v-if="event.notes" class="mt-0.5 text-sm text-gray-500 italic">
+                        <p v-if="event.notes" class="mt-0.5 text-sm text-slate-500 italic">
                             "{{ event.notes }}"
                         </p>
-                        <p class="mt-0.5 text-xs text-gray-400">
+                        <p class="mt-0.5 text-xs text-slate-400">
                             {{ formatDate(event.timestamp, true) }}
                         </p>
                     </div>
