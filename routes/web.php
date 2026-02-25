@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\ClientRegisterController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\OrderController;
@@ -41,7 +42,10 @@ Route::middleware([ForceTenantContext::class])->group(function () {
 
 // Guest routes
 Route::middleware('guest')->group(function () {
-    if (! config('app.forced_tenant_id')) {
+    if (config('app.forced_tenant_id')) {
+        Route::get('/register', [ClientRegisterController::class, 'create'])->name('register');
+        Route::post('/register', [ClientRegisterController::class, 'store']);
+    } else {
         Route::get('/register', [RegisterController::class, 'create'])->name('register');
         Route::post('/register', [RegisterController::class, 'store']);
     }
@@ -109,6 +113,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('clients/bulk', [ClientController::class, 'bulkDestroy'])->name('clients.bulk-destroy');
         Route::resource('clients', ClientController::class);
         Route::patch('clients/{client}/status', [ClientController::class, 'toggleStatus'])->name('clients.status');
+        Route::post('clients/{client}/resend-invitation', [ClientController::class, 'resendInvitation'])->name('clients.resend-invitation');
         Route::delete('orders/bulk', [OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
         Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
         Route::post('orders/{order}/assign', [OrderController::class, 'assign'])->name('orders.assign');

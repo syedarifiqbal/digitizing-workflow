@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,6 +20,7 @@ class ClientController extends Controller
         $filters = $request->only(['search', 'status']);
 
         $clients = Client::query()
+            ->withExists(['users as has_pending_invitation' => fn ($q) => $q->whereNull('email_verified_at')])
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', "%{$search}%")
@@ -47,6 +50,7 @@ class ClientController extends Controller
                     'phone' => $client->phone,
                     'company' => $client->company,
                     'is_active' => $client->is_active,
+                    'has_pending_invitation' => (bool) $client->has_pending_invitation,
                     'created_at' => $client->created_at?->toDateTimeString(),
                 ]),
                 'links' => $clients->linkCollection(),
@@ -125,6 +129,26 @@ class ClientController extends Controller
         ]);
 
         return back()->with('success', 'Client status updated.');
+    }
+
+    public function resendInvitation(Request $request, Client $client): RedirectResponse
+    {
+        $this->authorize('update', $client);
+
+        $user = User::where('client_id', $client->id)->whereNull('email_verified_at')->first();
+
+        if (! $user) {
+            return back()->with('error', 'No pending invitation found for this client.');
+        }
+
+        $mailerName = \App\Support\TenantMailer::configureForTenant($request->user()->tenant);
+        if ($mailerName) {
+            config(['mail.default' => $mailerName]);
+        }
+
+        Password::sendResetLink(['email' => $user->email]);
+
+        return back()->with('success', 'Invitation resent to ' . $user->email . '.');
     }
 
     public function bulkDestroy(Request $request): RedirectResponse

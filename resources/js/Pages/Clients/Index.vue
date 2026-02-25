@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
 import { Head, Link, router } from "@inertiajs/vue3";
+import { EnvelopeIcon } from "@heroicons/vue/24/outline";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Button from "@/Components/Button.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
@@ -110,6 +111,14 @@ const clearSelections = () => {
 const toggleStatus = (client) => {
     router.patch(
         route("clients.status", client.id),
+        {},
+        { preserveScroll: true }
+    );
+};
+
+const resendInvitation = (client) => {
+    router.post(
+        route("clients.resend-invitation", client.id),
         {},
         { preserveScroll: true }
     );
@@ -286,7 +295,8 @@ const clientColumns = [
                                 :actions="[
                                     { type: 'view', href: route('clients.show', row.id) },
                                     { type: 'edit', href: route('clients.edit', row.id) },
-                                    { type: 'toggle', action: () => toggleStatus(row), title: row.status === 'active' ? 'Mark inactive' : 'Mark active' },
+                                    { type: 'custom', icon: EnvelopeIcon, label: 'Resend invitation', action: () => resendInvitation(row), show: row.has_pending_invitation },
+                                    { type: 'toggle', action: () => toggleStatus(row), title: row.is_active ? 'Mark inactive' : 'Mark active' },
                                     { type: 'delete', action: () => openDeleteModal(row.id) },
                                 ]"
                             />

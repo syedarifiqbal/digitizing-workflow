@@ -66,6 +66,7 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'tenant_id' => 'integer',
             'due_at' => 'datetime',
             'need_by' => 'date',
             'submitted_at' => 'datetime',

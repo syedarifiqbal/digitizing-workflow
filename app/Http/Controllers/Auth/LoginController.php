@@ -24,7 +24,7 @@ class LoginController extends Controller
 
         return Inertia::render('Auth/Login', [
             'tenantName' => $tenantName,
-            'registrationEnabled' => ! (bool) config('app.forced_tenant_id'),
+            'registrationEnabled' => true,
         ]);
     }
 

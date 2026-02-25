@@ -37,6 +37,11 @@ class Client extends Model
         return $this->is_active === true;
     }
 
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
