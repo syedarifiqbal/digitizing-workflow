@@ -11,7 +11,6 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -46,7 +45,7 @@ class ClientRegisterController extends Controller
             'client_id' => $client->id,
             'name'      => $validated['name'],
             'email'     => $validated['email'],
-            'password'  => Hash::make($validated['password']),
+            'password'  => $validated['password'],
         ]);
 
         // Resolve role by object to avoid global scope issues (user not logged in yet)

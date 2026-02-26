@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\OrderFileController;
+use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Services\InvoicePdfService;
@@ -17,16 +18,33 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class ClientPortalController extends Controller
 {
+    /**
+     * Resolve the Client for the authenticated user.
+     * Uses withTrashed() so that soft-deleted clients (admin deleted them
+     * after the user was created) don't produce a false "no client" 403.
+     */
+    private function resolveClient(Request $request): Client
+    {
+        $user = $request->user();
+
+        if (!$user->client_id) {
+            abort(403, 'Your account is not linked to a client record. Please contact support.');
+        }
+
+        $client = $user->client()->withTrashed()->first();
+
+        if (!$client) {
+            abort(403, 'No client record found for your account. Please contact support.');
+        }
+
+        return $client;
+    }
+
     public function dashboard(Request $request): Response
     {
         $user = $request->user();
 
-        // Get the client associated with this user
-        $client = $user->client;
-
-        if (!$client) {
-            abort(403, 'No client record found for this user.');
-        }
+        $client = $this->resolveClient($request);
 
         // Recent orders (last 5)
         $recentOrders = Order::query()
@@ -115,11 +133,7 @@ class ClientPortalController extends Controller
     public function orders(Request $request): Response
     {
         $user = $request->user();
-        $client = $user->client;
-
-        if (!$client) {
-            abort(403, 'No client record found for this user.');
-        }
+        $client = $this->resolveClient($request);
 
         $filters = $request->only(['search', 'status', 'priority']);
 
@@ -169,11 +183,7 @@ class ClientPortalController extends Controller
     public function createOrder(Request $request): Response
     {
         $user = $request->user();
-        $client = $user->client;
-
-        if (!$client) {
-            abort(403, 'No client record found for this user.');
-        }
+        $client = $this->resolveClient($request);
 
         $tenant = $user->tenant;
 
@@ -192,11 +202,7 @@ class ClientPortalController extends Controller
     public function storeOrder(Request $request)
     {
         $user = $request->user();
-        $client = $user->client;
-
-        if (!$client) {
-            abort(403, 'No client record found for this user.');
-        }
+        $client = $this->resolveClient($request);
 
         $tenant = $user->tenant;
 
@@ -262,11 +268,7 @@ class ClientPortalController extends Controller
     public function showOrder(Request $request, Order $order): Response
     {
         $user = $request->user();
-        $client = $user->client;
-
-        if (!$client) {
-            abort(403, 'No client record found for this user.');
-        }
+        $client = $this->resolveClient($request);
 
         // Ensure client can only view their own orders
         if ($order->client_id !== $client->id || $order->tenant_id !== $user->tenant_id) {
@@ -374,9 +376,9 @@ class ClientPortalController extends Controller
     public function storeComment(Request $request, Order $order)
     {
         $user = $request->user();
-        $client = $user->client;
+        $client = $this->resolveClient($request);
 
-        if (!$client || $order->client_id !== $client->id || $order->tenant_id !== $user->tenant_id) {
+        if ($order->client_id !== $client->id || $order->tenant_id !== $user->tenant_id) {
             abort(403, 'Unauthorized to comment on this order.');
         }
 
@@ -414,11 +416,7 @@ class ClientPortalController extends Controller
     public function invoices(Request $request): Response
     {
         $user = $request->user();
-        $client = $user->client;
-
-        if (!$client) {
-            abort(403, 'No client record found for this user.');
-        }
+        $client = $this->resolveClient($request);
 
         $filters = $request->only(['status']);
 
@@ -469,11 +467,7 @@ class ClientPortalController extends Controller
     public function showInvoice(Request $request, Invoice $invoice): Response
     {
         $user = $request->user();
-        $client = $user->client;
-
-        if (!$client) {
-            abort(403, 'No client record found for this user.');
-        }
+        $client = $this->resolveClient($request);
 
         // Check authorization
         if ($invoice->client_id !== $client->id || $invoice->tenant_id !== $user->tenant_id) {
@@ -540,11 +534,7 @@ class ClientPortalController extends Controller
     public function downloadInvoicePdf(Request $request, Invoice $invoice, InvoicePdfService $pdfService): HttpResponse
     {
         $user = $request->user();
-        $client = $user->client;
-
-        if (!$client) {
-            abort(403, 'No client record found for this user.');
-        }
+        $client = $this->resolveClient($request);
 
         // Check authorization
         if ($invoice->client_id !== $client->id || $invoice->tenant_id !== $user->tenant_id) {

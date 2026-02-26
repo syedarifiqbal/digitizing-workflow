@@ -31,14 +31,17 @@ class Commission extends Model
     ];
 
     protected $casts = [
-        'role_type' => RoleType::class,
-        'base_amount' => 'decimal:2',
+        'tenant_id'    => 'integer',
+        'order_id'     => 'integer',
+        'user_id'      => 'integer',
+        'role_type'    => RoleType::class,
+        'base_amount'  => 'decimal:2',
         'extra_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
-        'earned_at' => 'datetime',
+        'earned_at'    => 'datetime',
         'rule_snapshot' => 'array',
-        'is_paid' => 'boolean',
-        'paid_at' => 'datetime',
+        'is_paid'      => 'boolean',
+        'paid_at'      => 'datetime',
     ];
 
     public function order(): BelongsTo

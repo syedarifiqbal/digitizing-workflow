@@ -407,8 +407,10 @@ class OrderController extends Controller
                 'created_at' => $rev->created_at?->toDateTimeString(),
             ]),
             'canSubmitWork' => $order->status === OrderStatus::IN_PROGRESS
-                && $user->isDesigner()
-                && $order->designer_id === $user->id,
+                && (
+                    $user->isAdmin() || $user->isManager()
+                    || ($user->isDesigner() && $order->designer_id === $user->id)
+                ),
             'maxUploadMb' => (int) $request->user()->tenant->getSetting('max_upload_mb', 25),
             'allowedOutputExtensions' => $request->user()->tenant->getSetting('allowed_output_extensions', ''),
             'timeline' => $this->buildTimeline($order),
@@ -842,8 +844,11 @@ class OrderController extends Controller
 
         $user = $request->user();
 
-        if (! $user->isDesigner() || $order->designer_id !== $user->id) {
-            abort(403, 'Only the assigned designer can submit work.');
+        $isPrivileged = $user->isAdmin() || $user->isManager();
+        $isAssignedDesigner = $user->isDesigner() && $order->designer_id === $user->id;
+
+        if (! $isPrivileged && ! $isAssignedDesigner) {
+            abort(403, 'Only the assigned designer or an admin can submit work.');
         }
 
         $tenant = $user->tenant;

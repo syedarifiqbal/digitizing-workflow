@@ -40,17 +40,19 @@ class Invoice extends Model
     protected function casts(): array
     {
         return [
-            'issue_date' => 'date',
-            'due_date' => 'date',
-            'sent_at' => 'datetime',
-            'paid_at' => 'datetime',
-            'status' => InvoiceStatus::class,
-            'sequence' => 'integer',
-            'subtotal' => 'decimal:2',
-            'tax_rate' => 'decimal:2',
-            'tax_amount' => 'decimal:2',
+            'tenant_id'       => 'integer',
+            'client_id'       => 'integer',
+            'issue_date'      => 'date',
+            'due_date'        => 'date',
+            'sent_at'         => 'datetime',
+            'paid_at'         => 'datetime',
+            'status'          => InvoiceStatus::class,
+            'sequence'        => 'integer',
+            'subtotal'        => 'decimal:2',
+            'tax_rate'        => 'decimal:2',
+            'tax_amount'      => 'decimal:2',
             'discount_amount' => 'decimal:2',
-            'total_amount' => 'decimal:2',
+            'total_amount'    => 'decimal:2',
         ];
     }
 

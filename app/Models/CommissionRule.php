@@ -26,11 +26,13 @@ class CommissionRule extends Model
     ];
 
     protected $casts = [
-        'role_type' => RoleType::class,
-        'type' => CommissionType::class,
+        'tenant_id'    => 'integer',
+        'user_id'      => 'integer',
+        'role_type'    => RoleType::class,
+        'type'         => CommissionType::class,
         'fixed_amount' => 'decimal:2',
         'percent_rate' => 'decimal:2',
-        'is_active' => 'boolean',
+        'is_active'    => 'boolean',
     ];
 
     public function user(): BelongsTo
