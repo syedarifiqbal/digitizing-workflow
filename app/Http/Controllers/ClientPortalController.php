@@ -228,11 +228,10 @@ class ClientPortalController extends Controller
         }
 
         // Generate order number
-        $prefix = $tenant->getSetting('order_number_prefix', '');
-        $lastOrder = Order::latest('id')->first();
-        $nextNumber = $lastOrder ? (intval(substr($lastOrder->order_number, strlen($prefix))) + 1) : 1;
-        $orderNumber = $prefix . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
-        $sequence = ((int) Order::forTenant($tenant->id)->max('sequence')) + 1;
+        ['sequence' => $sequence, 'order_number' => $orderNumber] = Order::nextOrderNumber(
+            $tenant->id,
+            $tenant->getSetting('order_number_prefix', '')
+        );
 
         // Create order
         $order = Order::create([

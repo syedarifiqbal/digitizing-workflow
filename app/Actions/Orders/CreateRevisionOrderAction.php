@@ -19,7 +19,7 @@ class CreateRevisionOrderAction
             $revisionNumber = $revisionCount + 1;
             $orderNumber = "{$parentOrder->order_number}-R{$revisionNumber}";
 
-            $sequence = ((int) Order::forTenant($parentOrder->tenant_id)->max('sequence')) + 1;
+            ['sequence' => $sequence] = Order::nextOrderNumber($parentOrder->tenant_id);
 
             // Create the revision order with copied details
             $revisionOrder = Order::create([

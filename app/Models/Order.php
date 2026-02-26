@@ -153,4 +153,17 @@ class Order extends Model
     {
         return $this->hasMany(InvoiceItem::class);
     }
+
+    /**
+     * Generate the next sequence number and order number for a tenant.
+     * Uses withTrashed() so soft-deleted orders don't cause unique constraint violations.
+     */
+    public static function nextOrderNumber(int $tenantId, string $prefix = ''): array
+    {
+        $sequence = ((int) static::withTrashed()->where('tenant_id', $tenantId)->max('sequence')) + 1;
+        $prefix    = $prefix !== '' ? strtoupper($prefix) : 'ORD';
+        $number    = sprintf('%s-%05d', $prefix, $sequence);
+
+        return ['sequence' => $sequence, 'order_number' => $number];
+    }
 }

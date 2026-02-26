@@ -225,8 +225,10 @@ class OrderController extends Controller
         $isQuote = $request->boolean('quote');
 
         $order = DB::transaction(function () use ($request, $tenant, $data, $isQuote) {
-            $sequence = ((int) Order::forTenant($tenant->id)->max('sequence')) + 1;
-            $orderNumber = $this->generateOrderNumber($tenant->getSetting('order_number_prefix', ''), $sequence);
+            ['sequence' => $sequence, 'order_number' => $orderNumber] = Order::nextOrderNumber(
+                $tenant->id,
+                $tenant->getSetting('order_number_prefix', '')
+            );
 
             /** @var Order $order */
             $currency = strtoupper($data['currency'] ?? $tenant->getSetting('currency', 'USD'));
@@ -1111,13 +1113,6 @@ class OrderController extends Controller
                 'PNG (High Res)',
             ],
         ];
-    }
-
-    private function generateOrderNumber(string $prefix, int $sequence): string
-    {
-        $prefix = $prefix !== '' ? strtoupper($prefix) : 'ORD';
-
-        return sprintf('%s-%05d', $prefix, $sequence);
     }
 
     public function storeComment(Request $request, Order $order): RedirectResponse

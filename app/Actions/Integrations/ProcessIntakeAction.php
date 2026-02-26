@@ -79,10 +79,7 @@ class ProcessIntakeAction
     protected function createOrder(Tenant $tenant, Client $client, User $clientUser, array $orderPayload): Order
     {
         $prefix = $tenant->getSetting('order_number_prefix', '');
-        $lastSequence = Order::where('tenant_id', $tenant->id)->max('sequence') ?? 0;
-        $sequence = $lastSequence + 1;
-        // Keep order numbers predictable for downstream systems
-        $orderNumber = $prefix . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
+        ['sequence' => $sequence, 'order_number' => $orderNumber] = Order::nextOrderNumber($tenant->id, $prefix);
 
         $priorityValue = strtolower($orderPayload['priority'] ?? OrderPriority::NORMAL->value);
         $priority = OrderPriority::tryFrom($priorityValue) ?? OrderPriority::NORMAL;
