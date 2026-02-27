@@ -1337,18 +1337,29 @@ class OrderController extends Controller
             $isSameStatus = $history->from_status === $history->to_status;
 
             if ($isSameStatus) {
-                // Activity log (no real status change): use the notes as the main description
-                $description = $history->notes ?? 'Activity logged';
+                // Detect specific activity type from the note prefix
+                $note = $history->notes ?? '';
+                if (str_starts_with($note, 'Deleted ')) {
+                    $activityType = 'file_deleted';
+                } elseif (str_contains($note, 'resubmit') || str_contains($note, 'files uploaded')) {
+                    $activityType = 'file_uploaded';
+                } elseif (str_starts_with($note, 'Re-delivery')) {
+                    $activityType = 'redelivery';
+                } else {
+                    $activityType = 'activity';
+                }
+                $description = $note ?: 'Activity logged';
                 $notes = null;
             } else {
                 $fromLabel = ucwords(str_replace('_', ' ', $history->from_status->value));
                 $toLabel = ucwords(str_replace('_', ' ', $history->to_status->value));
                 $description = "Status changed from {$fromLabel} to {$toLabel}";
+                $activityType = 'status_change';
                 $notes = $history->notes;
             }
 
             $events->push([
-                'type' => $isSameStatus ? 'activity' : 'status_change',
+                'type' => $activityType,
                 'description' => $description,
                 'user' => $history->changedBy?->name ?? 'System',
                 'notes' => $notes,

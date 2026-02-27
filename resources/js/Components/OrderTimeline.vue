@@ -12,23 +12,29 @@ defineProps({
 
 const getIcon = (type) => {
     switch (type) {
-        case 'created': return 'plus';
+        case 'created':      return 'plus';
         case 'status_change': return 'arrow';
-        case 'assigned': return 'user';
-        case 'unassigned': return 'user-minus';
-        case 'activity': return 'activity';
-        default: return 'dot';
+        case 'assigned':     return 'user';
+        case 'unassigned':   return 'user-minus';
+        case 'file_deleted': return 'trash';
+        case 'file_uploaded': return 'upload';
+        case 'redelivery':   return 'send';
+        case 'activity':     return 'activity';
+        default:             return 'dot';
     }
 };
 
 const getIconColor = (type) => {
     switch (type) {
-        case 'created': return 'bg-slate-400';
+        case 'created':      return 'bg-slate-400';
         case 'status_change': return 'bg-indigo-500';
-        case 'assigned': return 'bg-green-500';
-        case 'unassigned': return 'bg-red-400';
-        case 'activity': return 'bg-amber-400';
-        default: return 'bg-slate-400';
+        case 'assigned':     return 'bg-green-500';
+        case 'unassigned':   return 'bg-red-400';
+        case 'file_deleted': return 'bg-red-500';
+        case 'file_uploaded': return 'bg-violet-500';
+        case 'redelivery':   return 'bg-sky-500';
+        case 'activity':     return 'bg-amber-400';
+        default:             return 'bg-slate-400';
     }
 };
 </script>
@@ -68,6 +74,18 @@ const getIconColor = (type) => {
                             <!-- User minus icon -->
                             <svg v-else-if="getIcon(event.type) === 'user-minus'" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a7 7 0 00-7 7h14M23 11H17" />
+                            </svg>
+                            <!-- Trash / file deleted icon -->
+                            <svg v-else-if="getIcon(event.type) === 'trash'" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <!-- Upload / file submitted icon -->
+                            <svg v-else-if="getIcon(event.type) === 'upload'" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            <!-- Send / re-delivery icon -->
+                            <svg v-else-if="getIcon(event.type) === 'send'" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                             </svg>
                             <!-- Activity / note icon -->
                             <svg v-else-if="getIcon(event.type) === 'activity'" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
