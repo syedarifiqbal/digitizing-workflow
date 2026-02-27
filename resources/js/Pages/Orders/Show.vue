@@ -167,6 +167,7 @@ const updatingTip = ref(false);
 const newComment = ref("");
 const commentVisibility = ref("client");
 const submittingComment = ref(false);
+const activeHistoryTab = ref("activity");
 
 const page = usePage();
 const highlightedCommentId = ref(null);
@@ -176,6 +177,7 @@ onMounted(() => {
     const commentId = params.get("comment");
     if (commentId) {
         highlightedCommentId.value = parseInt(commentId);
+        activeHistoryTab.value = "comments";
         nextTick(() => {
             const el = document.getElementById(`comment-${commentId}`);
             if (el) {
@@ -1868,151 +1870,105 @@ const fileInputAccept = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Activity Timeline -->
-                        <div
-                            v-if="timeline?.length"
-                            class="bg-white shadow-sm rounded-lg border border-slate-200"
-                        >
-                            <div class="px-5 py-4 border-b border-slate-100">
-                                <h3 class="text-sm font-semibold text-slate-900">
-                                    Activity
-                                </h3>
-                            </div>
-                            <div class="px-5 py-4">
-                                <OrderTimeline :events="timeline" />
-                            </div>
-                        </div>
-
-                        <!-- Comments -->
-                        <div
-                            class="bg-white shadow-sm rounded-lg border border-slate-200"
-                        >
-                            <div class="px-5 py-4 border-b border-slate-100">
-                                <h3 class="text-sm font-semibold text-slate-900">
-                                    Comments
-                                </h3>
-                            </div>
-                            <div class="px-5 py-4 space-y-4">
-                                <!-- Comment List -->
-                                <div
-                                    v-if="comments?.length > 0"
-                                    class="space-y-3 mb-4"
+                        <!-- Activity & Comments (tabbed) -->
+                        <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+                            <!-- Tab bar -->
+                            <div class="flex border-b border-slate-100">
+                                <button
+                                    type="button"
+                                    class="flex-1 px-4 py-3 text-xs font-semibold border-b-2 transition-colors"
+                                    :class="activeHistoryTab === 'activity'
+                                        ? 'border-indigo-500 text-indigo-600'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700'"
+                                    @click="activeHistoryTab = 'activity'"
                                 >
-                                    <div
-                                        v-for="comment in comments"
-                                        :key="comment.id"
-                                        :id="`comment-${comment.id}`"
-                                        class="border-l-2 pl-4 rounded-r-md transition-all duration-700"
-                                        :class="[
-                                            comment.visibility === 'internal'
-                                                ? 'border-yellow-300 bg-yellow-50/30'
-                                                : 'border-indigo-200',
-                                            highlightedCommentId === comment.id
-                                                ? 'bg-indigo-50 ring-2 ring-indigo-300 !border-indigo-400'
-                                                : '',
-                                        ]"
+                                    Activity
+                                    <span class="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                                        {{ timeline?.length ?? 0 }}
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="flex-1 px-4 py-3 text-xs font-semibold border-b-2 transition-colors"
+                                    :class="activeHistoryTab === 'comments'
+                                        ? 'border-indigo-500 text-indigo-600'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700'"
+                                    @click="activeHistoryTab = 'comments'"
+                                >
+                                    Comments
+                                    <span
+                                        class="ml-1.5 rounded-full px-1.5 py-0.5 text-xs"
+                                        :class="comments?.length > 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'"
                                     >
-                                        <div
-                                            class="flex items-start justify-between"
-                                        >
-                                            <div>
-                                                <div
-                                                    class="flex items-center gap-2"
-                                                >
-                                                    <p
-                                                        class="text-sm font-medium text-slate-900"
-                                                    >
-                                                        {{ comment.user.name }}
-                                                    </p>
-                                                    <span
-                                                        v-if="
-                                                            comment.visibility ===
-                                                            'internal'
-                                                        "
-                                                        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800"
-                                                    >
-                                                        Internal
-                                                    </span>
-                                                </div>
-                                                <p
-                                                    class="text-xs text-slate-500"
-                                                >
-                                                    {{
-                                                        formatDate(
-                                                            comment.created_at
-                                                        )
-                                                    }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <p
-                                            class="mt-2 text-sm text-slate-700 whitespace-pre-wrap"
-                                        >
-                                            {{ comment.body }}
-                                        </p>
-                                    </div>
-                                </div>
-                                <p v-else class="text-sm text-slate-500">
-                                    No comments yet.
-                                </p>
+                                        {{ comments?.length ?? 0 }}
+                                    </span>
+                                </button>
+                            </div>
 
-                                <!-- Add Comment Form -->
-                                <div class="pt-4 border-t border-slate-200">
-                                    <label
-                                        class="block text-sm font-medium text-slate-700 mb-2"
-                                        >Add a comment</label
-                                    >
+                            <!-- Activity tab -->
+                            <div v-show="activeHistoryTab === 'activity'" class="overflow-y-auto max-h-96 px-5 py-4">
+                                <OrderTimeline v-if="timeline?.length" :events="timeline" />
+                                <p v-else class="text-sm text-slate-500">No activity yet.</p>
+                            </div>
+
+                            <!-- Comments tab -->
+                            <div v-show="activeHistoryTab === 'comments'">
+                                <!-- Comment list -->
+                                <div class="overflow-y-auto max-h-72 px-5 py-4 space-y-3">
+                                    <template v-if="comments?.length > 0">
+                                        <div
+                                            v-for="comment in comments"
+                                            :key="comment.id"
+                                            :id="`comment-${comment.id}`"
+                                            class="border-l-2 pl-4 rounded-r-md transition-all duration-700"
+                                            :class="[
+                                                comment.visibility === 'internal'
+                                                    ? 'border-yellow-300 bg-yellow-50/30'
+                                                    : 'border-indigo-200',
+                                                highlightedCommentId === comment.id
+                                                    ? 'bg-indigo-50 ring-2 ring-indigo-300 !border-indigo-400'
+                                                    : '',
+                                            ]"
+                                        >
+                                            <div class="flex items-center gap-2">
+                                                <p class="text-xs font-semibold text-slate-900">{{ comment.user.name }}</p>
+                                                <span
+                                                    v-if="comment.visibility === 'internal'"
+                                                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800"
+                                                >Internal</span>
+                                                <span class="ml-auto text-xs text-slate-400">{{ formatDate(comment.created_at) }}</span>
+                                            </div>
+                                            <p class="mt-1.5 text-sm text-slate-700 whitespace-pre-wrap">{{ comment.body }}</p>
+                                        </div>
+                                    </template>
+                                    <p v-else class="text-sm text-slate-500">No comments yet.</p>
+                                </div>
+
+                                <!-- Add comment — always visible, pinned below the list -->
+                                <div class="px-5 py-4 border-t border-slate-100 space-y-2">
                                     <textarea
                                         v-model="newComment"
-                                        rows="3"
+                                        rows="2"
                                         class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                        placeholder="Type your comment..."
+                                        placeholder="Write a comment…"
                                     ></textarea>
-                                    <div
-                                        class="mt-2 flex items-center justify-between"
-                                    >
-                                        <div
-                                            v-if="canAssign"
-                                            class="flex items-center gap-4"
-                                        >
-                                            <label class="flex items-center">
-                                                <input
-                                                    v-model="commentVisibility"
-                                                    type="radio"
-                                                    value="client"
-                                                    class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                                />
-                                                <span
-                                                    class="ml-2 text-sm text-slate-700"
-                                                    >Visible to client</span
-                                                >
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div v-if="canAssign" class="flex items-center gap-3">
+                                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                                <input v-model="commentVisibility" type="radio" value="client" class="h-3.5 w-3.5 border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                                                <span class="text-xs text-slate-600">Client</span>
                                             </label>
-                                            <label class="flex items-center">
-                                                <input
-                                                    v-model="commentVisibility"
-                                                    type="radio"
-                                                    value="internal"
-                                                    class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                                />
-                                                <span
-                                                    class="ml-2 text-sm text-slate-700"
-                                                    >Internal only</span
-                                                >
+                                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                                <input v-model="commentVisibility" type="radio" value="internal" class="h-3.5 w-3.5 border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                                                <span class="text-xs text-slate-600">Internal</span>
                                             </label>
                                         </div>
                                         <button
                                             @click="submitComment"
-                                            :disabled="
-                                                !newComment.trim() ||
-                                                submittingComment
-                                            "
-                                            class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                                            :disabled="!newComment.trim() || submittingComment"
+                                            class="ml-auto inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                                         >
-                                            {{
-                                                submittingComment
-                                                    ? "Posting..."
-                                                    : "Post Comment"
-                                            }}
+                                            {{ submittingComment ? "Posting…" : "Post" }}
                                         </button>
                                     </div>
                                 </div>
@@ -2132,6 +2088,35 @@ const fileInputAccept = computed(() => {
                                     <span v-if="entry.label" class="rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">{{ entry.label }}</span>
                                 </label>
                             </div>
+                        </div>
+
+                        <!-- Client Permanent Instructions (read-only reference) -->
+                        <div v-if="hasPermanentInstructions" class="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                            <p class="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-2">Client Instructions</p>
+                            <dl class="space-y-2">
+                                <div v-if="permanentInstructions.special_offer_note">
+                                    <dt class="text-xs font-medium text-amber-700">Special Offer / Note</dt>
+                                    <dd class="text-xs text-slate-800 whitespace-pre-line">{{ permanentInstructions.special_offer_note }}</dd>
+                                </div>
+                                <div v-if="permanentInstructions.price_instructions">
+                                    <dt class="text-xs font-medium text-amber-700">Price Instructions</dt>
+                                    <dd class="text-xs text-slate-800 whitespace-pre-line">{{ permanentInstructions.price_instructions }}</dd>
+                                </div>
+                                <div v-if="permanentInstructions.for_digitizer">
+                                    <dt class="text-xs font-medium text-amber-700">For Digitizer</dt>
+                                    <dd class="text-xs text-slate-800 whitespace-pre-line">{{ permanentInstructions.for_digitizer }}</dd>
+                                </div>
+                                <div v-if="permanentInstructions.appreciation_bonus">
+                                    <dt class="text-xs font-medium text-amber-700">Appreciation Bonus</dt>
+                                    <dd class="text-xs text-slate-800">${{ permanentInstructions.appreciation_bonus }}</dd>
+                                </div>
+                                <template v-if="permanentInstructions.custom?.length">
+                                    <div v-for="(item, i) in permanentInstructions.custom" :key="i">
+                                        <dt class="text-xs font-medium text-amber-700">{{ item.key }}</dt>
+                                        <dd class="text-xs text-slate-800 whitespace-pre-line">{{ item.value }}</dd>
+                                    </div>
+                                </template>
+                            </dl>
                         </div>
 
                         <!-- Message -->
