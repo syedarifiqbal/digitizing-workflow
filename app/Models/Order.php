@@ -159,6 +159,11 @@ class Order extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
+    public function deliveryOptions(): HasMany
+    {
+        return $this->hasMany(OrderDeliveryOption::class)->orderBy('sort_order');
+    }
+
     /**
      * Generate the next sequence number and order number for a tenant.
      * Uses withTrashed() so soft-deleted orders don't cause unique constraint violations.

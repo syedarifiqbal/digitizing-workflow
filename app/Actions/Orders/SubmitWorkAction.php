@@ -4,6 +4,7 @@ namespace App\Actions\Orders;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Models\OrderDeliveryOption;
 use App\Models\User;
 use App\Services\CommissionCalculator;
 use App\Services\FileStorageService;
@@ -21,6 +22,7 @@ class SubmitWorkAction
 
     /**
      * @param  array<UploadedFile>  $files
+     * @param  array<array>         $deliveryOptions  Array of ['label', 'width', 'height', 'stitch_count']
      */
     public function execute(
         Order $order,
@@ -29,9 +31,10 @@ class SubmitWorkAction
         ?string $notes = null,
         ?string $submittedWidth = null,
         ?string $submittedHeight = null,
-        ?int $submittedStitchCount = null
+        ?int $submittedStitchCount = null,
+        array $deliveryOptions = []
     ): Order {
-        return DB::transaction(function () use ($order, $files, $submittedBy, $notes, $submittedWidth, $submittedHeight, $submittedStitchCount) {
+        return DB::transaction(function () use ($order, $files, $submittedBy, $notes, $submittedWidth, $submittedHeight, $submittedStitchCount, $deliveryOptions) {
             // Upload output files
             foreach ($files as $file) {
                 $this->fileStorageService->storeOrderFile($order, $file, 'output');
@@ -43,6 +46,34 @@ class SubmitWorkAction
                 'submitted_height' => $submittedHeight,
                 'submitted_stitch_count' => $submittedStitchCount,
             ]);
+
+            // Sync delivery options (replace all existing ones for this order)
+            if (! empty($deliveryOptions)) {
+                OrderDeliveryOption::where('order_id', $order->id)->delete();
+                foreach ($deliveryOptions as $sortOrder => $optData) {
+                    OrderDeliveryOption::create([
+                        'order_id'    => $order->id,
+                        'tenant_id'   => $order->tenant_id,
+                        'label'       => $optData['label'] ?? 'Option A',
+                        'width'       => $optData['width'] ?? null,
+                        'height'      => $optData['height'] ?? null,
+                        'stitch_count' => isset($optData['stitch_count']) ? (int) $optData['stitch_count'] : null,
+                        'sort_order'  => $sortOrder,
+                    ]);
+                }
+            } elseif ($submittedWidth || $submittedHeight || $submittedStitchCount) {
+                // Fallback: auto-create Option A from the simple fields when no options array sent
+                OrderDeliveryOption::updateOrCreate(
+                    ['order_id' => $order->id, 'sort_order' => 0],
+                    [
+                        'tenant_id'   => $order->tenant_id,
+                        'label'       => 'Option A',
+                        'width'       => $submittedWidth,
+                        'height'      => $submittedHeight,
+                        'stitch_count' => $submittedStitchCount,
+                    ]
+                );
+            }
 
             $previousStatus = $order->status;
             $tenant = $order->tenant;
@@ -84,17 +115,16 @@ class SubmitWorkAction
                 // Process commissions
                 $this->commissionCalculator->processOrderCommissions($order, $order->status->value);
             } else {
-                // Just log the file upload without status change
-                if (!$autoSubmit) {
-                    $order->statusHistory()->create([
-                        'tenant_id' => $order->tenant_id,
-                        'from_status' => $order->status->value,
-                        'to_status' => $order->status->value,
-                        'changed_by_user_id' => $submittedBy->id,
-                        'changed_at' => now(),
-                        'notes' => ($notes ? $notes . ' - ' : '') . 'Work files uploaded (status unchanged)',
-                    ]);
-                }
+                // Log the file upload without status change (covers both resubmissions and when auto-submit is off)
+                $isResubmit = $order->status !== OrderStatus::IN_PROGRESS;
+                $order->statusHistory()->create([
+                    'tenant_id' => $order->tenant_id,
+                    'from_status' => $order->status->value,
+                    'to_status' => $order->status->value,
+                    'changed_by_user_id' => $submittedBy->id,
+                    'changed_at' => now(),
+                    'notes' => ($notes ? $notes . ' - ' : '') . ($isResubmit ? 'Work files resubmitted' : 'Work files uploaded (status unchanged)'),
+                ]);
             }
 
             return $order;

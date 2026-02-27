@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import { Link, router, usePage } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Button from "@/Components/Button.vue";
+import ConfirmModal from "@/Components/ConfirmModal.vue";
 import OrderTimeline from "@/Components/OrderTimeline.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 
@@ -18,9 +19,11 @@ const props = defineProps({
     allowedTransitions: Array,
     canCreateRevision: Boolean,
     canDeliver: Boolean,
+    alreadyDelivered: Boolean,
     canCancel: Boolean,
     revisionOrders: Array,
     canSubmitWork: Boolean,
+    alreadySubmitted: Boolean,
     maxUploadMb: Number,
     allowedOutputExtensions: String,
     timeline: Array,
@@ -31,6 +34,9 @@ const props = defineProps({
     invoiceInfo: Object,
     downloadInputZipUrl: String,
     downloadOutputZipUrl: String,
+    deliveryOptions: { type: Array, default: () => [] },
+    clientEmails: { type: Array, default: () => [] },
+    permanentInstructions: { type: Object, default: () => ({}) },
 });
 
 const selectedDesigner = ref(props.order?.designer?.id ?? "");
@@ -42,20 +48,107 @@ const submitting = ref(false);
 const submitFiles = ref([]);
 const submitNotes = ref("");
 const fileInput = ref(null);
+const showResubmitForm = ref(false);
 
 const showCreateRevisionModal = ref(false);
 const revisionNotes = ref("");
 const creatingRevision = ref(false);
 
-const submitWidth = ref("");
-const submitHeight = ref("");
-const submitStitchCount = ref("");
+// Submit Work delivery options (dynamic; first option = Option A, pre-filled from existing data)
+const submitDeliveryOptions = ref([]);
+const initSubmitOptions = () => {
+    if (props.deliveryOptions && props.deliveryOptions.length) {
+        submitDeliveryOptions.value = props.deliveryOptions.map(o => ({
+            label: o.label,
+            width: o.width ?? '',
+            height: o.height ?? '',
+            stitch_count: o.stitch_count ?? '',
+        }));
+    } else {
+        submitDeliveryOptions.value = [{
+            label: 'Option A',
+            width: props.order?.submitted_width ?? '',
+            height: props.order?.submitted_height ?? '',
+            stitch_count: props.order?.submitted_stitch_count ?? '',
+        }];
+    }
+};
+initSubmitOptions();
+
+const addSubmitOption = () => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const next = letters[submitDeliveryOptions.value.length] || String(submitDeliveryOptions.value.length + 1);
+    submitDeliveryOptions.value.push({ label: `Option ${next}`, width: '', height: '', stitch_count: '' });
+};
+
+const removeSubmitOption = (index) => {
+    if (submitDeliveryOptions.value.length > 1) {
+        submitDeliveryOptions.value.splice(index, 1);
+    }
+};
 
 const showDeliverModal = ref(false);
 const deliverMessage = ref("");
 const selectedFileIds = ref([]);
 const delivering = ref(false);
 const designerTip = ref("");
+
+// Delivery options (editable in deliver modal)
+const deliverOptionsForm = ref([]);
+const initDeliverOptions = () => {
+    if (props.deliveryOptions && props.deliveryOptions.length) {
+        deliverOptionsForm.value = props.deliveryOptions.map(o => ({ ...o }));
+    } else {
+        deliverOptionsForm.value = [{
+            id: null, label: 'Option A',
+            width: props.order?.submitted_width ?? '',
+            height: props.order?.submitted_height ?? '',
+            stitch_count: props.order?.submitted_stitch_count ?? '',
+            price: '', currency: 'USD',
+        }];
+    }
+};
+
+const addDeliveryOption = () => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const next = letters[deliverOptionsForm.value.length] || String(deliverOptionsForm.value.length + 1);
+    deliverOptionsForm.value.push({ id: null, label: `Option ${next}`, width: '', height: '', stitch_count: '', price: '', currency: 'USD' });
+};
+
+const removeDeliveryOption = (index) => {
+    if (deliverOptionsForm.value.length > 1) {
+        deliverOptionsForm.value.splice(index, 1);
+    }
+};
+
+// Email recipients
+const selectedEmailRecipients = ref([]);
+const initEmailRecipients = () => {
+    // Pre-check the primary email by default
+    const primary = props.clientEmails.find(e => e.is_primary);
+    if (primary) {
+        selectedEmailRecipients.value = [primary.email];
+    } else if (props.clientEmails.length) {
+        selectedEmailRecipients.value = [props.clientEmails[0].email];
+    } else {
+        selectedEmailRecipients.value = [];
+    }
+};
+
+const toggleEmailRecipient = (email) => {
+    const idx = selectedEmailRecipients.value.indexOf(email);
+    if (idx === -1) {
+        selectedEmailRecipients.value.push(email);
+    } else {
+        selectedEmailRecipients.value.splice(idx, 1);
+    }
+};
+
+const openDeliverModal = () => {
+    initDeliverOptions();
+    initEmailRecipients();
+    showDeliverModal.value = true;
+};
 
 const showCancelModal = ref(false);
 const cancelReason = ref("");
@@ -187,6 +280,16 @@ const submitDeliver = () => {
     const data = {
         message: deliverMessage.value,
         file_ids: selectedFileIds.value,
+        delivery_options: deliverOptionsForm.value.map(o => ({
+            id: o.id || null,
+            label: o.label,
+            width: o.width || null,
+            height: o.height || null,
+            stitch_count: o.stitch_count ? parseInt(o.stitch_count) : null,
+            price: o.price !== '' && o.price !== null ? parseFloat(o.price) : null,
+            currency: o.currency || 'USD',
+        })),
+        email_recipients: selectedEmailRecipients.value,
     };
 
     // Add designer tip if enabled and has value
@@ -346,30 +449,47 @@ const submitWork = () => {
     if (submitNotes.value) {
         formData.append("notes", submitNotes.value);
     }
-    if (submitWidth.value) {
-        formData.append("submitted_width", submitWidth.value);
-    }
-    if (submitHeight.value) {
-        formData.append("submitted_height", submitHeight.value);
-    }
-    if (submitStitchCount.value) {
-        formData.append("submitted_stitch_count", submitStitchCount.value);
-    }
+
+    // Send all delivery options; first option drives submitted_width/height/stitch_count on the order
+    submitDeliveryOptions.value.forEach((opt, i) => {
+        formData.append(`delivery_options[${i}][label]`, opt.label || '');
+        if (opt.width)        formData.append(`delivery_options[${i}][width]`, opt.width);
+        if (opt.height)       formData.append(`delivery_options[${i}][height]`, opt.height);
+        if (opt.stitch_count) formData.append(`delivery_options[${i}][stitch_count]`, opt.stitch_count);
+    });
 
     router.post(route("orders.submit-work", props.order.id), formData, {
         preserveScroll: true,
         onSuccess: () => {
             submitFiles.value = [];
             submitNotes.value = "";
-            submitWidth.value = "";
-            submitHeight.value = "";
-            submitStitchCount.value = "";
+            initSubmitOptions();
             if (fileInput.value) {
                 fileInput.value.value = "";
             }
+            showResubmitForm.value = false;
         },
         onFinish: () => {
             submitting.value = false;
+        },
+    });
+};
+
+const showDeleteFileModal = ref(false);
+const fileToDelete = ref(null);
+
+const confirmDeleteFile = (file) => {
+    fileToDelete.value = file;
+    showDeleteFileModal.value = true;
+};
+
+const executeDeleteFile = () => {
+    if (!fileToDelete.value) return;
+    router.delete(route("orders.files.destroy", fileToDelete.value.id), {
+        preserveScroll: true,
+        onFinish: () => {
+            showDeleteFileModal.value = false;
+            fileToDelete.value = null;
         },
     });
 };
@@ -406,6 +526,36 @@ const priorityBadgeClass = (priority) => {
         ? "bg-red-50 text-red-700 ring-1 ring-red-200"
         : "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
 };
+
+// Computed for submit file errors (covers both 'files' and 'files.0', 'files.1', etc.)
+const submitFileErrors = computed(() => {
+    const errors = page.props.errors ?? {};
+    const msgs = Object.entries(errors)
+        .filter(([key]) => key === 'files' || key.startsWith('files.'))
+        .map(([, val]) => val);
+    return [...new Set(msgs)].join(' ');
+});
+
+const hasPermanentInstructions = computed(() => {
+    const pi = props.permanentInstructions;
+    if (!pi) return false;
+    return (
+        pi.special_offer_note || pi.price_instructions ||
+        pi.for_digitizer || pi.appreciation_bonus ||
+        (pi.custom && pi.custom.length > 0)
+    );
+});
+
+// Accept attribute for file input derived from allowedOutputExtensions
+const fileInputAccept = computed(() => {
+    if (!props.allowedOutputExtensions) return '';
+    return props.allowedOutputExtensions
+        .split(',')
+        .map(ext => ext.trim())
+        .filter(Boolean)
+        .map(ext => ext.startsWith('.') ? ext : `.${ext}`)
+        .join(',');
+});
 </script>
 
 <template>
@@ -473,6 +623,17 @@ const priorityBadgeClass = (priority) => {
 
         <div class="py-8">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <!-- Flash success banner -->
+                <div
+                    v-if="page.props.flash?.success"
+                    class="mb-4 rounded-md bg-green-50 border border-green-200 px-4 py-3 flex items-center gap-3"
+                >
+                    <svg class="h-5 w-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                    </svg>
+                    <p class="text-sm font-medium text-green-800">{{ page.props.flash.success }}</p>
+                </div>
+
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <!-- Main Content (Left) -->
                     <div class="lg:col-span-2 space-y-6">
@@ -993,12 +1154,22 @@ const priorityBadgeClass = (priority) => {
                                             }}
                                         </p>
                                     </div>
-                                    <a
-                                        :href="file.download_url"
-                                        class="ml-3 inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
-                                    >
-                                        Download
-                                    </a>
+                                    <div class="ml-3 flex items-center gap-2">
+                                        <a
+                                            :href="file.download_url"
+                                            class="inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                                        >
+                                            Download
+                                        </a>
+                                        <button
+                                            v-if="file.can_delete"
+                                            type="button"
+                                            class="inline-flex items-center rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 ring-1 ring-red-200 hover:bg-red-100"
+                                            @click="confirmDeleteFile(file)"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div v-else class="px-5 py-4">
@@ -1056,12 +1227,22 @@ const priorityBadgeClass = (priority) => {
                                             }}
                                         </p>
                                     </div>
-                                    <a
-                                        :href="file.download_url"
-                                        class="ml-3 inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
-                                    >
-                                        Download
-                                    </a>
+                                    <div class="ml-3 flex items-center gap-2">
+                                        <a
+                                            :href="file.download_url"
+                                            class="inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                                        >
+                                            Download
+                                        </a>
+                                        <button
+                                            v-if="file.can_delete"
+                                            type="button"
+                                            class="inline-flex items-center rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 ring-1 ring-red-200 hover:bg-red-100"
+                                            @click="confirmDeleteFile(file)"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1071,11 +1252,54 @@ const priorityBadgeClass = (priority) => {
                             v-if="canSubmitWork"
                             class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
-                            <div class="px-5 py-4 border-b border-slate-100">
+                            <!-- Collapsed state: work already submitted, user hasn't clicked Resubmit yet -->
+                            <template v-if="alreadySubmitted && !showResubmitForm">
+                                <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                            Work Already Submitted
+                                        </span>
+                                        <span class="text-xs text-slate-500">Output files have been uploaded for this order.</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 shrink-0"
+                                        @click="showResubmitForm = true"
+                                    >
+                                        Resubmit Work
+                                    </button>
+                                </div>
+                            </template>
+
+                            <!-- Full form (initial submit OR resubmit mode) -->
+                            <template v-else>
+                            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                                 <h3 class="text-sm font-semibold text-slate-900">
-                                    Submit Work
+                                    {{ alreadySubmitted ? 'Resubmit Work' : 'Submit Work' }}
                                 </h3>
+                                <button
+                                    v-if="alreadySubmitted"
+                                    type="button"
+                                    class="text-xs text-slate-400 hover:text-slate-600"
+                                    @click="showResubmitForm = false"
+                                >
+                                    Cancel
+                                </button>
                             </div>
+
+                            <!-- Resubmit warning banner -->
+                            <div v-if="alreadySubmitted" class="mx-5 mt-4 rounded-md bg-amber-50 border border-amber-200 p-3">
+                                <div class="flex items-start gap-2">
+                                    <svg class="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                    </svg>
+                                    <div>
+                                        <p class="text-xs font-semibold text-amber-800">Work has already been submitted</p>
+                                        <p class="text-xs text-amber-700 mt-0.5">Uploading new files will add to the existing output files. The order status will not change.</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="px-5 py-4 space-y-4">
                                 <p class="text-xs text-slate-500">
                                     Upload your completed files to submit for
@@ -1092,14 +1316,15 @@ const priorityBadgeClass = (priority) => {
                                         ref="fileInput"
                                         type="file"
                                         multiple
+                                        :accept="fileInputAccept"
                                         class="block w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                                         @change="handleFileSelect"
                                     />
                                     <p
-                                        v-if="page.props.errors?.files"
+                                        v-if="submitFileErrors"
                                         class="mt-1 text-xs text-red-600"
                                     >
-                                        {{ page.props.errors.files }}
+                                        {{ submitFileErrors }}
                                     </p>
                                 </div>
 
@@ -1132,49 +1357,71 @@ const priorityBadgeClass = (priority) => {
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-3 gap-3">
-                                    <div>
-                                        <label
-                                            for="submit_width"
-                                            class="block text-xs font-medium text-slate-700"
-                                            >Width</label
+                                <!-- Dynamic delivery options -->
+                                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-xs font-semibold text-slate-700">Delivery Options</p>
+                                        <button
+                                            type="button"
+                                            @click="addSubmitOption"
+                                            class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                         >
-                                        <input
-                                            v-model="submitWidth"
-                                            id="submit_width"
-                                            type="text"
-                                            placeholder='e.g. 3.5"'
-                                            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                        />
+                                            + Add Option
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label
-                                            for="submit_height"
-                                            class="block text-xs font-medium text-slate-700"
-                                            >Height</label
+                                    <div class="space-y-2">
+                                        <div
+                                            v-for="(opt, idx) in submitDeliveryOptions"
+                                            :key="idx"
+                                            class="rounded-md border border-slate-200 bg-white p-2.5"
                                         >
-                                        <input
-                                            v-model="submitHeight"
-                                            id="submit_height"
-                                            type="text"
-                                            placeholder='e.g. 2.5"'
-                                            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label
-                                            for="submit_stitch_count"
-                                            class="block text-xs font-medium text-slate-700"
-                                            >Stitch Count</label
-                                        >
-                                        <input
-                                            v-model="submitStitchCount"
-                                            id="submit_stitch_count"
-                                            type="number"
-                                            min="0"
-                                            placeholder="e.g. 12000"
-                                            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                        />
+                                            <div class="flex items-center justify-between mb-2">
+                                                <input
+                                                    v-model="opt.label"
+                                                    type="text"
+                                                    placeholder="Option A"
+                                                    class="block w-28 rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                />
+                                                <button
+                                                    v-if="submitDeliveryOptions.length > 1"
+                                                    type="button"
+                                                    @click="removeSubmitOption(idx)"
+                                                    class="text-red-500 hover:text-red-700 text-xs"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <div>
+                                                    <label class="block text-xs text-slate-500">Width</label>
+                                                    <input
+                                                        v-model="opt.width"
+                                                        type="text"
+                                                        placeholder='3.5"'
+                                                        class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-slate-500">Height</label>
+                                                    <input
+                                                        v-model="opt.height"
+                                                        type="text"
+                                                        placeholder='2.5"'
+                                                        class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-slate-500">Stitches</label>
+                                                    <input
+                                                        v-model="opt.stitch_count"
+                                                        type="number"
+                                                        min="0"
+                                                        placeholder="12000"
+                                                        class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1204,10 +1451,11 @@ const priorityBadgeClass = (priority) => {
                                     {{
                                         submitting
                                             ? "Submitting..."
-                                            : "Submit Work"
+                                            : alreadySubmitted ? "Resubmit Work" : "Submit Work"
                                     }}
                                 </button>
                             </div>
+                            </template>
                         </div>
                     </div>
 
@@ -1252,10 +1500,7 @@ const priorityBadgeClass = (priority) => {
                                         v-if="canDeliver"
                                         type="button"
                                         class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium shadow-sm bg-green-600 hover:bg-green-700 text-white"
-                                        @click="
-                                            showDeliverModal = true;
-                                            selectAllFiles();
-                                        "
+                                        @click="openDeliverModal(); selectAllFiles();"
                                     >
                                         Deliver Order
                                     </button>
@@ -1589,6 +1834,40 @@ const priorityBadgeClass = (priority) => {
                             </div>
                         </div>
 
+                        <!-- Permanent Instructions -->
+                        <div
+                            v-if="hasPermanentInstructions"
+                            class="rounded-lg border border-amber-200 bg-amber-50 shadow-sm"
+                        >
+                            <div class="px-5 py-4 border-b border-amber-200">
+                                <h3 class="text-sm font-semibold text-amber-900">Client Instructions</h3>
+                            </div>
+                            <div class="px-5 py-4 space-y-3">
+                                <div v-if="permanentInstructions.special_offer_note">
+                                    <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Special Offer / Note</p>
+                                    <p class="mt-0.5 text-sm text-slate-800 whitespace-pre-line">{{ permanentInstructions.special_offer_note }}</p>
+                                </div>
+                                <div v-if="permanentInstructions.price_instructions">
+                                    <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Price Instructions</p>
+                                    <p class="mt-0.5 text-sm text-slate-800 whitespace-pre-line">{{ permanentInstructions.price_instructions }}</p>
+                                </div>
+                                <div v-if="permanentInstructions.for_digitizer">
+                                    <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide">For Digitizer</p>
+                                    <p class="mt-0.5 text-sm text-slate-800 whitespace-pre-line">{{ permanentInstructions.for_digitizer }}</p>
+                                </div>
+                                <div v-if="permanentInstructions.appreciation_bonus">
+                                    <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Appreciation Bonus</p>
+                                    <p class="mt-0.5 text-sm text-slate-800">${{ permanentInstructions.appreciation_bonus }}</p>
+                                </div>
+                                <template v-if="permanentInstructions.custom && permanentInstructions.custom.length">
+                                    <div v-for="(item, idx) in permanentInstructions.custom" :key="idx">
+                                        <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide">{{ item.key }}</p>
+                                        <p class="mt-0.5 text-sm text-slate-800 whitespace-pre-line">{{ item.value }}</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
                         <!-- Activity Timeline -->
                         <div
                             v-if="timeline?.length"
@@ -1751,16 +2030,111 @@ const priorityBadgeClass = (priority) => {
                     @click="showDeliverModal = false"
                 ></div>
                 <div
-                    class="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-xl"
+                    class="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto"
                 >
                     <h3 class="text-lg font-semibold text-slate-900">
-                        Deliver Order
+                        {{ alreadyDelivered ? 'Re-send Delivery' : 'Deliver Order' }}
                     </h3>
                     <p class="mt-1 text-sm text-slate-500">
                         Send the completed work to the client via email.
                     </p>
 
-                    <div class="mt-4 space-y-4">
+                    <!-- Re-delivery warning banner -->
+                    <div v-if="alreadyDelivered" class="mt-3 rounded-md bg-amber-50 border border-amber-200 p-3">
+                        <div class="flex items-start gap-2">
+                            <svg class="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                            </svg>
+                            <div>
+                                <p class="text-xs font-semibold text-amber-800">This order has already been delivered</p>
+                                <p class="text-xs text-amber-700 mt-0.5">You are sending the files again. A new delivery email will be sent to the client without changing the order status.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 space-y-5">
+                        <!-- Delivery Options -->
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="block text-sm font-semibold text-slate-800">Delivery Options</label>
+                                <button
+                                    type="button"
+                                    @click="addDeliveryOption"
+                                    class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                >
+                                    + Add Option
+                                </button>
+                            </div>
+                            <div class="space-y-3">
+                                <div
+                                    v-for="(opt, idx) in deliverOptionsForm"
+                                    :key="idx"
+                                    class="rounded-md border border-slate-200 bg-white p-3"
+                                >
+                                    <div class="flex items-center justify-between mb-2">
+                                        <input
+                                            v-model="opt.label"
+                                            type="text"
+                                            placeholder="Option A"
+                                            class="block w-32 rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        />
+                                        <button
+                                            v-if="deliverOptionsForm.length > 1"
+                                            type="button"
+                                            @click="removeDeliveryOption(idx)"
+                                            class="text-red-500 hover:text-red-700 text-xs font-medium"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                        <div>
+                                            <label class="text-xs text-slate-500">Width</label>
+                                            <input v-model="opt.width" type="text" placeholder="e.g. 4.5 in"
+                                                class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-slate-500">Height</label>
+                                            <input v-model="opt.height" type="text" placeholder="e.g. 3.2 in"
+                                                class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-slate-500">Stitches</label>
+                                            <input v-model="opt.stitch_count" type="number" min="0" placeholder="5000"
+                                                class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-slate-500">Price</label>
+                                            <input v-model="opt.price" type="number" step="0.01" min="0" placeholder="0.00"
+                                                class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Recipients -->
+                        <div v-if="clientEmails && clientEmails.length" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                            <label class="block text-sm font-semibold text-slate-800 mb-2">Email Recipients</label>
+                            <div class="space-y-1.5">
+                                <label
+                                    v-for="entry in clientEmails"
+                                    :key="entry.email"
+                                    class="flex items-center gap-3 cursor-pointer rounded-md px-2 py-1.5 hover:bg-slate-100"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        :checked="selectedEmailRecipients.includes(entry.email)"
+                                        @change="toggleEmailRecipient(entry.email)"
+                                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    <span class="text-sm text-slate-800">{{ entry.email }}</span>
+                                    <span v-if="entry.label" class="rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">{{ entry.label }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Message -->
                         <div>
                             <label
                                 class="block text-sm font-medium text-slate-700"
@@ -1803,6 +2177,7 @@ const priorityBadgeClass = (priority) => {
                             </div>
                         </div>
 
+                        <!-- Files to Attach -->
                         <div v-if="outputFiles?.length">
                             <label
                                 class="block text-sm font-medium text-slate-700"
@@ -1821,9 +2196,7 @@ const priorityBadgeClass = (priority) => {
                                 >
                                     <input
                                         type="checkbox"
-                                        :checked="
-                                            selectedFileIds.includes(file.id)
-                                        "
+                                        :checked="selectedFileIds.includes(file.id)"
                                         @change="toggleFileSelection(file.id)"
                                         class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                     />
@@ -2122,5 +2495,14 @@ const priorityBadgeClass = (priority) => {
                 </div>
             </div>
         </div>
+    <!-- Delete File Confirmation -->
+    <ConfirmModal
+        :show="showDeleteFileModal"
+        title="Delete file"
+        :message="fileToDelete ? `Are you sure you want to delete &quot;${fileToDelete.original_name}&quot;? This cannot be undone.` : ''"
+        confirm-label="Delete"
+        @close="showDeleteFileModal = false; fileToDelete = null;"
+        @confirm="executeDeleteFile"
+    />
     </AppLayout>
 </template>

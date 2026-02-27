@@ -16,6 +16,7 @@ const getIcon = (type) => {
         case 'status_change': return 'arrow';
         case 'assigned': return 'user';
         case 'unassigned': return 'user-minus';
+        case 'activity': return 'activity';
         default: return 'dot';
     }
 };
@@ -26,6 +27,7 @@ const getIconColor = (type) => {
         case 'status_change': return 'bg-indigo-500';
         case 'assigned': return 'bg-green-500';
         case 'unassigned': return 'bg-red-400';
+        case 'activity': return 'bg-amber-400';
         default: return 'bg-slate-400';
     }
 };
@@ -66,6 +68,10 @@ const getIconColor = (type) => {
                             <!-- User minus icon -->
                             <svg v-else-if="getIcon(event.type) === 'user-minus'" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a7 7 0 00-7 7h14M23 11H17" />
+                            </svg>
+                            <!-- Activity / note icon -->
+                            <svg v-else-if="getIcon(event.type) === 'activity'" class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             <!-- Default dot -->
                             <span v-else class="h-2 w-2 rounded-full bg-white"></span>

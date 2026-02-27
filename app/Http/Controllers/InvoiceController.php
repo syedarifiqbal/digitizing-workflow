@@ -331,7 +331,7 @@ class InvoiceController extends Controller
     {
         $this->authorize('view', $invoice);
 
-        $invoice->load(['client', 'items.order', 'payments.recordedBy']);
+        $invoice->load(['client.emails', 'items.order', 'payments.recordedBy']);
         $companyDetails = $request->user()->tenant->getSetting('company_details', []);
         $paidAmount = (float) $invoice->payments->sum('amount');
         $balance = max((float) $invoice->total_amount - $paidAmount, 0);
@@ -383,7 +383,35 @@ class InvoiceController extends Controller
             ],
             'companyDetails' => $companyDetails,
             'canEdit' => $request->user()->can('update', $invoice) && $invoice->status === InvoiceStatus::DRAFT,
+            'clientEmails'  => $this->getClientEmails($invoice->client),
         ]);
+    }
+
+    private function getClientEmails(?Client $client): array
+    {
+        if (! $client) {
+            return [];
+        }
+
+        $emails = [];
+
+        if ($client->email) {
+            $emails[] = [
+                'email'      => $client->email,
+                'label'      => 'Primary',
+                'is_primary' => true,
+            ];
+        }
+
+        foreach ($client->emails as $extra) {
+            $emails[] = [
+                'email'      => $extra->email,
+                'label'      => $extra->label,
+                'is_primary' => false,
+            ];
+        }
+
+        return $emails;
     }
 
     public function edit(Request $request, Invoice $invoice): Response
@@ -585,8 +613,10 @@ class InvoiceController extends Controller
         abort_if($invoice->status !== InvoiceStatus::DRAFT, 403);
 
         $data = $request->validate([
-            'message' => ['nullable', 'string'],
-            'attach_pdf' => ['nullable', 'boolean'],
+            'message'            => ['nullable', 'string'],
+            'attach_pdf'         => ['nullable', 'boolean'],
+            'email_recipients'   => ['nullable', 'array'],
+            'email_recipients.*' => ['email'],
         ]);
 
         $attachPdf = (bool) ($data['attach_pdf'] ?? false);
@@ -611,10 +641,12 @@ class InvoiceController extends Controller
 
         $invoice = $this->workflow->transitionTo($invoice, InvoiceStatus::SENT);
         $invoice->logActivity('sent', 'Invoice sent to client.', $request->user()->id);
-        $invoice->load('client');
+        $invoice->load('client.emails');
+        $emailRecipients = $data['email_recipients'] ?? [];
         $this->notifyClient(
             $invoice,
-            new InvoiceSentNotification($invoice, $data['message'] ?? null, $pdfData, $pdfName)
+            new InvoiceSentNotification($invoice, $data['message'] ?? null, $pdfData, $pdfName),
+            $emailRecipients
         );
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice marked as sent.');
@@ -789,15 +821,19 @@ class InvoiceController extends Controller
         }
     }
 
-    protected function notifyClient(Invoice $invoice, BaseNotification $notification): void
+    protected function notifyClient(Invoice $invoice, BaseNotification $notification, array $emailRecipients = []): void
     {
-        $email = $invoice->client?->email;
-
-        if (! $email) {
-            return;
+        // Build recipient list: use explicit list or fall back to primary email
+        if (empty($emailRecipients)) {
+            $primary = $invoice->client?->email;
+            if ($primary) {
+                $emailRecipients = [$primary];
+            }
         }
 
-        NotificationFacade::route('mail', $email)->notify($notification);
+        foreach ($emailRecipients as $email) {
+            NotificationFacade::route('mail', $email)->notify($notification);
+        }
     }
 
     public function eligibleOrders(Request $request)

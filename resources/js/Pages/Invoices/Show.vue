@@ -20,6 +20,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    clientEmails: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const statusBadgeClass = (status) => {
@@ -132,7 +136,30 @@ const paymentForm = useForm({
 const sendForm = useForm({
     message: "",
     attach_pdf: true,
+    email_recipients: [],
 });
+
+// Pre-select primary email when opening send modal
+const openSendModalWithRecipients = () => {
+    sendForm.reset();
+    sendForm.attach_pdf = true;
+    const primary = props.clientEmails.find(e => e.is_primary);
+    if (primary) {
+        sendForm.email_recipients = [primary.email];
+    } else if (props.clientEmails.length) {
+        sendForm.email_recipients = [props.clientEmails[0].email];
+    }
+    showSendModal.value = true;
+};
+
+const toggleSendRecipient = (email) => {
+    const idx = sendForm.email_recipients.indexOf(email);
+    if (idx === -1) {
+        sendForm.email_recipients.push(email);
+    } else {
+        sendForm.email_recipients.splice(idx, 1);
+    }
+};
 
 const submitPayment = () => {
     paymentForm.post(route("invoices.payments.store", props.invoice.id), {
@@ -197,7 +224,7 @@ const submitSend = () => {
                 <Button
                     v-if="isDraft"
                     as="button"
-                    @click="openSendModal"
+                    @click="openSendModalWithRecipients"
                     variant="primary"
                 >
                     Send Invoice
@@ -457,6 +484,28 @@ const submitSend = () => {
                     <h3 class="text-lg font-semibold text-slate-900">Send Invoice</h3>
                     <button class="text-slate-400 hover:text-slate-600" @click="closeSendModal">&times;</button>
                 </div>
+
+                <!-- Email Recipients -->
+                <div v-if="clientEmails && clientEmails.length" class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <label class="block text-xs font-semibold text-slate-700 mb-2">Send To</label>
+                    <div class="space-y-1.5">
+                        <label
+                            v-for="entry in clientEmails"
+                            :key="entry.email"
+                            class="flex items-center gap-3 cursor-pointer rounded-md px-2 py-1 hover:bg-slate-100"
+                        >
+                            <input
+                                type="checkbox"
+                                :checked="sendForm.email_recipients.includes(entry.email)"
+                                @change="toggleSendRecipient(entry.email)"
+                                class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span class="text-sm text-slate-800">{{ entry.email }}</span>
+                            <span v-if="entry.label" class="rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">{{ entry.label }}</span>
+                        </label>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs font-medium text-slate-700">Message</label>
                     <textarea

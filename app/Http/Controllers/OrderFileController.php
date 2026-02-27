@@ -22,9 +22,16 @@ class OrderFileController extends Controller
             abort(403);
         }
 
-        if (! $request->user()->isAdmin() && ! $request->user()->isManager()) {
+        $requestUser = $request->user();
+        $isPrivileged = $requestUser->isAdmin() || $requestUser->isManager();
+        $isUploader = $file->uploaded_by_user_id === $requestUser->id;
+
+        if (! $isPrivileged && ! $isUploader) {
             abort(403);
         }
+
+        $fileName = $file->original_name;
+        $fileType = $file->type;
 
         $disk = Storage::disk($file->disk);
 
@@ -33,6 +40,15 @@ class OrderFileController extends Controller
         }
 
         $file->delete();
+
+        $order->statusHistory()->create([
+            'tenant_id'          => $order->tenant_id,
+            'from_status'        => $order->status->value,
+            'to_status'          => $order->status->value,
+            'changed_by_user_id' => $requestUser->id,
+            'changed_at'         => now(),
+            'notes'              => "Deleted {$fileType} file: {$fileName}",
+        ]);
 
         return back()->with('success', 'File deleted.');
     }

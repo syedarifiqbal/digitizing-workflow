@@ -105,6 +105,63 @@ const confirmDelete = () => {
                     </div>
                 </div>
 
+                <!-- Additional Emails -->
+                <div v-if="client.emails && client.emails.length" class="bg-white shadow sm:rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-slate-900">Additional Email Addresses</h3>
+                        <ul class="mt-3 space-y-2">
+                            <li
+                                v-for="(entry, index) in client.emails"
+                                :key="index"
+                                class="flex items-center gap-3 text-sm text-slate-700"
+                            >
+                                <span class="font-medium text-slate-900">{{ entry.email }}</span>
+                                <span v-if="entry.label" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{{ entry.label }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Permanent Instructions -->
+                <div
+                    v-if="client.permanent_instructions && (
+                        client.permanent_instructions.special_offer_note ||
+                        client.permanent_instructions.price_instructions ||
+                        client.permanent_instructions.for_digitizer ||
+                        client.permanent_instructions.appreciation_bonus ||
+                        (client.permanent_instructions.custom && client.permanent_instructions.custom.length)
+                    )"
+                    class="bg-amber-50 border border-amber-200 shadow sm:rounded-lg"
+                >
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-amber-900">Permanent Instructions</h3>
+                        <dl class="mt-3 space-y-3">
+                            <div v-if="client.permanent_instructions.special_offer_note">
+                                <dt class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Special Offer / Note</dt>
+                                <dd class="mt-1 text-sm text-slate-800 whitespace-pre-line">{{ client.permanent_instructions.special_offer_note }}</dd>
+                            </div>
+                            <div v-if="client.permanent_instructions.price_instructions">
+                                <dt class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Price Instructions</dt>
+                                <dd class="mt-1 text-sm text-slate-800 whitespace-pre-line">{{ client.permanent_instructions.price_instructions }}</dd>
+                            </div>
+                            <div v-if="client.permanent_instructions.for_digitizer">
+                                <dt class="text-xs font-semibold text-amber-700 uppercase tracking-wide">For Digitizer</dt>
+                                <dd class="mt-1 text-sm text-slate-800 whitespace-pre-line">{{ client.permanent_instructions.for_digitizer }}</dd>
+                            </div>
+                            <div v-if="client.permanent_instructions.appreciation_bonus">
+                                <dt class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Appreciation Bonus</dt>
+                                <dd class="mt-1 text-sm text-slate-800">${{ client.permanent_instructions.appreciation_bonus }}</dd>
+                            </div>
+                            <template v-if="client.permanent_instructions.custom && client.permanent_instructions.custom.length">
+                                <div v-for="(item, index) in client.permanent_instructions.custom" :key="index">
+                                    <dt class="text-xs font-semibold text-amber-700 uppercase tracking-wide">{{ item.key }}</dt>
+                                    <dd class="mt-1 text-sm text-slate-800 whitespace-pre-line">{{ item.value }}</dd>
+                                </div>
+                            </template>
+                        </dl>
+                    </div>
+                </div>
+
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="p-6">
                         <div class="flex items-center justify-between">

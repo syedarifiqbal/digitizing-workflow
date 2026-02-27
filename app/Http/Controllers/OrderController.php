@@ -6,10 +6,12 @@ use App\Enums\OrderPriority;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Models\Client;
+use App\Models\ClientEmail;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Order;
 use App\Models\OrderComment;
+use App\Models\OrderDeliveryOption;
 use App\Models\OrderStatusHistory;
 use App\Models\User;
 use App\Actions\Orders\AssignOrderAction;
@@ -281,7 +283,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['client', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'commissions.user', 'comments.user', 'parent', 'revisionOrders']);
+        $order->load(['client.emails', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'commissions.user', 'comments.user', 'parent', 'revisionOrders', 'deliveryOptions']);
 
         $user = $request->user();
         $canAssign = $user->isAdmin() || $user->isManager();
@@ -349,6 +351,7 @@ class OrderController extends Controller
                 'original_name' => $file->original_name,
                 'size' => $file->size,
                 'uploaded_at' => $file->created_at?->toDateTimeString(),
+                'can_delete' => $user->isAdmin() || $user->isManager() || $file->uploaded_by_user_id === $user->id,
                 'download_url' => URL::temporarySignedRoute(
                     'orders.files.download',
                     now()->addMinutes(30),
@@ -367,6 +370,7 @@ class OrderController extends Controller
                 'size' => $file->size,
                 'is_delivered' => (bool) $file->is_delivered,
                 'uploaded_at' => $file->created_at?->toDateTimeString(),
+                'can_delete' => $user->isAdmin() || $user->isManager() || $file->uploaded_by_user_id === $user->id,
                 'download_url' => URL::temporarySignedRoute(
                     'orders.files.download',
                     now()->addMinutes(30),
@@ -398,7 +402,12 @@ class OrderController extends Controller
                 ])
                 ->values(),
             'canCreateRevision' => $canAssign && in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED]),
-            'canDeliver' => $canAssign && $order->status === OrderStatus::APPROVED,
+            'canDeliver' => $canAssign && in_array($order->status, [
+                OrderStatus::APPROVED,
+                OrderStatus::DELIVERED,
+                OrderStatus::CLOSED,
+            ]),
+            'alreadyDelivered' => in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED]),
             'canCancel' => $canAssign && $this->workflowService->canTransitionTo($order->status, OrderStatus::CANCELLED),
             'revisionOrders' => $order->revisionOrders->map(fn ($rev) => [
                 'id' => $rev->id,
@@ -406,11 +415,17 @@ class OrderController extends Controller
                 'status' => $rev->status->value,
                 'created_at' => $rev->created_at?->toDateTimeString(),
             ]),
-            'canSubmitWork' => $order->status === OrderStatus::IN_PROGRESS
-                && (
+            'canSubmitWork' => in_array($order->status, [
+                    OrderStatus::IN_PROGRESS,
+                    OrderStatus::SUBMITTED,
+                    OrderStatus::IN_REVIEW,
+                    OrderStatus::APPROVED,
+                ]) && (
                     $user->isAdmin() || $user->isManager()
                     || ($user->isDesigner() && $order->designer_id === $user->id)
                 ),
+            'alreadySubmitted' => $order->status !== OrderStatus::IN_PROGRESS
+                && $order->files->where('type', 'output')->isNotEmpty(),
             'maxUploadMb' => (int) $request->user()->tenant->getSetting('max_upload_mb', 25),
             'allowedOutputExtensions' => $request->user()->tenant->getSetting('allowed_output_extensions', ''),
             'timeline' => $this->buildTimeline($order),
@@ -455,8 +470,47 @@ class OrderController extends Controller
             'downloadOutputZipUrl' => $order->files->where('type', 'output')->isNotEmpty()
                 ? OrderFileController::signedZipUrl($order, 'output')
                 : null,
-            'invoiceInfo' => $isPrivileged ? $this->getOrderInvoiceInfo($order, $canAssign) : null,
+            'invoiceInfo'            => $isPrivileged ? $this->getOrderInvoiceInfo($order, $canAssign) : null,
+            'deliveryOptions'        => $isPrivileged ? $order->deliveryOptions->map(fn ($o) => [
+                'id'          => $o->id,
+                'label'       => $o->label,
+                'width'       => $o->width,
+                'height'      => $o->height,
+                'stitch_count' => $o->stitch_count,
+                'price'       => $o->price !== null ? (float) $o->price : null,
+                'currency'    => $o->currency,
+                'sort_order'  => $o->sort_order,
+            ]) : [],
+            'clientEmails'           => $isPrivileged ? $this->getClientEmails($order->client) : [],
+            'permanentInstructions'  => $isPrivileged ? ($order->client?->permanent_instructions ?? []) : [],
         ]);
+    }
+
+    private function getClientEmails(?Client $client): array
+    {
+        if (! $client) {
+            return [];
+        }
+
+        $emails = [];
+
+        if ($client->email) {
+            $emails[] = [
+                'email'      => $client->email,
+                'label'      => 'Primary',
+                'is_primary' => true,
+            ];
+        }
+
+        foreach ($client->emails as $extra) {
+            $emails[] = [
+                'email'      => $extra->email,
+                'label'      => $extra->label,
+                'is_primary' => false,
+            ];
+        }
+
+        return $emails;
     }
 
     public function edit(Request $request, Order $order): Response
@@ -767,16 +821,28 @@ class OrderController extends Controller
         $this->authorize('update', $order);
 
         $validated = $request->validate([
-            'message' => ['nullable', 'string', 'max:5000'],
-            'file_ids' => ['nullable', 'array'],
-            'file_ids.*' => ['integer', 'exists:order_files,id'],
-            'designer_tip' => ['nullable', 'numeric', 'min:0'],
+            'message'                         => ['nullable', 'string', 'max:5000'],
+            'file_ids'                        => ['nullable', 'array'],
+            'file_ids.*'                      => ['integer', 'exists:order_files,id'],
+            'designer_tip'                    => ['nullable', 'numeric', 'min:0'],
+            'delivery_options'                => ['nullable', 'array'],
+            'delivery_options.*.id'           => ['nullable', 'integer'],
+            'delivery_options.*.label'        => ['required_with:delivery_options', 'string', 'max:100'],
+            'delivery_options.*.width'        => ['nullable', 'string', 'max:50'],
+            'delivery_options.*.height'       => ['nullable', 'string', 'max:50'],
+            'delivery_options.*.stitch_count' => ['nullable', 'integer'],
+            'delivery_options.*.price'        => ['nullable', 'numeric', 'min:0'],
+            'delivery_options.*.currency'     => ['nullable', 'string', 'max:3'],
+            'email_recipients'                => ['nullable', 'array'],
+            'email_recipients.*'              => ['email'],
         ]);
 
         $user = $request->user();
 
-        if ($order->status !== OrderStatus::APPROVED) {
-            return back()->withErrors(['status' => 'Only approved orders can be delivered.']);
+        $isRedelivery = in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED]);
+
+        if (! $isRedelivery && $order->status !== OrderStatus::APPROVED) {
+            return back()->withErrors(['status' => 'Only approved or already-delivered orders can be delivered.']);
         }
 
         // Store designer tip to pass to commission calculator
@@ -792,41 +858,71 @@ class OrderController extends Controller
                 ->update(['is_delivered' => true]);
         }
 
-        // Transition to delivered
-        $order = $action->execute($order, OrderStatus::DELIVERED, $user, $designerTip);
-
-        // Log delivery message
-        if (! empty($validated['message'])) {
+        if ($isRedelivery) {
+            // Re-delivery: skip workflow transition, just log the action
             $order->statusHistory()->create([
                 'tenant_id' => $order->tenant_id,
-                'from_status' => OrderStatus::DELIVERED->value,
-                'to_status' => OrderStatus::DELIVERED->value,
+                'from_status' => $order->status->value,
+                'to_status' => $order->status->value,
                 'changed_by_user_id' => $user->id,
                 'changed_at' => now(),
-                'notes' => "Delivery message: {$validated['message']}",
+                'notes' => 'Re-delivery: work files sent again.' . (! empty($validated['message']) ? " Message: {$validated['message']}" : ''),
             ]);
+        } else {
+            // Normal first delivery: transition to DELIVERED
+            $order = $action->execute($order, OrderStatus::DELIVERED, $user, $designerTip);
+
+            // Log delivery message
+            if (! empty($validated['message'])) {
+                $order->statusHistory()->create([
+                    'tenant_id' => $order->tenant_id,
+                    'from_status' => OrderStatus::DELIVERED->value,
+                    'to_status' => OrderStatus::DELIVERED->value,
+                    'changed_by_user_id' => $user->id,
+                    'changed_at' => now(),
+                    'notes' => "Delivery message: {$validated['message']}",
+                ]);
+            }
+        }
+
+        // Sync delivery options
+        if (! empty($validated['delivery_options'])) {
+            $this->storeOrSyncDeliveryOptions($order, $validated['delivery_options']);
         }
 
         // Send delivery notification to client with attachments
-        $order->load('client');
+        $order->load(['client.emails', 'deliveryOptions']);
+
+        // Determine recipients: explicit list or fall back to primary
+        $emailRecipients = $validated['email_recipients'] ?? [];
+        if (empty($emailRecipients)) {
+            if ($order->client?->email) {
+                $emailRecipients = [$order->client->email];
+            }
+        }
+
         $notification = new \App\Notifications\OrderDeliveredNotification(
             $order,
             $validated['message'] ?? null,
-            $validated['file_ids'] ?? []
+            $validated['file_ids'] ?? [],
+            $emailRecipients,
+            $order->deliveryOptions->toArray()
         );
 
-        $clientUser = User::where('client_id', $order->client_id)->first();
-
         $notificationSent = false;
-        if ($clientUser) {
-            $clientUser->notify($notification);
+        if (! empty($emailRecipients)) {
+            $clientUser = User::where('client_id', $order->client_id)->first();
+            if ($clientUser && in_array($clientUser->email, $emailRecipients, true)) {
+                $clientUser->notify($notification);
+            }
+            foreach ($emailRecipients as $recipientEmail) {
+                if (! $clientUser || $recipientEmail !== $clientUser->email) {
+                    \Illuminate\Support\Facades\Notification::route('mail', $recipientEmail)
+                        ->notify($notification);
+                }
+            }
             $notificationSent = true;
-            \Log::info("Order {$order->order_number} delivery notification sent to user: {$clientUser->email}");
-        } elseif ($order->client?->email) {
-            \Illuminate\Support\Facades\Notification::route('mail', $order->client->email)
-                ->notify($notification);
-            $notificationSent = true;
-            \Log::info("Order {$order->order_number} delivery notification sent to client email: {$order->client->email}");
+            \Log::info("Order {$order->order_number} delivery notification sent to: " . implode(', ', $emailRecipients));
         } else {
             \Log::warning("Order {$order->order_number} delivered but no email recipient found. Client ID: {$order->client_id}");
         }
@@ -865,13 +961,22 @@ class OrderController extends Controller
         }
 
         $validated = $request->validate([
-            'files' => ['required', 'array', 'min:1'],
-            'files.*' => $fileRules,
-            'notes' => ['nullable', 'string', 'max:1000'],
-            'submitted_width' => ['nullable', 'string', 'max:50'],
-            'submitted_height' => ['nullable', 'string', 'max:50'],
-            'submitted_stitch_count' => ['nullable', 'integer', 'min:0'],
+            'files'                               => ['required', 'array', 'min:1'],
+            'files.*'                             => $fileRules,
+            'notes'                               => ['nullable', 'string', 'max:1000'],
+            'delivery_options'                    => ['nullable', 'array'],
+            'delivery_options.*.label'            => ['required_with:delivery_options', 'string', 'max:100'],
+            'delivery_options.*.width'            => ['nullable', 'string', 'max:50'],
+            'delivery_options.*.height'           => ['nullable', 'string', 'max:50'],
+            'delivery_options.*.stitch_count'     => ['nullable', 'integer', 'min:0'],
         ]);
+
+        // Extract first-option specs for backward-compat columns on the order
+        $deliveryOptions  = $validated['delivery_options'] ?? [];
+        $firstOpt         = $deliveryOptions[0] ?? [];
+        $submittedWidth   = $firstOpt['width'] ?? null;
+        $submittedHeight  = $firstOpt['height'] ?? null;
+        $submittedStitch  = isset($firstOpt['stitch_count']) ? (int) $firstOpt['stitch_count'] : null;
 
         try {
             $action->execute(
@@ -879,9 +984,10 @@ class OrderController extends Controller
                 $request->file('files', []),
                 $request->user(),
                 $validated['notes'] ?? null,
-                $validated['submitted_width'] ?? null,
-                $validated['submitted_height'] ?? null,
-                isset($validated['submitted_stitch_count']) ? (int) $validated['submitted_stitch_count'] : null
+                $submittedWidth,
+                $submittedHeight,
+                $submittedStitch,
+                $deliveryOptions
             );
 
             return back()->with('success', 'Work submitted successfully.');
@@ -1005,6 +1111,45 @@ class OrderController extends Controller
         ];
 
         return $request->validate($rules);
+    }
+
+    private function storeOrSyncDeliveryOptions(Order $order, array $options): void
+    {
+        $keptIds = [];
+
+        foreach ($options as $optionData) {
+            $id = $optionData['id'] ?? null;
+
+            $attributes = [
+                'tenant_id'    => $order->tenant_id,
+                'label'        => $optionData['label'],
+                'width'        => $optionData['width'] ?? null,
+                'height'       => $optionData['height'] ?? null,
+                'stitch_count' => isset($optionData['stitch_count']) ? (int) $optionData['stitch_count'] : null,
+                'price'        => isset($optionData['price']) ? (float) $optionData['price'] : null,
+                'currency'     => $optionData['currency'] ?? 'USD',
+            ];
+
+            if ($id) {
+                $opt = OrderDeliveryOption::where('order_id', $order->id)->find($id);
+                if ($opt) {
+                    $opt->update($attributes);
+                    $keptIds[] = $opt->id;
+                }
+            } else {
+                $newSortOrder = OrderDeliveryOption::where('order_id', $order->id)->max('sort_order') + 1;
+                $opt = OrderDeliveryOption::create(array_merge($attributes, [
+                    'order_id'   => $order->id,
+                    'sort_order' => $newSortOrder,
+                ]));
+                $keptIds[] = $opt->id;
+            }
+        }
+
+        // Delete options not in the kept list
+        OrderDeliveryOption::where('order_id', $order->id)
+            ->whereNotIn('id', $keptIds)
+            ->delete();
     }
 
     private function typeStats(int $tenantId, string $type, bool $isQuote): ?array
@@ -1189,14 +1334,24 @@ class OrderController extends Controller
 
         // Status change events
         foreach ($order->statusHistory as $history) {
-            $fromLabel = ucwords(str_replace('_', ' ', $history->from_status->value));
-            $toLabel = ucwords(str_replace('_', ' ', $history->to_status->value));
+            $isSameStatus = $history->from_status === $history->to_status;
+
+            if ($isSameStatus) {
+                // Activity log (no real status change): use the notes as the main description
+                $description = $history->notes ?? 'Activity logged';
+                $notes = null;
+            } else {
+                $fromLabel = ucwords(str_replace('_', ' ', $history->from_status->value));
+                $toLabel = ucwords(str_replace('_', ' ', $history->to_status->value));
+                $description = "Status changed from {$fromLabel} to {$toLabel}";
+                $notes = $history->notes;
+            }
 
             $events->push([
-                'type' => 'status_change',
-                'description' => "Status changed from {$fromLabel} to {$toLabel}",
+                'type' => $isSameStatus ? 'activity' : 'status_change',
+                'description' => $description,
                 'user' => $history->changedBy?->name ?? 'System',
-                'notes' => $history->notes,
+                'notes' => $notes,
                 'timestamp' => $history->changed_at?->toDateTimeString(),
                 'sort_at' => $history->changed_at,
             ]);

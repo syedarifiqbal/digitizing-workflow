@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { Link, useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Button from "@/Components/Button.vue";
@@ -59,8 +59,27 @@ const isDigitizing = computed(() => form.type === "digitizing");
 const isPatch = computed(() => form.type === "patch");
 const isVector = computed(() => form.type === "vector");
 
+const attachmentFiles = ref([]);
+const fileInputRef = ref(null);
+
 const handleFiles = (event) => {
-    form.attachments = Array.from(event.target.files ?? []);
+    const newFiles = Array.from(event.target.files ?? []);
+    attachmentFiles.value.push(...newFiles);
+    form.attachments = [...attachmentFiles.value];
+    // Reset the input so the same file can be re-added if removed
+    if (fileInputRef.value) fileInputRef.value.value = '';
+};
+
+const removeAttachment = (index) => {
+    attachmentFiles.value.splice(index, 1);
+    form.attachments = [...attachmentFiles.value];
+};
+
+const formatAttachmentSize = (size) => {
+    if (!size) return '0 KB';
+    const kb = size / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(1)} MB`;
 };
 
 const attachmentError = computed(() => {
@@ -462,8 +481,9 @@ const selectedTypeLabel = computed(() => {
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-slate-700" for="attachments">Input Artwork</label>
-                                        <p class="mt-0.5 text-xs text-slate-400">Upload up to 10 files.</p>
+                                        <p class="mt-0.5 text-xs text-slate-400">Upload up to 10 files. Click "Add Files" to select and add multiple files one batch at a time.</p>
                                         <input
+                                            ref="fileInputRef"
                                             id="attachments"
                                             type="file"
                                             multiple
@@ -471,6 +491,30 @@ const selectedTypeLabel = computed(() => {
                                             class="mt-1 block w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                                         />
                                         <p v-if="attachmentError" class="mt-1 text-xs text-red-600">{{ attachmentError }}</p>
+
+                                        <!-- Selected file list -->
+                                        <div
+                                            v-if="attachmentFiles.length"
+                                            class="mt-2 rounded-md border border-slate-200 divide-y divide-slate-100"
+                                        >
+                                            <div
+                                                v-for="(file, index) in attachmentFiles"
+                                                :key="index"
+                                                class="flex items-center justify-between px-3 py-2"
+                                            >
+                                                <div>
+                                                    <p class="text-xs font-medium text-slate-900">{{ file.name }}</p>
+                                                    <p class="text-xs text-slate-500">{{ formatAttachmentSize(file.size) }}</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    class="text-xs text-red-500 hover:text-red-700"
+                                                    @click="removeAttachment(index)"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -16,12 +16,16 @@ class OrderDeliveredNotification extends Notification implements ShouldQueue
     use Queueable;
 
     /**
-     * @param  array<int>  $fileIds
+     * @param  array<int>    $fileIds
+     * @param  array<string> $emailRecipients
+     * @param  array         $deliveryOptions
      */
     public function __construct(
         public Order $order,
         public ?string $message = null,
-        public array $fileIds = []
+        public array $fileIds = [],
+        public array $emailRecipients = [],
+        public array $deliveryOptions = []
     ) {}
 
     public function via(object $notifiable): array
@@ -51,9 +55,31 @@ class OrderDeliveredNotification extends Notification implements ShouldQueue
             ->line('- **Type:** ' . ucwords(str_replace('_', ' ', $order->type->value)))
             ->line('- **Priority:** ' . ucwords($order->priority->value));
 
-        // Work specifications (if submitted dimensions exist)
-        $hasSpecs = $order->submitted_width || $order->submitted_height || $order->submitted_stitch_count;
-        if ($hasSpecs) {
+        // Delivery options table
+        if (! empty($this->deliveryOptions)) {
+            $mail->line('')
+                ->line('**Delivery Options:**');
+            foreach ($this->deliveryOptions as $option) {
+                $label = $option['label'] ?? 'Option';
+                $parts = [];
+                if (! empty($option['width'])) {
+                    $parts[] = "Width: {$option['width']}";
+                }
+                if (! empty($option['height'])) {
+                    $parts[] = "Height: {$option['height']}";
+                }
+                if (! empty($option['stitch_count'])) {
+                    $parts[] = 'Stitches: ' . number_format((int) $option['stitch_count']);
+                }
+                if (isset($option['price']) && $option['price'] !== null) {
+                    $currency = $option['currency'] ?? 'USD';
+                    $parts[] = "Price: {$currency} " . number_format((float) $option['price'], 2);
+                }
+                $detail = $parts ? ' — ' . implode(', ', $parts) : '';
+                $mail->line("- **{$label}**{$detail}");
+            }
+        } elseif ($order->submitted_width || $order->submitted_height || $order->submitted_stitch_count) {
+            // Fallback: show submitted specs if no delivery options
             $mail->line('')
                 ->line('**Work Specifications:**');
             if ($order->submitted_width) {

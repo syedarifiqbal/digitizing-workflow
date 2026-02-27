@@ -22,13 +22,15 @@ class Client extends Model
         'company',
         'notes',
         'is_active',
+        'permanent_instructions',
     ];
 
     protected function casts(): array
     {
         return [
-            'tenant_id' => 'integer',
-            'is_active' => 'boolean',
+            'tenant_id'              => 'integer',
+            'is_active'              => 'boolean',
+            'permanent_instructions' => 'array',
         ];
     }
 
@@ -45,5 +47,10 @@ class Client extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function emails(): HasMany
+    {
+        return $this->hasMany(ClientEmail::class)->orderBy('sort_order');
     }
 }

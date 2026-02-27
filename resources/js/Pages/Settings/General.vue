@@ -28,6 +28,7 @@ const form = useForm({
     email_verification_required:
         props.settings.email_verification_required ?? true,
     date_format: props.settings.date_format ?? "MM/DD/YYYY",
+    time_format: props.settings.time_format ?? "h:mm A",
     sales_commission_earned_on: props.settings.sales_commission_earned_on ?? "delivered",
     designer_bonus_earned_on: props.settings.designer_bonus_earned_on ?? "delivered",
     enable_designer_tips: props.settings.enable_designer_tips ?? false,

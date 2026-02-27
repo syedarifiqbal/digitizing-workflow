@@ -63,6 +63,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'tenant_settings' => fn () => $request->user()?->tenant ? [
                 'date_format' => $request->user()->tenant->getSetting('date_format', 'MM/DD/YYYY'),
+                'time_format' => $request->user()->tenant->getSetting('time_format', 'h:mm A'),
             ] : null,
             'notifications' => fn () => $user ? [
                 'unread_count' => $user->unreadNotifications()->count(),

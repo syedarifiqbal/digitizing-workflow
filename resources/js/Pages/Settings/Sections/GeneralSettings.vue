@@ -1,9 +1,51 @@
 <script setup>
+import { computed } from 'vue';
+
 const props = defineProps({
     form: {
         type: Object,
         required: true,
     },
+});
+
+const timeFormatOptions = [
+    { value: 'h:mm A',    label: '12-hour  (e.g. 2:05 PM)' },
+    { value: 'h:mm:ss A', label: '12-hour with seconds  (e.g. 2:05:30 PM)' },
+    { value: 'HH:mm',     label: '24-hour  (e.g. 14:05)' },
+    { value: 'HH:mm:ss',  label: '24-hour with seconds  (e.g. 14:05:30)' },
+];
+
+// Live preview using the currently selected formats
+const previewTimestamp = computed(() => {
+    const now = new Date();
+    const day   = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year  = now.getFullYear();
+
+    let datePart;
+    switch (props.form.date_format) {
+        case 'DD/MM/YYYY':  datePart = `${day}/${month}/${year}`; break;
+        case 'YYYY-MM-DD':  datePart = `${year}-${month}-${day}`; break;
+        case 'DD-MM-YYYY':  datePart = `${day}-${month}-${year}`; break;
+        case 'DD.MM.YYYY':  datePart = `${day}.${month}.${year}`; break;
+        default:            datePart = `${month}/${day}/${year}`;
+    }
+
+    const h24  = now.getHours();
+    const h12  = h24 % 12 || 12;
+    const ampm = h24 >= 12 ? 'PM' : 'AM';
+    const mm   = String(now.getMinutes()).padStart(2, '0');
+    const ss   = String(now.getSeconds()).padStart(2, '0');
+
+    let timePart;
+    switch (props.form.time_format) {
+        case 'h:mm:ss A': timePart = `${h12}:${mm}:${ss} ${ampm}`; break;
+        case 'HH:mm':     timePart = `${String(h24).padStart(2,'0')}:${mm}`; break;
+        case 'HH:mm:ss':  timePart = `${String(h24).padStart(2,'0')}:${mm}:${ss}`; break;
+        default:          timePart = `${h12}:${mm} ${ampm}`;
+    }
+
+    return `${datePart} ${timePart}`;
 });
 </script>
 
@@ -45,6 +87,27 @@ const props = defineProps({
                             {{ form.errors.date_format }}
                         </p>
                     </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700" for="time_format">Time Format</label>
+                        <select
+                            v-model="form.time_format"
+                            id="time_format"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                            <option v-for="opt in timeFormatOptions" :key="opt.value" :value="opt.value">
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                        <p v-if="form.errors.time_format" class="mt-1 text-xs text-red-600">
+                            {{ form.errors.time_format }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Live timestamp preview -->
+                <div class="rounded-md bg-slate-50 border border-slate-200 px-4 py-3 flex items-center gap-3">
+                    <span class="text-xs font-medium text-slate-500">Preview:</span>
+                    <span class="text-sm font-mono text-slate-800">{{ previewTimestamp }}</span>
                 </div>
 
                 <div class="space-y-3 pt-2">

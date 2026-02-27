@@ -52,6 +52,7 @@ class TenantSettingsController extends Controller
             'currency' => ['required', 'string', 'size:3'],
             'order_number_prefix' => ['nullable', 'string', 'max:10'],
             'date_format' => ['required', 'string', 'in:MM/DD/YYYY,DD/MM/YYYY,YYYY-MM-DD,DD-MM-YYYY,DD.MM.YYYY'],
+            'time_format' => ['required', 'string', 'in:h:mm A,h:mm:ss A,HH:mm,HH:mm:ss'],
             'show_order_cards' => ['required', 'boolean'],
             'notify_on_assignment' => ['required', 'boolean'],
             'notify_on_comment' => ['required', 'boolean'],
@@ -98,6 +99,7 @@ class TenantSettingsController extends Controller
         $settings = array_merge($currentSettings, [
             'email_verification_required' => $validated['email_verification_required'],
             'date_format' => $validated['date_format'],
+            'time_format' => $validated['time_format'],
             'sales_commission_earned_on' => $validated['sales_commission_earned_on'],
             'designer_bonus_earned_on' => $validated['designer_bonus_earned_on'],
             'enable_designer_tips' => $validated['enable_designer_tips'],
@@ -206,6 +208,7 @@ class TenantSettingsController extends Controller
         return [
             'email_verification_required' => true,
             'date_format' => 'MM/DD/YYYY',
+            'time_format' => 'h:mm A',
             'sales_commission_earned_on' => 'delivered',
             'designer_bonus_earned_on' => 'delivered',
             'enable_designer_tips' => false,
