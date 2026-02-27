@@ -1986,7 +1986,7 @@ const fileInputAccept = computed(() => {
                     @click="showDeliverModal = false"
                 ></div>
                 <div
-                    class="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+                    class="relative w-full max-w-6xl rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto"
                 >
                     <h3 class="text-lg font-semibold text-slate-900">
                         {{ alreadyDelivered ? 'Re-send Delivery' : 'Deliver Order' }}
@@ -2008,209 +2008,185 @@ const fileInputAccept = computed(() => {
                         </div>
                     </div>
 
-                    <div class="mt-4 space-y-5">
-                        <!-- Delivery Options -->
-                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <label class="block text-sm font-semibold text-slate-800">Delivery Options</label>
-                                <button
-                                    type="button"
-                                    @click="addDeliveryOption"
-                                    class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                >
-                                    + Add Option
-                                </button>
+                    <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        <!-- ── Left column: what you're delivering ── -->
+                        <div class="space-y-4">
+
+                            <!-- Client Permanent Instructions (read-only reference) -->
+                            <div v-if="hasPermanentInstructions" class="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                <p class="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-2">Client Instructions</p>
+                                <dl class="space-y-2">
+                                    <div v-if="permanentInstructions.special_offer_note">
+                                        <dt class="text-xs font-medium text-amber-700">Special Offer / Note</dt>
+                                        <dd class="text-xs text-slate-800 whitespace-pre-line">{{ permanentInstructions.special_offer_note }}</dd>
+                                    </div>
+                                    <div v-if="permanentInstructions.price_instructions">
+                                        <dt class="text-xs font-medium text-amber-700">Price Instructions</dt>
+                                        <dd class="text-xs text-slate-800 whitespace-pre-line">{{ permanentInstructions.price_instructions }}</dd>
+                                    </div>
+                                    <div v-if="permanentInstructions.for_digitizer">
+                                        <dt class="text-xs font-medium text-amber-700">For Digitizer</dt>
+                                        <dd class="text-xs text-slate-800 whitespace-pre-line">{{ permanentInstructions.for_digitizer }}</dd>
+                                    </div>
+                                    <div v-if="permanentInstructions.appreciation_bonus">
+                                        <dt class="text-xs font-medium text-amber-700">Appreciation Bonus</dt>
+                                        <dd class="text-xs text-slate-800">${{ permanentInstructions.appreciation_bonus }}</dd>
+                                    </div>
+                                    <template v-if="permanentInstructions.custom?.length">
+                                        <div v-for="(item, i) in permanentInstructions.custom" :key="i">
+                                            <dt class="text-xs font-medium text-amber-700">{{ item.key }}</dt>
+                                            <dd class="text-xs text-slate-800 whitespace-pre-line">{{ item.value }}</dd>
+                                        </div>
+                                    </template>
+                                </dl>
                             </div>
-                            <div class="space-y-3">
-                                <div
-                                    v-for="(opt, idx) in deliverOptionsForm"
-                                    :key="idx"
-                                    class="rounded-md border border-slate-200 bg-white p-3"
-                                >
-                                    <div class="flex items-center justify-between mb-2">
+                            
+                            <!-- Delivery Options -->
+                            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <label class="block text-sm font-semibold text-slate-800">Delivery Options</label>
+                                    <button
+                                        type="button"
+                                        @click="addDeliveryOption"
+                                        class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                    >
+                                        + Add Option
+                                    </button>
+                                </div>
+                                <div class="space-y-3">
+                                    <div
+                                        v-for="(opt, idx) in deliverOptionsForm"
+                                        :key="idx"
+                                        class="rounded-md border border-slate-200 bg-white p-3"
+                                    >
+                                        <div class="flex items-center justify-between mb-2">
+                                            <input
+                                                v-model="opt.label"
+                                                type="text"
+                                                placeholder="Option A"
+                                                class="block w-28 rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            />
+                                            <button
+                                                v-if="deliverOptionsForm.length > 1"
+                                                type="button"
+                                                @click="removeDeliveryOption(idx)"
+                                                class="text-red-500 hover:text-red-700 text-xs font-medium"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label class="text-xs text-slate-500">Width</label>
+                                                <input v-model="opt.width" type="text" placeholder='e.g. 4.5"'
+                                                    class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-slate-500">Height</label>
+                                                <input v-model="opt.height" type="text" placeholder='e.g. 3.2"'
+                                                    class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-slate-500">Stitches</label>
+                                                <input v-model="opt.stitch_count" type="number" min="0" placeholder="5000"
+                                                    class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-slate-500">Price</label>
+                                                <input v-model="opt.price" type="number" step="0.01" min="0" placeholder="0.00"
+                                                    class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Right column: how you're sending it ── -->
+                        <div class="space-y-4">
+                            <!-- Email Recipients -->
+                            <div v-if="clientEmails && clientEmails.length" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                <label class="block text-sm font-semibold text-slate-800 mb-2">Email Recipients</label>
+                                <div class="space-y-1.5">
+                                    <label
+                                        v-for="entry in clientEmails"
+                                        :key="entry.email"
+                                        class="flex items-center gap-3 cursor-pointer rounded-md px-2 py-1.5 hover:bg-slate-100"
+                                    >
                                         <input
-                                            v-model="opt.label"
-                                            type="text"
-                                            placeholder="Option A"
-                                            class="block w-32 rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            type="checkbox"
+                                            :checked="selectedEmailRecipients.includes(entry.email)"
+                                            @change="toggleEmailRecipient(entry.email)"
+                                            class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                         />
-                                        <button
-                                            v-if="deliverOptionsForm.length > 1"
-                                            type="button"
-                                            @click="removeDeliveryOption(idx)"
-                                            class="text-red-500 hover:text-red-700 text-xs font-medium"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                        <div>
-                                            <label class="text-xs text-slate-500">Width</label>
-                                            <input v-model="opt.width" type="text" placeholder="e.g. 4.5 in"
-                                                class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                        </div>
-                                        <div>
-                                            <label class="text-xs text-slate-500">Height</label>
-                                            <input v-model="opt.height" type="text" placeholder="e.g. 3.2 in"
-                                                class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                        </div>
-                                        <div>
-                                            <label class="text-xs text-slate-500">Stitches</label>
-                                            <input v-model="opt.stitch_count" type="number" min="0" placeholder="5000"
-                                                class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                        </div>
-                                        <div>
-                                            <label class="text-xs text-slate-500">Price</label>
-                                            <input v-model="opt.price" type="number" step="0.01" min="0" placeholder="0.00"
-                                                class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                        </div>
-                                    </div>
+                                        <span class="text-sm text-slate-800 truncate">{{ entry.email }}</span>
+                                        <span v-if="entry.label" class="shrink-0 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">{{ entry.label }}</span>
+                                    </label>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Email Recipients -->
-                        <div v-if="clientEmails && clientEmails.length" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <label class="block text-sm font-semibold text-slate-800 mb-2">Email Recipients</label>
-                            <div class="space-y-1.5">
-                                <label
-                                    v-for="entry in clientEmails"
-                                    :key="entry.email"
-                                    class="flex items-center gap-3 cursor-pointer rounded-md px-2 py-1.5 hover:bg-slate-100"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        :checked="selectedEmailRecipients.includes(entry.email)"
-                                        @change="toggleEmailRecipient(entry.email)"
-                                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                    <span class="text-sm text-slate-800">{{ entry.email }}</span>
-                                    <span v-if="entry.label" class="rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">{{ entry.label }}</span>
-                                </label>
+                            <!-- Attach Files -->
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Attach Files</label>
+                                <p class="text-xs text-slate-500 mt-0.5">Select which output files to include as attachments.</p>
+                                <div v-if="outputFiles?.length" class="mt-2 max-h-40 overflow-y-auto rounded-md border border-slate-200 divide-y divide-slate-100">
+                                    <label
+                                        v-for="file in outputFiles"
+                                        :key="file.id"
+                                        class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-50"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            :checked="selectedFileIds.includes(file.id)"
+                                            @change="toggleFileSelection(file.id)"
+                                            class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-medium text-slate-900 truncate">{{ file.original_name }}</p>
+                                            <p class="text-xs text-slate-400">{{ formatSize(file.size) }}</p>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div v-else class="mt-2 rounded-md border border-yellow-200 bg-yellow-50 p-3">
+                                    <p class="text-xs text-yellow-700">No output files available. Email will be sent without attachments.</p>
+                                </div>
+                                <p v-if="outputFiles?.length" class="mt-1 text-xs text-slate-500">
+                                    {{ selectedFileIds.length }} of {{ outputFiles.length }} selected
+                                </p>
                             </div>
-                        </div>
 
-                        <!-- Client Permanent Instructions (read-only reference) -->
-                        <div v-if="hasPermanentInstructions" class="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                            <p class="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-2">Client Instructions</p>
-                            <dl class="space-y-2">
-                                <div v-if="permanentInstructions.special_offer_note">
-                                    <dt class="text-xs font-medium text-amber-700">Special Offer / Note</dt>
-                                    <dd class="text-xs text-slate-800 whitespace-pre-line">{{ permanentInstructions.special_offer_note }}</dd>
-                                </div>
-                                <div v-if="permanentInstructions.price_instructions">
-                                    <dt class="text-xs font-medium text-amber-700">Price Instructions</dt>
-                                    <dd class="text-xs text-slate-800 whitespace-pre-line">{{ permanentInstructions.price_instructions }}</dd>
-                                </div>
-                                <div v-if="permanentInstructions.for_digitizer">
-                                    <dt class="text-xs font-medium text-amber-700">For Digitizer</dt>
-                                    <dd class="text-xs text-slate-800 whitespace-pre-line">{{ permanentInstructions.for_digitizer }}</dd>
-                                </div>
-                                <div v-if="permanentInstructions.appreciation_bonus">
-                                    <dt class="text-xs font-medium text-amber-700">Appreciation Bonus</dt>
-                                    <dd class="text-xs text-slate-800">${{ permanentInstructions.appreciation_bonus }}</dd>
-                                </div>
-                                <template v-if="permanentInstructions.custom?.length">
-                                    <div v-for="(item, i) in permanentInstructions.custom" :key="i">
-                                        <dt class="text-xs font-medium text-amber-700">{{ item.key }}</dt>
-                                        <dd class="text-xs text-slate-800 whitespace-pre-line">{{ item.value }}</dd>
-                                    </div>
-                                </template>
-                            </dl>
-                        </div>
-
-                        <!-- Message -->
-                        <div>
-                            <label
-                                class="block text-sm font-medium text-slate-700"
-                                >Message to Client (optional)</label
-                            >
-                            <textarea
-                                v-model="deliverMessage"
-                                rows="3"
-                                placeholder="Add a message or feedback for the client..."
-                                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                            ></textarea>
-                        </div>
-
-                        <!-- Designer Tip (if enabled) -->
-                        <div
-                            v-if="enableDesignerTips && order?.designer"
-                            class="rounded-lg border border-indigo-200 bg-indigo-50 p-4"
-                        >
-                            <label
-                                class="block text-sm font-medium text-indigo-900"
-                                >Designer Tip (optional)</label
-                            >
-                            <p class="text-xs text-indigo-700 mt-0.5 mb-2">
-                                Reward exceptional work! This tip will be added
-                                to {{ order.designer.name }}'s earnings.
-                            </p>
-                            <div class="flex items-center gap-2">
-                                <span
-                                    class="text-sm font-medium text-indigo-700"
-                                    >{{ currency || "USD" }}</span
-                                >
-                                <input
-                                    v-model="designerTip"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    placeholder="0.00"
-                                    class="block w-32 rounded-md border-indigo-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                />
+                            <!-- Message -->
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Message to Client (optional)</label>
+                                <textarea
+                                    v-model="deliverMessage"
+                                    rows="4"
+                                    placeholder="Add a message or feedback for the client..."
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                ></textarea>
                             </div>
-                        </div>
 
-                        <!-- Files to Attach -->
-                        <div v-if="outputFiles?.length">
-                            <label
-                                class="block text-sm font-medium text-slate-700"
-                                >Attach Files</label
-                            >
-                            <p class="text-xs text-slate-500 mt-0.5">
-                                Select which files to send as email attachments.
-                            </p>
+                            <!-- Designer Tip (if enabled) -->
                             <div
-                                class="mt-2 max-h-48 overflow-y-auto rounded-md border border-slate-200 divide-y divide-slate-100"
+                                v-if="enableDesignerTips && order?.designer"
+                                class="rounded-lg border border-indigo-200 bg-indigo-50 p-4"
                             >
-                                <label
-                                    v-for="file in outputFiles"
-                                    :key="file.id"
-                                    class="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50"
-                                >
+                                <label class="block text-sm font-medium text-indigo-900">Designer Tip (optional)</label>
+                                <p class="text-xs text-indigo-700 mt-0.5 mb-2">
+                                    Reward exceptional work. Added to {{ order.designer.name }}'s earnings.
+                                </p>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-medium text-indigo-700">{{ currency || "USD" }}</span>
                                     <input
-                                        type="checkbox"
-                                        :checked="selectedFileIds.includes(file.id)"
-                                        @change="toggleFileSelection(file.id)"
-                                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                        v-model="designerTip"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        placeholder="0.00"
+                                        class="block w-32 rounded-md border-indigo-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                     />
-                                    <div class="min-w-0 flex-1">
-                                        <p
-                                            class="text-sm font-medium text-slate-900 truncate"
-                                        >
-                                            {{ file.original_name }}
-                                        </p>
-                                        <p class="text-xs text-slate-500">
-                                            {{ formatSize(file.size) }}
-                                        </p>
-                                    </div>
-                                </label>
+                                </div>
                             </div>
-                            <p class="mt-1 text-xs text-slate-500">
-                                {{ selectedFileIds.length }} of
-                                {{ outputFiles.length }} files selected
-                            </p>
-                        </div>
-
-                        <div
-                            v-else
-                            class="rounded-md border border-yellow-200 bg-yellow-50 p-3"
-                        >
-                            <p class="text-sm text-yellow-700">
-                                No output files available. The email will be
-                                sent without attachments.
-                            </p>
                         </div>
                     </div>
 
