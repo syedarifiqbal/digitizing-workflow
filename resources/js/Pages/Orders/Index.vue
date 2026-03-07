@@ -808,15 +808,21 @@ const orderColumns = [
                                 ? 'No quotes found.'
                                 : 'No orders found.'
                         "
+                        :row-class="(row) => row.parent_order_id ? 'bg-indigo-50 !border-l-2 !border-l-indigo-300' : ''"
                     >
                         <template #cell-order="{ row }">
-                            <div class="font-medium text-slate-900">
+                            <div class="font-medium text-slate-900 flex items-center gap-1.5">
                                 {{ row.order_number }}
                                 <span
                                     v-if="row.po_number"
-                                    class="ml-1 text-xs font-normal text-slate-400"
+                                    class="text-xs font-normal text-slate-400"
                                     >({{ row.po_number }})</span
                                 >
+                                <span
+                                    v-if="row.parent_order_id"
+                                    class="inline-flex items-center rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700"
+                                    title="Revision order"
+                                >REV</span>
                             </div>
                             <p class="text-sm text-slate-500">
                                 {{ row.title }}

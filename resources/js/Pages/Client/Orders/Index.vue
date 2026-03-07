@@ -146,7 +146,7 @@ const orderColumns = [
             </div>
 
             <!-- DataTable -->
-            <DataTable :columns="orderColumns" :rows="orders" empty-text="No orders found.">
+            <DataTable :columns="orderColumns" :rows="orders" empty-text="No orders found." :row-class="(row) => row.parent_order_id ? 'bg-indigo-50 !border-l-2 !border-l-indigo-300' : ''">
                 <template #empty>
                     <div class="text-center">
                         <p class="text-slate-400">No orders found.</p>
@@ -161,12 +161,19 @@ const orderColumns = [
 
                 <template #cell-order="{ row }">
                     <div>
-                        <Link
-                            :href="route('client.orders.show', row.id)"
-                            class="font-medium text-indigo-600 hover:text-indigo-900"
-                        >
-                            {{ row.order_number }}
-                        </Link>
+                        <div class="flex items-center gap-1.5">
+                            <Link
+                                :href="route('client.orders.show', row.id)"
+                                class="font-medium text-indigo-600 hover:text-indigo-900"
+                            >
+                                {{ row.order_number }}
+                            </Link>
+                            <span
+                                v-if="row.parent_order_id"
+                                class="inline-flex items-center rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700"
+                                title="Revision order"
+                            >REV</span>
+                        </div>
                         <div class="text-xs text-slate-500 truncate max-w-xs">
                             {{ row.title }}
                         </div>

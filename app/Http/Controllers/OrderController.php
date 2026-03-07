@@ -174,6 +174,7 @@ class OrderController extends Controller
                     'currency' => $order->currency ?? $request->user()->tenant->getSetting('currency', 'USD'),
                     'is_invoiced' => (bool) $order->is_invoiced,
                     'is_invoice_eligible' => ! $order->is_invoiced && in_array($order->status->value, [OrderStatus::DELIVERED->value, OrderStatus::CLOSED->value], true),
+                    'parent_order_id' => $order->parent_order_id,
                     'due_at' => optional($order->due_at)?->toDateTimeString(),
                     'created_at' => $order->created_at?->toDateTimeString(),
                 ]),
@@ -401,6 +402,7 @@ class OrderController extends Controller
                     'style' => $this->workflowService->getTransitionStyle($status),
                 ])
                 ->values(),
+            'canEdit' => $isPrivileged,
             'canCreateRevision' => $canAssign && in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED]),
             'canDeliver' => $canAssign && in_array($order->status, [
                 OrderStatus::APPROVED,
@@ -517,6 +519,10 @@ class OrderController extends Controller
     {
         $this->authorize('update', $order);
 
+        if ($request->user()->isDesigner() || $request->user()->isClient()) {
+            abort(403, 'You do not have permission to edit order details.');
+        }
+
         $order->load('files');
 
         return Inertia::render('Orders/Edit', [
@@ -579,6 +585,10 @@ class OrderController extends Controller
     public function update(Request $request, Order $order): RedirectResponse
     {
         $this->authorize('update', $order);
+
+        if ($request->user()->isDesigner() || $request->user()->isClient()) {
+            abort(403, 'You do not have permission to edit order details.');
+        }
 
         $data = $this->validateOrderUpdate($request, $order);
 
@@ -768,10 +778,6 @@ class OrderController extends Controller
     {
         $this->authorize('update', $order);
 
-        $validated = $request->validate([
-            'notes' => ['nullable', 'string', 'max:5000'],
-        ]);
-
         $user = $request->user();
 
         if (! ($user->isAdmin() || $user->isManager())) {
@@ -782,7 +788,19 @@ class OrderController extends Controller
             return back()->withErrors(['status' => 'Revision orders can only be created for delivered or closed orders.']);
         }
 
+        $maxKilobytes = (int) ($user->tenant->getSetting('max_upload_mb', 25)) * 1024;
+
+        $validated = $request->validate([
+            'notes'   => ['nullable', 'string', 'max:5000'],
+            'files'   => ['nullable', 'array'],
+            'files.*' => ['file', 'max:'.$maxKilobytes],
+        ]);
+
         $revisionOrder = $action->execute($order, $user, $validated['notes'] ?? null);
+
+        foreach ($request->file('files', []) as $file) {
+            $this->fileStorageService->storeOrderFile($revisionOrder, $file, 'input', $user);
+        }
 
         return redirect()->route('orders.show', $revisionOrder)->with('success', 'Revision order created.');
     }
@@ -957,7 +975,13 @@ class OrderController extends Controller
 
         $fileRules = ['file', 'max:'.$maxKilobytes];
         if ($allowedExtensions->isNotEmpty()) {
-            $fileRules[] = 'mimes:'.$allowedExtensions->implode(',');
+            $exts = $allowedExtensions->all();
+            $fileRules[] = function (string $attribute, mixed $value, \Closure $fail) use ($exts) {
+                $ext = strtolower($value->getClientOriginalExtension());
+                if (! in_array($ext, $exts)) {
+                    $fail("The {$attribute} must be a file of type: ".implode(', ', $exts));
+                }
+            };
         }
 
         $validated = $request->validate([
@@ -1009,7 +1033,13 @@ class OrderController extends Controller
 
         $attachmentRules = ['file', 'max:'.$maxKilobytes];
         if ($allowedExtensions->isNotEmpty()) {
-            $attachmentRules[] = 'mimes:'.$allowedExtensions->implode(',');
+            $exts = $allowedExtensions->all();
+            $attachmentRules[] = function (string $attribute, mixed $value, \Closure $fail) use ($exts) {
+                $ext = strtolower($value->getClientOriginalExtension());
+                if (! in_array($ext, $exts)) {
+                    $fail("The {$attribute} must be a file of type: ".implode(', ', $exts));
+                }
+            };
         }
 
         $allowedTypes = collect(OrderType::cases())
@@ -1071,7 +1101,13 @@ class OrderController extends Controller
 
         $attachmentRules = ['file', 'max:'.$maxKilobytes];
         if ($allowedExtensions->isNotEmpty()) {
-            $attachmentRules[] = 'mimes:'.$allowedExtensions->implode(',');
+            $exts = $allowedExtensions->all();
+            $attachmentRules[] = function (string $attribute, mixed $value, \Closure $fail) use ($exts) {
+                $ext = strtolower($value->getClientOriginalExtension());
+                if (! in_array($ext, $exts)) {
+                    $fail("The {$attribute} must be a file of type: ".implode(', ', $exts));
+                }
+            };
         }
 
         $rules = [

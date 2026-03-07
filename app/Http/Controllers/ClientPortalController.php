@@ -139,7 +139,6 @@ class ClientPortalController extends Controller
 
         $orders = Order::query()
             ->where('client_id', $client->id)
-            ->with(['designer:id,name', 'sales:id,name'])
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('order_number', 'like', "%{$search}%")
@@ -167,8 +166,7 @@ class ClientPortalController extends Controller
                 'status_label' => $order->status->label(),
                 'priority' => $order->priority->value,
                 'priority_label' => $order->priority->label(),
-                'designer' => $order->designer ? ['id' => $order->designer->id, 'name' => $order->designer->name] : null,
-                'sales' => $order->sales ? ['id' => $order->sales->id, 'name' => $order->sales->name] : null,
+                'parent_order_id' => $order->parent_order_id,
                 'created_at' => $order->created_at,
                 'updated_at' => $order->updated_at,
                 'delivered_at' => $order->delivered_at,
@@ -277,8 +275,6 @@ class ClientPortalController extends Controller
 
         $order->load([
             'client',
-            'designer:id,name',
-            'sales:id,name',
             'files' => fn ($q) => $q->orderBy('created_at', 'desc'),
             'files.uploader:id,name',
             'comments' => fn ($q) => $q->where('visibility', 'client')->latest(),
@@ -336,8 +332,6 @@ class ClientPortalController extends Controller
                 'is_quote' => $order->is_quote,
                 'status' => $order->status->value,
                 'status_label' => $order->status->label(),
-                'designer' => $order->designer ? ['id' => $order->designer->id, 'name' => $order->designer->name] : null,
-                'sales' => $order->sales ? ['id' => $order->sales->id, 'name' => $order->sales->name] : null,
                 'created_at' => $order->created_at,
                 'submitted_at' => $order->submitted_at,
                 'approved_at' => $order->approved_at,
@@ -370,6 +364,7 @@ class ClientPortalController extends Controller
                 'user' => ['id' => $comment->user->id, 'name' => $comment->user->name],
                 'created_at' => $comment->created_at,
             ]),
+            'permanentInstructions' => $order->client?->permanent_instructions ?? [],
         ]);
     }
 

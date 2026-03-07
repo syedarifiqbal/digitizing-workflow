@@ -26,6 +26,10 @@ const props = defineProps({
         type: String,
         default: "No records found.",
     },
+    rowClass: {
+        type: Function,
+        default: () => '',
+    },
 });
 
 const emit = defineEmits(["update:selectedIds", "rowClick"]);
@@ -115,7 +119,7 @@ const defaultCellValue = (row, column) => {
                     <tr
                         v-for="(row, rowIndex) in rows"
                         :key="row?.[rowKey] ?? `row-${rowIndex}`"
-                        class="transition hover:bg-slate-50"
+                        :class="['transition hover:bg-slate-50', rowClass(row)]"
                         @click="$emit('rowClick', row)"
                     >
                         <td v-if="selectable" class="px-4 py-3">

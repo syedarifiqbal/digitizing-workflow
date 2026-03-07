@@ -4,14 +4,11 @@ namespace App\Notifications;
 
 use App\Models\Invoice;
 use App\Support\TenantMailer;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class InvoiceSentNotification extends Notification implements ShouldQueue
+class InvoiceSentNotification extends Notification
 {
-    use Queueable;
 
     public function __construct(
         private Invoice $invoice,

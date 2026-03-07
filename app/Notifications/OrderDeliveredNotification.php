@@ -5,15 +5,12 @@ namespace App\Notifications;
 use App\Models\Order;
 use App\Models\OrderFile;
 use App\Support\TenantMailer;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 
-class OrderDeliveredNotification extends Notification implements ShouldQueue
+class OrderDeliveredNotification extends Notification
 {
-    use Queueable;
 
     /**
      * @param  array<int>    $fileIds

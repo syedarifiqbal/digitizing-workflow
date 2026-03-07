@@ -9,7 +9,7 @@ class OrderPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin() || $user->isManager() || $user->isDesigner();
+        return $user->isAdmin() || $user->isManager();
     }
 
     public function view(User $user, Order $order): bool

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Button from '@/Components/Button.vue';
@@ -17,6 +17,13 @@ const props = defineProps({
     parentOrder: Object,
     revisionOrders: Array,
     comments: Array,
+    permanentInstructions: { type: Object, default: () => ({}) },
+});
+
+const hasPermanentInstructions = computed(() => {
+    if (!props.permanentInstructions) return false;
+    const { special_offer_note, price_instructions, for_digitizer, appreciation_bonus, custom } = props.permanentInstructions;
+    return !!(special_offer_note || price_instructions || for_digitizer || appreciation_bonus || (custom?.length));
 });
 
 const newComment = ref('');
@@ -154,10 +161,6 @@ const formatFileSize = (bytes) => {
                         <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Created</dt>
                         <dd class="mt-1 text-sm text-slate-900">{{ formatDate(order.created_at) }}</dd>
                     </div>
-                    <div v-if="order.designer" class="col-span-full">
-                        <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Assigned Designer</dt>
-                        <dd class="mt-1 text-sm text-slate-900">{{ order.designer.name }}</dd>
-                    </div>
                     <div v-if="order.description" class="col-span-full">
                         <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Description</dt>
                         <dd class="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{{ order.description }}</dd>
@@ -285,6 +288,38 @@ const formatFileSize = (bytes) => {
                             </a>
                         </li>
                     </ul>
+                </div>
+            </div>
+
+            <!-- Permanent Instructions (from your client profile) -->
+            <div v-if="hasPermanentInstructions" class="rounded-2xl border border-amber-200 bg-amber-50 shadow-xl shadow-amber-100/50">
+                <div class="border-b border-amber-200 px-6 py-4">
+                    <h3 class="text-sm font-semibold text-amber-900">Your Standing Instructions</h3>
+                    <p class="mt-0.5 text-xs text-amber-700">These are your saved preferences applied to all orders.</p>
+                </div>
+                <div class="px-6 py-5 space-y-3">
+                    <div v-if="permanentInstructions.special_offer_note">
+                        <dt class="text-xs font-medium uppercase tracking-wide text-amber-700">Special Offer / Note</dt>
+                        <dd class="mt-1 text-sm text-amber-900 whitespace-pre-wrap">{{ permanentInstructions.special_offer_note }}</dd>
+                    </div>
+                    <div v-if="permanentInstructions.price_instructions">
+                        <dt class="text-xs font-medium uppercase tracking-wide text-amber-700">Price Instructions</dt>
+                        <dd class="mt-1 text-sm text-amber-900 whitespace-pre-wrap">{{ permanentInstructions.price_instructions }}</dd>
+                    </div>
+                    <div v-if="permanentInstructions.for_digitizer">
+                        <dt class="text-xs font-medium uppercase tracking-wide text-amber-700">For Digitizer</dt>
+                        <dd class="mt-1 text-sm text-amber-900 whitespace-pre-wrap">{{ permanentInstructions.for_digitizer }}</dd>
+                    </div>
+                    <div v-if="permanentInstructions.appreciation_bonus">
+                        <dt class="text-xs font-medium uppercase tracking-wide text-amber-700">Appreciation Bonus</dt>
+                        <dd class="mt-1 text-sm text-amber-900">{{ permanentInstructions.appreciation_bonus }}</dd>
+                    </div>
+                    <template v-if="permanentInstructions.custom?.length">
+                        <div v-for="(item, idx) in permanentInstructions.custom" :key="idx">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-amber-700">{{ item.key }}</dt>
+                            <dd class="mt-1 text-sm text-amber-900 whitespace-pre-wrap">{{ item.value }}</dd>
+                        </div>
+                    </template>
                 </div>
             </div>
 
