@@ -1,64 +1,20 @@
 <script setup>
-import { computed, reactive, ref, watch } from "vue";
-import { Head, Link, router } from "@inertiajs/vue3";
+import { reactive, ref } from "vue";
+import { Head, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 import DataTable from "@/Components/DataTable.vue";
 import RowActions from "@/Components/RowActions.vue";
-import PaginationControls from "@/Components/PaginationControls.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 import Button from "@/Components/Button.vue";
 
 const { formatDate } = useDateFormat();
 
 const props = defineProps({
-    filters: Object,
-    users: Object,
-    roles: Array,
+    userGroups: Array,
 });
-
-const filters = reactive({
-    search: props.filters?.search ?? "",
-    role: props.filters?.role ?? "all",
-    status: props.filters?.status ?? "all",
-});
-
-const roleOptions = computed(() => [
-    { label: "All roles", value: "all" },
-    ...(props.roles || []).map((role) => ({ label: role, value: role })),
-]);
-
-const statusOptions = [
-    { label: "All statuses", value: "all" },
-    { label: "Active", value: "active" },
-    { label: "Inactive", value: "inactive" },
-];
-
-const users = computed(
-    () => props.users?.data?.data ?? props.users?.data ?? []
-);
-const paginationLinks = computed(
-    () => props.users?.links ?? props.users?.data?.links ?? []
-);
-const paginationMeta = computed(
-    () => props.users?.meta ?? props.users?.data?.meta ?? null
-);
 
 const selectedIds = ref([]);
-
-watch(
-    () => props.users,
-    () => {
-        selectedIds.value = [];
-    }
-);
-
-const submitFilters = () => {
-    router.get(route("users.index"), filters, {
-        preserveState: true,
-        replace: true,
-    });
-};
 
 const modal = reactive({
     show: false,
@@ -112,172 +68,104 @@ const clearSelection = () => {
     selectedIds.value = [];
 };
 
-const userColumns = [
-    { key: "user", label: "User" },
-    { key: "role", label: "Role" },
-    { key: "status", label: "Status" },
-    { key: "client", label: "Client" },
-    { key: "actions", label: "", headerClass: "text-right" },
-];
+const columnsFor = (role) => {
+    const cols = [
+        { key: "user", label: "User" },
+        { key: "status", label: "Status" },
+    ];
+    if (role === "Client") {
+        cols.push({ key: "client", label: "Client Account" });
+    }
+    cols.push({ key: "actions", label: "", headerClass: "text-right" });
+    return cols;
+};
+
+const roleAccentClass = {
+    Admin: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    Manager: "border-purple-200 bg-purple-50 text-purple-700",
+    Designer: "border-blue-200 bg-blue-50 text-blue-700",
+    Sales: "border-green-200 bg-green-50 text-green-700",
+    Client: "border-amber-200 bg-amber-50 text-amber-700",
+};
 </script>
 
 <template>
     <AppLayout>
-        <Head :title="`Users`" />
+        <Head title="Users" />
         <template #header>
-            <div
-                class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-            >
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-2xl font-semibold text-slate-900">Users</h2>
                     <p class="text-sm text-slate-500">
                         Invite teammates, assign roles, and manage access.
                     </p>
                 </div>
-                <Button
-                    :href="route('users.create')"
-                    variant="primary"
-                >
+                <Button :href="route('users.create')" variant="primary">
                     Invite User
                 </Button>
             </div>
         </template>
 
-        <div class="mx-auto max-w-7xl space-y-8">
+        <div class="mx-auto max-w-7xl space-y-6">
+            <!-- Bulk action bar -->
             <div
-                class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70"
+                v-if="selectedIds.length"
+                class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 shadow-inner shadow-indigo-100"
             >
-                <div class="p-6">
-                    <form
-                        @submit.prevent="submitFilters"
-                        class="grid gap-5 md:grid-cols-4"
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="font-medium">{{ selectedIds.length }} user(s) selected</span>
+                    <button
+                        type="button"
+                        class="text-indigo-600 underline"
+                        @click="clearSelection"
                     >
-                        <div>
-                            <label
-                                class="block text-sm font-medium text-slate-300"
-                                for="search"
-                                >Search</label
-                            >
-                            <input
-                                v-model="filters.search"
-                                id="search"
-                                type="text"
-                                placeholder="Search name or email"
-                                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-indigo-400 focus:ring-indigo-400"
-                            />
-                        </div>
-
-                        <div>
-                            <label
-                                class="block text-sm font-medium text-slate-300"
-                                for="role"
-                                >Role</label
-                            >
-                            <select
-                                v-model="filters.role"
-                                id="role"
-                                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-400 focus:ring-indigo-400"
-                            >
-                                <option
-                                    v-for="option in roleOptions"
-                                    :key="option.value"
-                                    :value="option.value"
-                                >
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label
-                                class="block text-sm font-medium text-slate-300"
-                                for="status"
-                                >Status</label
-                            >
-                            <select
-                                v-model="filters.status"
-                                id="status"
-                                class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-400 focus:ring-indigo-400"
-                            >
-                                <option
-                                    v-for="option in statusOptions"
-                                    :key="option.value"
-                                    :value="option.value"
-                                >
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="flex items-end">
-                            <Button
-                                as="button"
-                                variant="primary"
-                                type="submit"
-                                class="w-full"
-                                >Apply filters</Button
-                            >
-                        </div>
-                    </form>
+                        Clear
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-600"
+                        @click="openDeleteModal(selectedIds)"
+                    >
+                        Delete selected
+                    </button>
                 </div>
             </div>
 
+            <!-- Per-role tables -->
             <div
-                class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70"
+                v-for="group in userGroups"
+                :key="group.role"
+                class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70 overflow-hidden"
             >
-                <div class="p-6">
-                    <div
-                        v-if="selectedIds.length"
-                        class="mb-5 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 shadow-inner shadow-indigo-100"
+                <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+                    <span
+                        class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+                        :class="roleAccentClass[group.role] ?? 'border-slate-200 bg-slate-50 text-slate-700'"
                     >
-                        <div class="flex flex-wrap items-center gap-3">
-                            <span class="font-medium"
-                                >{{ selectedIds.length }} user(s) selected</span
-                            >
-                            <button
-                                type="button"
-                                class="text-indigo-600 underline"
-                                @click="clearSelection"
-                            >
-                                Clear
-                            </button>
-                            <button
-                                type="button"
-                                class="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-600"
-                                @click="openDeleteModal(selectedIds)"
-                            >
-                                Delete selected
-                            </button>
-                        </div>
-                    </div>
+                        {{ group.role }}
+                    </span>
+                    <span class="text-sm text-slate-500">
+                        {{ group.users.length }} {{ group.users.length === 1 ? "user" : "users" }}
+                    </span>
+                </div>
 
+                <div class="p-6">
                     <DataTable
-                        :columns="userColumns"
-                        :rows="users"
+                        :columns="columnsFor(group.role)"
+                        :rows="group.users"
                         selectable
                         v-model:selected-ids="selectedIds"
-                        empty-text="No users found."
+                        empty-text="No users."
                     >
                         <template #cell-user="{ row }">
-                            <div class="font-medium text-slate-900">
-                                {{ row.name }}
-                            </div>
-                            <div class="text-sm text-slate-500">
-                                {{ row.email }}
-                            </div>
-                            <p class="text-xs text-slate-500">
-                                Invited {{ formatDate(row.created_at) }}
-                            </p>
-                        </template>
-                        <template #cell-role="{ row }">
-                            <span class="text-sm text-slate-900">{{
-                                row.role ?? "—"
-                            }}</span>
+                            <div class="font-medium text-slate-900">{{ row.name }}</div>
+                            <div class="text-sm text-slate-500">{{ row.email }}</div>
+                            <p class="text-xs text-slate-400">Invited {{ formatDate(row.created_at) }}</p>
                         </template>
                         <template #cell-status="{ row }">
                             <span
                                 :class="[
-                                    'inline-flex rounded-full px-2 text-xs font-semibold leading-5 capitalize',
+                                    'inline-flex rounded-full px-2 text-xs font-semibold leading-5',
                                     row.is_active
                                         ? 'bg-emerald-500/20 text-emerald-300'
                                         : 'bg-amber-100 text-amber-700',
@@ -287,9 +175,7 @@ const userColumns = [
                             </span>
                         </template>
                         <template #cell-client="{ row }">
-                            <span class="text-sm text-slate-900">{{
-                                row.client?.name ?? "—"
-                            }}</span>
+                            <span class="text-sm text-slate-900">{{ row.client?.name ?? "—" }}</span>
                         </template>
                         <template #cell-actions="{ row }">
                             <RowActions
@@ -300,14 +186,12 @@ const userColumns = [
                             />
                         </template>
                     </DataTable>
-
-                    <PaginationControls
-                        :meta="paginationMeta"
-                        :links="paginationLinks"
-                        label="users"
-                    />
                 </div>
             </div>
+
+            <p v-if="!userGroups?.length" class="text-center text-sm text-slate-500 py-12">
+                No users yet.
+            </p>
         </div>
 
         <ConfirmModal

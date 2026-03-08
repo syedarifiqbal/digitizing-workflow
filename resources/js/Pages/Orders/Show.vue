@@ -30,6 +30,7 @@ const props = defineProps({
     timeline: Array,
     enableDesignerTips: Boolean,
     currency: String,
+    commissionCurrency: String,
     commissions: Array,
     comments: Array,
     invoiceInfo: Object,
@@ -2201,7 +2202,7 @@ const fileInputAccept = computed(() => {
                                     Reward exceptional work. Added to {{ order.designer.name }}'s earnings.
                                 </p>
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium text-indigo-700">{{ currency || "USD" }}</span>
+                                    <span class="text-sm font-medium text-indigo-700">{{ commissionCurrency || currency || "USD" }}</span>
                                     <input
                                         v-model="designerTip"
                                         type="number"

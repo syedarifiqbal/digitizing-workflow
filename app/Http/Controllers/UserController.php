@@ -20,58 +20,35 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $filters = $request->only(['search', 'role', 'status']);
+        $roleOrder = ['Admin', 'Manager', 'Designer', 'Sales', 'Client'];
 
-        $users = User::query()
+        $allUsers = User::query()
             ->with(['roles', 'client'])
-            ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                });
-            })
-            ->when($filters['role'] ?? null, function ($query, $role) {
-                if ($role !== 'all') {
-                    $query->whereHas('roles', fn ($q) => $q->where('name', $role));
-                }
-            })
-            ->when($filters['status'] ?? null, function ($query, $status) {
-                if ($status !== 'all') {
-                    $query->where('is_active', $status==='active');
-                }
-            })
             ->orderBy('name')
-            ->paginate(10)
-            ->withQueryString();
+            ->get()
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_active' => $user->is_active,
+                'role' => $user->roles->pluck('name')->first(),
+                'client' => $user->client ? [
+                    'id' => $user->client->id,
+                    'name' => $user->client->name,
+                ] : null,
+                'created_at' => $user->created_at?->toDateTimeString(),
+            ]);
+
+        $userGroups = collect($roleOrder)
+            ->map(fn ($role) => [
+                'role' => $role,
+                'users' => $allUsers->filter(fn ($u) => $u['role'] === $role)->values(),
+            ])
+            ->filter(fn ($group) => count($group['users']) > 0)
+            ->values();
 
         return Inertia::render('Users/Index', [
-            'filters' => [
-                'search' => $filters['search'] ?? '',
-                'role' => $filters['role'] ?? 'all',
-                'status' => $filters['status'] ?? 'all',
-            ],
-            'roles' => $this->roles,
-            'users' => [
-                'data' => $users->through(fn (User $user) => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'is_active' => $user->is_active,
-                    'role' => $user->roles->pluck('name')->first(),
-                    'client' => $user->client ? [
-                        'id' => $user->client->id,
-                        'name' => $user->client->name,
-                    ] : null,
-                    'created_at' => $user->created_at?->toDateTimeString(),
-                ]),
-                'links' => $users->linkCollection(),
-                'meta' => [
-                    'total' => $users->total(),
-                    'from' => $users->firstItem(),
-                    'to' => $users->lastItem(),
-                    'per_page' => $users->perPage(),
-                ],
-            ],
+            'userGroups' => $userGroups,
         ]);
     }
 

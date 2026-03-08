@@ -446,6 +446,8 @@ class OrderController extends Controller
             'timeline' => $this->buildTimeline($order),
             'enableDesignerTips' => $order->tenant->getSetting('enable_designer_tips', false),
             'currency' => $order->tenant->getSetting('currency', 'USD'),
+            'commissionCurrency' => $order->tenant->getSetting('commission_currency')
+                ?: $order->tenant->getSetting('currency', 'USD'),
             'commissions' => $isPrivileged
                 ? $order->commissions->map(fn ($commission) => [
                     'id' => $commission->id,
