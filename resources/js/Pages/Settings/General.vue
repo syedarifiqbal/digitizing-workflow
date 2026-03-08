@@ -39,6 +39,7 @@ const form = useForm({
     allowed_output_extensions: props.settings.allowed_output_extensions ?? "",
     max_upload_mb: props.settings.max_upload_mb ?? 25,
     currency: props.settings.currency ?? "USD",
+    commission_currency: props.settings.commission_currency ?? "USD",
     order_number_prefix: props.settings.order_number_prefix ?? "",
     show_order_cards: props.settings.show_order_cards ?? false,
     notify_on_assignment: props.settings.notify_on_assignment ?? true,

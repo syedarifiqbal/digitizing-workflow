@@ -49,7 +49,8 @@ class CommissionCalculator
                 }
 
                 // Get currency from tenant settings (more reliable than order currency)
-                $currency = $order->tenant->getSetting('currency', 'USD');
+                $currency = $order->tenant->getSetting('commission_currency')
+                    ?: $order->tenant->getSetting('currency', 'USD');
 
                 return Commission::create([
                     'tenant_id' => $order->tenant_id,

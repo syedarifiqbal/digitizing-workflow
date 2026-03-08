@@ -82,7 +82,8 @@ class CommissionController extends Controller
             ],
             'users' => $users,
             'totals' => $totals,
-            'currency' => $request->user()->tenant->getSetting('currency', 'USD'),
+            'currency' => $request->user()->tenant->getSetting('commission_currency')
+                ?: $request->user()->tenant->getSetting('currency', 'USD'),
             'commissions' => [
                 'data' => $commissions->through(fn (Commission $commission) => [
                     'id' => $commission->id,
@@ -173,7 +174,8 @@ class CommissionController extends Controller
             'roleType' => $roleType->value,
             'roleLabel' => $roleType->label(),
             'totals' => $totals,
-            'currency' => $user->tenant->getSetting('currency', 'USD'),
+            'currency' => $user->tenant->getSetting('commission_currency')
+                ?: $user->tenant->getSetting('currency', 'USD'),
             'commissions' => [
                 'data' => $commissions->through(fn (Commission $commission) => [
                     'id' => $commission->id,

@@ -693,7 +693,7 @@ const fileInputAccept = computed(() => {
                                             }}
                                         </dd>
                                     </div>
-                                    <div>
+                                    <div v-if="page.props.auth?.user?.is_admin || page.props.auth?.user?.is_manager">
                                         <dt
                                             class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
@@ -742,7 +742,7 @@ const fileInputAccept = computed(() => {
                                             {{ order.po_number }}
                                         </dd>
                                     </div>
-                                    <div v-if="canEdit">
+                                    <div v-if="page.props.auth?.user?.is_admin || page.props.auth?.user?.is_manager">
                                         <dt
                                             class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >

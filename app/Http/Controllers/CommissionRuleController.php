@@ -74,7 +74,8 @@ class CommissionRuleController extends Controller
                 'value' => $case->value,
                 'label' => ucfirst($case->value),
             ]),
-            'currency' => $user->tenant->getSetting('currency', 'USD'),
+            'currency' => $user->tenant->getSetting('commission_currency')
+                ?: $user->tenant->getSetting('currency', 'USD'),
         ]);
     }
 

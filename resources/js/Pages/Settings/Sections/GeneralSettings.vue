@@ -224,6 +224,23 @@ const previewTimestamp = computed(() => {
                         </p>
                     </div>
                     <div>
+                        <label class="block text-xs font-medium text-slate-700" for="commission_currency">
+                            Commission Currency
+                        </label>
+                        <p class="mt-0.5 text-xs text-slate-400">Currency used for designer &amp; sales payouts</p>
+                        <input
+                            v-model="form.commission_currency"
+                            id="commission_currency"
+                            type="text"
+                            maxlength="3"
+                            @input="form.commission_currency = form.commission_currency.toUpperCase()"
+                            class="mt-1 block w-32 rounded-md border-slate-300 text-sm shadow-sm uppercase focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                        <p v-if="form.errors.commission_currency" class="mt-1 text-xs text-red-600">
+                            {{ form.errors.commission_currency }}
+                        </p>
+                    </div>
+                    <div>
                         <label class="block text-xs font-medium text-slate-700" for="order_number_prefix">
                             Order Number Prefix
                         </label>
