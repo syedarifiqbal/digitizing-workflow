@@ -38,6 +38,7 @@ const filters = reactive({
     priority: props.filters?.priority ?? "all",
     type: props.filters?.type ?? "all",
     quote: props.filters?.quote ?? "0",
+    scope: props.filters?.scope ?? "",
     client_id: props.filters?.client_id ?? "all",
     designer_id: props.filters?.designer_id ?? "all",
     sales_user_id: props.filters?.sales_user_id ?? "all",
@@ -78,6 +79,7 @@ const quoteStats = [
 ];
 const labelFor = (type) => type.charAt(0).toUpperCase() + type.slice(1);
 const isAllView = computed(() => (filters.type ?? "all") === "all");
+const isScopeAll = computed(() => filters.scope === "all");
 const typeStats = computed(() => props.typeStats ?? null);
 const showTypeStats = computed(() => !isAllView.value && typeStats.value);
 const invoiceBulkEnabled = computed(() => props.invoiceBulkActionEnabled);
@@ -293,6 +295,8 @@ const orderColumns = [
                             {{
                                 isAllView
                                     ? "All Quotes"
+                                    : isScopeAll
+                                    ? `All ${labelFor(filters.type)} Quotes`
                                     : `${labelFor(filters.type)} Quotes`
                             }}
                         </template>
@@ -300,32 +304,35 @@ const orderColumns = [
                             {{
                                 isAllView
                                     ? "All Orders"
+                                    : isScopeAll
+                                    ? `All ${labelFor(filters.type)} Orders`
                                     : `${labelFor(filters.type)} Orders`
                             }}
                         </template>
                     </h2>
                     <p class="text-sm text-slate-500">
                         <template v-if="isQuoteView">
-                            Manage
                             {{
                                 isAllView
-                                    ? "all pending quotes"
-                                    : `${labelFor(filters.type)} quotes`
+                                    ? "All quotes"
+                                    : isScopeAll
+                                    ? `Completed ${labelFor(filters.type)} quotes`
+                                    : `Active ${labelFor(filters.type)} quotes`
                             }}
-                            for clients.
                         </template>
                         <template v-else>
-                            Track
                             {{
                                 isAllView
-                                    ? "all intake orders"
-                                    : `${labelFor(filters.type)} jobs`
-                            }}, priorities, and workflow status.
+                                    ? "All orders"
+                                    : isScopeAll
+                                    ? `Completed ${labelFor(filters.type)} jobs`
+                                    : `Active ${labelFor(filters.type)} jobs`
+                            }}
                         </template>
                     </p>
                 </div>
                 <Button
-                    v-if="!isAllView"
+                    v-if="!isAllView && !isScopeAll"
                     :href="
                         route('orders.create', {
                             type: filters.type,

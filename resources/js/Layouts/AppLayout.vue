@@ -53,6 +53,7 @@ const queryParams = computed(() => {
     return {
         type: params.get("type"),
         quote: params.get("quote") === "1",
+        scope: params.get("scope"),
     };
 });
 const currentType = computed(() => {
@@ -63,6 +64,7 @@ const currentType = computed(() => {
     return type && type !== "all" ? type : null;
 });
 const isQuoteContext = computed(() => queryParams.value.quote);
+const currentScope = computed(() => queryParams.value.scope);
 const currentQuoteType = computed(() => {
     if (!queryParams.value.quote) {
         return null;
@@ -199,20 +201,36 @@ const toggleReportsMenu = () => {
                                                 All Orders
                                             </Link>
                                             <div class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                                Order Types
+                                                Active
                                             </div>
                                             <Link
                                                 v-for="type in orderTypes"
-                                                :key="'desktop-orders-' + type.value"
-                                                :href="route('orders.index', { type: type.value })"
+                                                :key="'desktop-orders-active-' + type.value"
+                                                :href="route('orders.index', { type: type.value, scope: 'active' })"
                                                 class="block px-4 py-2 text-sm capitalize transition hover:bg-slate-50"
                                                 :class="
-                                                    route().current('orders.index') && !isQuoteContext && currentType === type.value
+                                                    route().current('orders.index') && !isQuoteContext && currentType === type.value && currentScope !== 'all'
                                                         ? 'bg-indigo-50 text-indigo-700 font-medium'
                                                         : 'text-slate-700'
                                                 "
                                             >
                                                 {{ type.label }}
+                                            </Link>
+                                            <div class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                Completed
+                                            </div>
+                                            <Link
+                                                v-for="type in orderTypes"
+                                                :key="'desktop-orders-all-' + type.value"
+                                                :href="route('orders.index', { type: type.value, scope: 'all' })"
+                                                class="block px-4 py-2 text-sm capitalize transition hover:bg-slate-50"
+                                                :class="
+                                                    route().current('orders.index') && !isQuoteContext && currentType === type.value && currentScope === 'all'
+                                                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                        : 'text-slate-700'
+                                                "
+                                            >
+                                                All {{ type.label }}
                                             </Link>
                                         </div>
                                     </div>
@@ -251,22 +269,42 @@ const toggleReportsMenu = () => {
                                                 Quotes List
                                             </Link>
                                             <div class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                                Quote Types
+                                                Active
                                             </div>
                                             <Link
                                                 v-for="type in orderTypes"
-                                                :key="'desktop-quotes-' + type.value"
-                                                :href="route('orders.index', { quote: 1, type: type.value })"
+                                                :key="'desktop-quotes-active-' + type.value"
+                                                :href="route('orders.index', { quote: 1, type: type.value, scope: 'active' })"
                                                 class="block px-4 py-2 text-sm capitalize transition hover:bg-slate-50"
                                                 :class="
                                                     route().current('orders.index') &&
                                                     isQuoteContext &&
-                                                    currentQuoteType === type.value
+                                                    currentQuoteType === type.value &&
+                                                    currentScope !== 'all'
                                                         ? 'bg-indigo-50 text-indigo-700 font-medium'
                                                         : 'text-slate-700'
                                                 "
                                             >
                                                 {{ type.label }}
+                                            </Link>
+                                            <div class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                Completed
+                                            </div>
+                                            <Link
+                                                v-for="type in orderTypes"
+                                                :key="'desktop-quotes-all-' + type.value"
+                                                :href="route('orders.index', { quote: 1, type: type.value, scope: 'all' })"
+                                                class="block px-4 py-2 text-sm capitalize transition hover:bg-slate-50"
+                                                :class="
+                                                    route().current('orders.index') &&
+                                                    isQuoteContext &&
+                                                    currentQuoteType === type.value &&
+                                                    currentScope === 'all'
+                                                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                        : 'text-slate-700'
+                                                "
+                                            >
+                                                All {{ type.label }}
                                             </Link>
                                         </div>
                                     </div>
@@ -626,18 +664,33 @@ const toggleReportsMenu = () => {
                             >
                                 All Orders
                             </Link>
+                            <p class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Active</p>
                             <Link
                                 v-for="type in orderTypes"
-                                :key="'mobile-filter-' + type.value"
-                                :href="route('orders.index', { type: type.value })"
+                                :key="'mobile-orders-active-' + type.value"
+                                :href="route('orders.index', { type: type.value, scope: 'active' })"
                                 class="block rounded-lg px-4 py-2 text-base font-medium capitalize"
                                 :class="
-                                    route().current('orders.index') && !isQuoteContext && currentType === type.value
+                                    route().current('orders.index') && !isQuoteContext && currentType === type.value && currentScope !== 'all'
                                         ? 'bg-indigo-50 text-indigo-700'
                                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                                 "
                             >
                                 {{ type.label }} orders
+                            </Link>
+                            <p class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Completed</p>
+                            <Link
+                                v-for="type in orderTypes"
+                                :key="'mobile-orders-all-' + type.value"
+                                :href="route('orders.index', { type: type.value, scope: 'all' })"
+                                class="block rounded-lg px-4 py-2 text-base font-medium capitalize"
+                                :class="
+                                    route().current('orders.index') && !isQuoteContext && currentType === type.value && currentScope === 'all'
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                All {{ type.label }} orders
                             </Link>
                         </div>
 
@@ -655,18 +708,33 @@ const toggleReportsMenu = () => {
                             >
                                 Quotes List
                             </Link>
+                            <p class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Active</p>
                             <Link
                                 v-for="type in orderTypes"
-                                :key="'mobile-quotes-' + type.value"
-                                :href="route('orders.index', { quote: 1, type: type.value })"
+                                :key="'mobile-quotes-active-' + type.value"
+                                :href="route('orders.index', { quote: 1, type: type.value, scope: 'active' })"
                                 class="block rounded-lg px-4 py-2 text-base font-medium capitalize"
                                 :class="
-                                    route().current('orders.index') && isQuoteContext && currentQuoteType === type.value
+                                    route().current('orders.index') && isQuoteContext && currentQuoteType === type.value && currentScope !== 'all'
                                         ? 'bg-indigo-50 text-indigo-700'
                                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                                 "
                             >
                                 {{ type.label }} quotes
+                            </Link>
+                            <p class="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Completed</p>
+                            <Link
+                                v-for="type in orderTypes"
+                                :key="'mobile-quotes-all-' + type.value"
+                                :href="route('orders.index', { quote: 1, type: type.value, scope: 'all' })"
+                                class="block rounded-lg px-4 py-2 text-base font-medium capitalize"
+                                :class="
+                                    route().current('orders.index') && isQuoteContext && currentQuoteType === type.value && currentScope === 'all'
+                                        ? 'bg-indigo-50 text-indigo-700'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                "
+                            >
+                                All {{ type.label }} quotes
                             </Link>
                         </div>
 

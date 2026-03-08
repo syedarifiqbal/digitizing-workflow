@@ -39,7 +39,7 @@ class OrderController extends Controller
     {
         $this->authorize('viewAny', Order::class);
 
-        $filters = $request->only(['search', 'status', 'priority', 'client_id', 'designer_id', 'sales_user_id', 'type', 'quote']);
+        $filters = $request->only(['search', 'status', 'priority', 'client_id', 'designer_id', 'sales_user_id', 'type', 'quote', 'scope']);
         $tenantId = $request->user()->tenant_id;
         $quoteView = filter_var($filters['quote'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
@@ -88,6 +88,18 @@ class OrderController extends Controller
                 });
             });
 
+        $scope = $filters['scope'] ?? null;
+        $finalizedStatuses = [
+            OrderStatus::DELIVERED->value,
+            OrderStatus::CLOSED->value,
+            OrderStatus::CANCELLED->value,
+        ];
+        if ($scope === 'active') {
+            $query->whereNotIn('status', $finalizedStatuses);
+        } elseif ($scope === 'all') {
+            $query->whereIn('status', $finalizedStatuses);
+        }
+
         if ($request->user()->isDesigner()) {
             $query->where('designer_id', $request->user()->id);
         }
@@ -112,6 +124,7 @@ class OrderController extends Controller
                 'priority' => $filters['priority'] ?? 'all',
                 'type' => $filters['type'] ?? 'all',
                 'quote' => $quoteView ? '1' : '0',
+                'scope' => $filters['scope'] ?? '',
                 'client_id' => $filters['client_id'] ?? 'all',
                 'designer_id' => $filters['designer_id'] ?? 'all',
                 'sales_user_id' => $filters['sales_user_id'] ?? 'all',
@@ -265,7 +278,7 @@ class OrderController extends Controller
                 'status' => OrderStatus::RECEIVED,
                 'priority' => $data['priority'],
                 'due_at' => $data['due_at'] ?? null,
-                'price_amount' => $data['price_amount'] ?? null,
+                'price' => $data['price_amount'] ?? null,
                 'currency' => $currency,
                 'source' => $data['source'] ?? null,
             ]);
@@ -334,7 +347,7 @@ class OrderController extends Controller
                     'id' => $order->sales->id,
                     'name' => $order->sales->name,
                 ] : null,
-                'price_amount' => $isPrivileged ? $order->price_amount : null,
+                'price_amount' => $isPrivileged ? $order->price : null,
                 'currency' => $order->currency,
                 'due_at' => optional($order->due_at)?->toDateTimeString(),
                 'created_at' => $order->created_at?->toDateTimeString(),
@@ -550,7 +563,7 @@ class OrderController extends Controller
                 'color_type' => $order->color_type,
                 'vector_order_type' => $order->vector_order_type,
                 'required_format' => $order->required_format,
-                'price_amount' => $order->price_amount,
+                'price_amount' => $order->price,
                 'currency' => $order->currency,
                 'due_at' => $order->due_at?->format('Y-m-d'),
                 'source' => $order->source,
@@ -614,7 +627,7 @@ class OrderController extends Controller
             'required_format' => $data['required_format'] ?? null,
             'priority' => $data['priority'],
             'due_at' => $data['due_at'] ?? null,
-            'price_amount' => $data['price_amount'] ?? null,
+            'price' => $data['price_amount'] ?? null,
             'currency' => strtoupper($data['currency'] ?? $request->user()->tenant->getSetting('currency', 'USD')),
             'source' => $data['source'] ?? null,
         ]);

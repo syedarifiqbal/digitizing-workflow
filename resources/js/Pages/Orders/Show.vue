@@ -639,7 +639,7 @@ const fileInputAccept = computed(() => {
                         Edit
                     </Link>
                     <Link
-                        :href="route(true ? 'designer.dashboard' : 'orders.index')"
+                        :href="route(page.props.auth?.user?.is_designer ? 'designer.dashboard' : 'orders.index')"
                         class="inline-flex items-center rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
                     >
                         Back
@@ -702,7 +702,7 @@ const fileInputAccept = computed(() => {
                                         <dd class="mt-1 text-sm text-slate-900">
                                             {{ order.client.name }}
                                         </dd>
-                                        <dd class="text-xs text-slate-500">
+                                        <dd v-if="canEdit && order.client.email" class="text-xs text-slate-500">
                                             {{ order.client.email }}
                                         </dd>
                                     </div>
@@ -742,7 +742,7 @@ const fileInputAccept = computed(() => {
                                             {{ order.po_number }}
                                         </dd>
                                     </div>
-                                    <div>
+                                    <div v-if="canEdit">
                                         <dt
                                             class="text-xs font-medium text-slate-500 uppercase tracking-wide"
                                         >
@@ -750,7 +750,7 @@ const fileInputAccept = computed(() => {
                                         </dt>
                                         <dd class="mt-1 text-sm text-slate-900">
                                             {{
-                                                order.price_amount
+                                                order.price_amount != null && order.price_amount !== ""
                                                     ? `${order.currency} ${order.price_amount}`
                                                     : "—"
                                             }}
