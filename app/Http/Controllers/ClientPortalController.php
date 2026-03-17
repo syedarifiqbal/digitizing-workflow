@@ -454,7 +454,7 @@ class ClientPortalController extends Controller
                 'user' => ['id' => $comment->user->id, 'name' => $comment->user->name],
                 'created_at' => $comment->created_at,
             ]),
-            'permanentInstructions' => $order->client?->permanent_instructions ?? [],
+            'permanentInstructions' => [],
         ]);
     }
 
@@ -490,10 +490,13 @@ class ClientPortalController extends Controller
             $admin->notify($notification);
         }
 
+        /**
+         * Commented these line because we don't need to send any notification to designer from client's comment since client comment will only be visible to admin
+         */
         // Notify designer (if assigned)
-        if ($order->designer && $order->designer_id !== $user->id) {
-            $order->designer->notify($notification);
-        }
+        // if ($order->designer && $order->designer_id !== $user->id) {
+            // $order->designer->notify($notification);
+        // }
 
         return back()->with('success', 'Comment added successfully.');
     }

@@ -1939,7 +1939,7 @@ const fileInputAccept = computed(() => {
                             class="rounded-lg border border-amber-200 bg-amber-50 shadow-sm"
                         >
                             <div class="px-5 py-4 border-b border-amber-200">
-                                <h3 class="text-sm font-semibold text-amber-900">Client Instructions</h3>
+                                <h3 class="text-sm font-semibold text-amber-900">{{ canAssign ? 'Client Instructions' : 'Digitizer Instructions' }}</h3>
                             </div>
                             <div class="px-5 py-4 space-y-3">
                                 <div v-if="permanentInstructions.special_offer_note">
@@ -2033,6 +2033,10 @@ const fileInputAccept = computed(() => {
                                                     v-if="comment.visibility === 'internal'"
                                                     class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800"
                                                 >Internal</span>
+                                                <span
+                                                    v-else-if="comment.visibility === 'client' && canAssign"
+                                                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700"
+                                                >Client</span>
                                                 <span class="ml-auto text-xs text-slate-400">{{ formatDate(comment.created_at) }}</span>
                                             </div>
                                             <p class="mt-1.5 text-sm text-slate-700 whitespace-pre-wrap">{{ comment.body }}</p>
@@ -2060,7 +2064,7 @@ const fileInputAccept = computed(() => {
                                                 <span class="text-xs text-slate-600">Internal</span>
                                             </label>
                                         </div>
-                                        <span v-else class="text-xs text-slate-400 italic">Internal note — only visible to admin</span>
+                                        <span v-else class="text-xs text-slate-400 italic">Internal note — visible to admin &amp; designer only</span>
                                         <button
                                             @click="submitComment"
                                             :disabled="!newComment.trim() || submittingComment"

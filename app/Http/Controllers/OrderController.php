@@ -487,7 +487,7 @@ class OrderController extends Controller
                 ])
                 : [],
             'comments' => $order->comments
-                ->when($user->hasRole('Client'), fn ($comments) => $comments->where('visibility', 'client'))
+                ->when($user->isDesigner(), fn ($comments) => $comments->where('visibility', 'internal'))
                 ->map(fn ($comment) => [
                     'id' => $comment->id,
                     'body' => $comment->body,
@@ -517,7 +517,14 @@ class OrderController extends Controller
                 'sort_order'  => $o->sort_order,
             ]),
             'clientEmails'           => $isPrivileged ? $this->getClientEmails($order->client) : [],
-            'permanentInstructions'  => $isPrivileged ? ($order->client?->permanent_instructions ?? []) : [],
+            'permanentInstructions'  => $isPrivileged
+                ? ($order->client?->permanent_instructions ?? [])
+                : ($user->isDesigner()
+                    ? array_filter([
+                        'special_offer_note' => $order->client?->permanent_instructions['special_offer_note'] ?? null,
+                        'for_digitizer'      => $order->client?->permanent_instructions['for_digitizer'] ?? null,
+                    ])
+                    : []),
         ]);
     }
 
@@ -1462,8 +1469,8 @@ class OrderController extends Controller
         $isInternal   = $comment->visibility === 'internal';
 
         if ($commenter->isAdmin() || $commenter->isManager()) {
-            // Notify designer (if assigned)
-            if ($order->designer && $order->designer_id !== $commenter->id) {
+            // Notify designer only for internal comments (client-visible comments are not their concern)
+            if ($isInternal && $order->designer && $order->designer_id !== $commenter->id) {
                 $order->designer->notify($notification);
             }
 
