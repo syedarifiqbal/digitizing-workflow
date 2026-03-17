@@ -4,6 +4,7 @@ import { Link, router, usePage } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Button from "@/Components/Button.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
+import CreateRevisionModal from "@/Components/CreateRevisionModal.vue";
 import OrderTimeline from "@/Components/OrderTimeline.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 
@@ -55,26 +56,8 @@ const fileInput = ref(null);
 const showResubmitForm = ref(false);
 
 const showCreateRevisionModal = ref(false);
-const revisionNotes = ref("");
 const creatingRevision = ref(false);
-const revisionFiles = ref([]);
-const revisionFileInput = ref(null);
 
-const handleRevisionFiles = (event) => {
-    revisionFiles.value = [...revisionFiles.value, ...Array.from(event.target.files ?? [])];
-    if (revisionFileInput.value) revisionFileInput.value.value = '';
-};
-
-const removeRevisionFile = (index) => {
-    revisionFiles.value.splice(index, 1);
-};
-
-const formatRevisionFileSize = (bytes) => {
-    if (!bytes) return '';
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-};
 
 // Submit Work delivery options (dynamic; first option = Option A, pre-filled from existing data)
 const submitDeliveryOptions = ref([]);
@@ -292,24 +275,22 @@ const unassignSales = () => {
     });
 };
 
-const submitCreateRevision = () => {
+const submitCreateRevision = ({ notes, files }) => {
     creatingRevision.value = true;
 
     let payload;
-    if (revisionFiles.value.length > 0) {
+    if (files.length > 0) {
         payload = new FormData();
-        if (revisionNotes.value) payload.append('notes', revisionNotes.value);
-        revisionFiles.value.forEach((f) => payload.append('files[]', f));
+        if (notes) payload.append('notes', notes);
+        files.forEach((f) => payload.append('files[]', f));
     } else {
-        payload = { notes: revisionNotes.value || null };
+        payload = { notes: notes || null };
     }
 
     router.post(route("orders.create-revision", props.order.id), payload, {
         preserveScroll: true,
         onSuccess: () => {
             showCreateRevisionModal.value = false;
-            revisionNotes.value = "";
-            revisionFiles.value = [];
         },
         onFinish: () => {
             creatingRevision.value = false;
@@ -2335,93 +2316,14 @@ const fileInputAccept = computed(() => {
         </div>
 
         <!-- Create Revision Order Modal -->
-        <div
-            v-if="showCreateRevisionModal"
-            class="fixed inset-0 z-50 overflow-y-auto"
-        >
-            <div class="flex min-h-full items-center justify-center p-4">
-                <div
-                    class="fixed inset-0 bg-slate-500/75"
-                    @click="showCreateRevisionModal = false"
-                ></div>
-                <div
-                    class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
-                >
-                    <h3 class="text-lg font-semibold text-slate-900">
-                        Create Revision Order
-                    </h3>
-                    <p class="mt-1 text-sm text-slate-500">
-                        A new revision order will be created with all details copied from this order.
-                    </p>
-                    <div class="mt-4">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Notes / Instructions (optional)</label>
-                        <textarea
-                            v-model="revisionNotes"
-                            rows="3"
-                            placeholder="Describe what changes are needed for the revision..."
-                            class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                        ></textarea>
-                    </div>
-                    <div class="mt-4">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Input Artwork Files (optional)</label>
-                        <p class="text-xs text-slate-500 mb-2">Attach any new reference files. Existing input files from the parent order are copied automatically.</p>
-                        <input
-                            ref="revisionFileInput"
-                            type="file"
-                            multiple
-                            class="hidden"
-                            @change="handleRevisionFiles"
-                        />
-                        <button
-                            type="button"
-                            class="inline-flex items-center gap-1.5 rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 w-full justify-center"
-                            @click="revisionFileInput?.click()"
-                        >
-                            <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add Files
-                        </button>
-                        <ul v-if="revisionFiles.length" class="mt-2 space-y-1.5">
-                            <li v-for="(file, idx) in revisionFiles" :key="idx" class="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-3 py-1.5 text-sm">
-                                <span class="truncate text-slate-800">{{ file.name }}</span>
-                                <span class="text-xs text-slate-400 whitespace-nowrap">{{ formatRevisionFileSize(file.size) }}</span>
-                                <button type="button" class="text-red-400 hover:text-red-600 flex-shrink-0" @click="removeRevisionFile(idx)">
-                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                    <!-- Validation errors -->
-                    <div v-if="page.props.errors?.['files.0'] || page.props.errors?.files || page.props.errors?.status" class="mt-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-                        {{ page.props.errors?.['files.0'] || page.props.errors?.files || page.props.errors?.status }}
-                    </div>
-                    <div class="mt-4 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                            @click="showCreateRevisionModal = false"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            :disabled="creatingRevision"
-                            class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                            @click="submitCreateRevision"
-                        >
-                            {{
-                                creatingRevision
-                                    ? "Creating..."
-                                    : "Create Revision Order"
-                            }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <CreateRevisionModal
+            :show="showCreateRevisionModal"
+            :submitting="creatingRevision"
+            :allow-files="true"
+            :errors="page.props.errors"
+            @close="showCreateRevisionModal = false"
+            @confirm="submitCreateRevision"
+        />
 
         <!-- Cancel Order Modal -->
         <div v-if="showCancelModal" class="fixed inset-0 z-50 overflow-y-auto">

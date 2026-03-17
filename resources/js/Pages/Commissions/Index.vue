@@ -486,20 +486,20 @@ const pageTotal = computed(() =>
                                 <div
                                     class="text-sm font-semibold text-slate-900"
                                 >
-                                    {{ row.currency }} {{ row.total_amount }}
+                                    {{ currency }} {{ row.total_amount }}
                                 </div>
                                 <div
                                     v-if="row.extra_amount > 0"
                                     class="text-xs text-slate-500"
                                 >
-                                    Base: {{ row.currency }}
+                                    Base: {{ currency }}
                                     {{ row.base_amount }}
                                 </div>
                                 <div
                                     v-if="row.extra_amount > 0"
                                     class="text-xs text-indigo-600"
                                 >
-                                    + Tip: {{ row.currency }}
+                                    + Tip: {{ currency }}
                                     {{ row.extra_amount }}
                                 </div>
                             </template>

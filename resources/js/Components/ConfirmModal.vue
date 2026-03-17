@@ -45,6 +45,7 @@ const confirmButtonClass = {
         <div class="space-y-4">
             <h3 class="text-lg font-semibold text-slate-900">{{ title }}</h3>
             <p class="text-sm text-slate-600">{{ message }}</p>
+            <slot name="extra" />
             <div class="flex justify-end gap-3">
                 <button
                     type="button"

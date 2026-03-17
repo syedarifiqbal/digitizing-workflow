@@ -286,7 +286,7 @@ const exportCsv = () => {
                                         <div
                                             class="text-sm font-semibold text-slate-900"
                                         >
-                                            {{ commission.currency }}
+                                            {{ currency }}
                                             {{
                                                 parseFloat(
                                                     commission.total_amount || 0
@@ -301,7 +301,7 @@ const exportCsv = () => {
                                             "
                                             class="text-xs text-slate-500"
                                         >
-                                            Base: {{ commission.currency }}
+                                            Base: {{ currency }}
                                             {{
                                                 parseFloat(
                                                     commission.base_amount || 0
@@ -316,7 +316,7 @@ const exportCsv = () => {
                                             "
                                             class="text-xs text-indigo-600 font-medium"
                                         >
-                                            + Tip: {{ commission.currency }}
+                                            + Tip: {{ currency }}
                                             {{
                                                 parseFloat(
                                                     commission.extra_amount || 0

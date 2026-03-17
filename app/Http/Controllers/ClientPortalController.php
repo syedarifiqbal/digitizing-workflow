@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Orders\CreateRevisionOrderAction;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\OrderFileController;
@@ -455,7 +456,41 @@ class ClientPortalController extends Controller
                 'created_at' => $comment->created_at,
             ]),
             'permanentInstructions' => [],
+            'canCreateRevision' => in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED]),
         ]);
+    }
+
+    public function createRevision(Request $request, Order $order, CreateRevisionOrderAction $action)
+    {
+        $user = $request->user();
+        $client = $this->resolveClient($request);
+
+        if ($order->client_id !== $client->id || $order->tenant_id !== $user->tenant_id) {
+            abort(403, 'Unauthorized.');
+        }
+
+        if (! in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED])) {
+            return back()->withErrors(['order' => 'Revisions can only be requested for delivered or closed orders.']);
+        }
+
+        $tenant = $user->tenant;
+        $maxKilobytes = (int) ($tenant->getSetting('max_upload_mb', 25)) * 1024;
+
+        $validated = $request->validate([
+            'notes'   => ['nullable', 'string', 'max:2000'],
+            'files'   => ['nullable', 'array'],
+            'files.*' => ['file', 'max:' . $maxKilobytes],
+        ]);
+
+        $revisionOrder = $action->execute($order, $user, $validated['notes'] ?? null);
+
+        $fileStorageService = app(\App\Services\FileStorageService::class);
+        foreach ($request->file('files', []) as $file) {
+            $fileStorageService->storeOrderFile($revisionOrder, $file, 'input', $user);
+        }
+
+        return redirect()->route('client.orders.show', $revisionOrder)
+            ->with('success', 'Revision order created. Our team will review it shortly.');
     }
 
     public function storeComment(Request $request, Order $order)

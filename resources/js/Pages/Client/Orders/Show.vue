@@ -3,6 +3,7 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Button from '@/Components/Button.vue';
+import CreateRevisionModal from '@/Components/CreateRevisionModal.vue';
 import { useDateFormat } from '@/Composables/useDateFormat';
 
 const { formatDate } = useDateFormat();
@@ -19,6 +20,7 @@ const props = defineProps({
     revisionOrders: Array,
     comments: Array,
     permanentInstructions: { type: Object, default: () => ({}) },
+    canCreateRevision: Boolean,
 });
 
 const hasPermanentInstructions = computed(() => {
@@ -30,6 +32,31 @@ const hasPermanentInstructions = computed(() => {
 const newComment = ref('');
 const submitting = ref(false);
 const highlightedCommentId = ref(null);
+
+const showRevisionModal = ref(false);
+const creatingRevision = ref(false);
+
+const submitRevision = ({ notes, files }) => {
+    creatingRevision.value = true;
+
+    let payload;
+    if (files.length > 0) {
+        payload = new FormData();
+        if (notes) payload.append('notes', notes);
+        files.forEach((f) => payload.append('files[]', f));
+    } else {
+        payload = { notes: notes || null };
+    }
+
+    router.post(route('client.orders.create-revision', props.order.id), payload, {
+        onSuccess: () => {
+            showRevisionModal.value = false;
+        },
+        onFinish: () => {
+            creatingRevision.value = false;
+        },
+    });
+};
 
 onMounted(() => {
     const params = new URLSearchParams(window.location.search);
@@ -116,6 +143,15 @@ const formatFileSize = (bytes) => {
                         </span>
                     </div>
                     <p class="mt-1 text-sm text-slate-500">{{ order.title }}</p>
+                </div>
+                <div v-if="canCreateRevision">
+                    <button
+                        type="button"
+                        class="inline-flex items-center rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-amber-700"
+                        @click="showRevisionModal = true"
+                    >
+                        Request Revision
+                    </button>
                 </div>
             </div>
         </template>
@@ -549,5 +585,13 @@ const formatFileSize = (bytes) => {
             </div>
 
         </div>
+
+        <!-- Request Revision Modal -->
+        <CreateRevisionModal
+            :show="showRevisionModal"
+            :submitting="creatingRevision"
+            @close="showRevisionModal = false"
+            @confirm="submitRevision"
+        />
     </AppLayout>
 </template>
