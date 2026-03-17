@@ -444,6 +444,8 @@ class OrderController extends Controller
                         OrderStatus::SUBMITTED,
                         OrderStatus::IN_REVIEW,
                         OrderStatus::APPROVED,
+                        OrderStatus::DELIVERED,
+                        OrderStatus::CLOSED,
                     ])
                 ) || (
                     $user->isDesigner()
