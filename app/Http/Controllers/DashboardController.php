@@ -281,31 +281,16 @@ class DashboardController extends Controller
         // Performance stats
         $performanceStats = $this->getDesignerPerformanceStats($userId, $startOfMonth, $startOfLastMonth, $endOfLastMonth);
 
-        // Orders needing action (assigned)
-        $actionRequired = Order::where('designer_id', $userId)
-            ->where('status', OrderStatus::ASSIGNED)
+        // All in-progress orders (assigned + working + review)
+        $inProgressOrders = Order::where('designer_id', $userId)
+            ->whereIn('status', [
+                OrderStatus::ASSIGNED,
+                OrderStatus::IN_PROGRESS,
+                OrderStatus::SUBMITTED,
+                OrderStatus::IN_REVIEW,
+            ])
             ->orderBy('priority', 'desc') // Rush first
             ->orderBy('created_at', 'asc')
-            ->limit(5)
-            ->get()
-            ->map(function ($order) {
-                return [
-                    'id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'title' => $order->title,
-                    'status' => $order->status->value,
-                    'priority' => $order->priority->value ?? 'normal',
-                    'created_at' => $order->created_at->toIso8601String(),
-                    'revision_notes' => null,
-                ];
-            });
-
-        // Current work (in progress, submitted, in review)
-        $currentWork = Order::where('designer_id', $userId)
-            ->whereIn('status', [OrderStatus::IN_PROGRESS, OrderStatus::SUBMITTED, OrderStatus::IN_REVIEW])
-            ->orderBy('priority', 'desc')
-            ->orderBy('due_at', 'asc')
-            ->limit(5)
             ->get()
             ->map(fn ($order) => [
                 'id' => $order->id,
@@ -313,15 +298,16 @@ class DashboardController extends Controller
                 'title' => $order->title,
                 'status' => $order->status->value,
                 'priority' => $order->priority->value ?? 'normal',
+                'created_at' => $order->created_at->toIso8601String(),
                 'due_at' => $order->due_at?->toIso8601String(),
             ]);
 
-        // Recent completions with earnings
-        $recentCompletions = Order::where('designer_id', $userId)
+        // Completed orders with earnings (last 10)
+        $completedOrders = Order::where('designer_id', $userId)
             ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
             ->whereNotNull('delivered_at')
             ->orderByDesc('delivered_at')
-            ->limit(5)
+            ->limit(10)
             ->get()
             ->map(function ($order) use ($userId) {
                 $earnings = Commission::where('order_id', $order->id)
@@ -333,6 +319,7 @@ class DashboardController extends Controller
                     'id' => $order->id,
                     'order_number' => $order->order_number,
                     'title' => $order->title,
+                    'status' => $order->status->value,
                     'delivered_at' => $order->delivered_at->toIso8601String(),
                     'earnings' => $earnings ?? 0,
                 ];
@@ -342,9 +329,8 @@ class DashboardController extends Controller
             'orders' => $orderStats,
             'earnings' => $earningsStats,
             'performance' => $performanceStats,
-            'action_required' => $actionRequired,
-            'current_work' => $currentWork,
-            'recent_completions' => $recentCompletions,
+            'in_progress_orders' => $inProgressOrders,
+            'completed_orders' => $completedOrders,
         ];
     }
 

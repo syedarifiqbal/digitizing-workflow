@@ -8,7 +8,7 @@ use App\Models\Order;
 class WorkflowService
 {
     private array $transitions = [
-        'received' => ['assigned', 'cancelled'],
+        'received' => ['assigned', 'in_progress', 'cancelled'],
         'assigned' => ['in_progress', 'received', 'cancelled'],
         'in_progress' => ['submitted', 'cancelled'],
         'submitted' => ['in_review', 'cancelled'],

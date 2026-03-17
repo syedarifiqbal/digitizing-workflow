@@ -21,7 +21,10 @@ class OrderCommentNotification extends Notification
     {
         $channels = ['database'];
 
-        if ($this->order->tenant->getSetting('notify_on_comment', true)) {
+        if (
+            ! $this->commenter->isDesigner()
+            && $this->order->tenant->getSetting('notify_on_comment', true)
+        ) {
             $channels[] = 'mail';
         }
 

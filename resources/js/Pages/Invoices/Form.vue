@@ -523,37 +523,20 @@ const submit = () => {
                                             {{ form.errors[`custom_items.${index}.description`] }}
                                         </p>
                                     </div>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label class="block text-xs font-medium text-slate-700">
-                                                Quantity
-                                            </label>
-                                            <input
-                                                v-model.number="item.quantity"
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                            />
-                                            <p v-if="form.errors[`custom_items.${index}.quantity`]" class="mt-1 text-xs text-red-600">
-                                                {{ form.errors[`custom_items.${index}.quantity`] }}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-medium text-slate-700">
-                                                Unit Price ({{ form.currency }})
-                                            </label>
-                                            <input
-                                                v-model.number="item.unit_price"
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                            />
-                                            <p v-if="form.errors[`custom_items.${index}.unit_price`]" class="mt-1 text-xs text-red-600">
-                                                {{ form.errors[`custom_items.${index}.unit_price`] }}
-                                            </p>
-                                        </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-700">
+                                            Amount ({{ form.currency }})
+                                        </label>
+                                        <input
+                                            v-model.number="item.unit_price"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        />
+                                        <p v-if="form.errors[`custom_items.${index}.unit_price`]" class="mt-1 text-xs text-red-600">
+                                            {{ form.errors[`custom_items.${index}.unit_price`] }}
+                                        </p>
                                     </div>
                                 </div>
                             </div>

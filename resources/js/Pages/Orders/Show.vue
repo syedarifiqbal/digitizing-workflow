@@ -18,6 +18,8 @@ const props = defineProps({
     salesUsers: Array,
     allowedTransitions: Array,
     canEdit: Boolean,
+    canConvertToOrder: Boolean,
+    convertedOrder: { type: Object, default: null },
     canCreateRevision: Boolean,
     canDeliver: Boolean,
     alreadyDelivered: Boolean,
@@ -111,7 +113,20 @@ const showDeliverModal = ref(false);
 const deliverMessage = ref("");
 const selectedFileIds = ref([]);
 const delivering = ref(false);
+const converting = ref(false);
+const showConvertModal = ref(false);
+
+const convertToOrder = () => {
+    converting.value = true;
+    router.post(route('orders.convert-to-order', props.order.id), {}, {
+        onFinish: () => {
+            converting.value = false;
+            showConvertModal.value = false;
+        },
+    });
+};
 const designerTip = ref("");
+const deliverOrderPrice = ref("");
 
 // Delivery options (editable in deliver modal)
 const deliverOptionsForm = ref([]);
@@ -167,6 +182,7 @@ const toggleEmailRecipient = (email) => {
 const openDeliverModal = () => {
     initDeliverOptions();
     initEmailRecipients();
+    deliverOrderPrice.value = props.order?.price_amount ?? '';
     showDeliverModal.value = true;
 };
 
@@ -185,7 +201,7 @@ const commissionTipNotes = ref("");
 const updatingTip = ref(false);
 
 const newComment = ref("");
-const commentVisibility = ref("client");
+const commentVisibility = ref(props.canAssign ? "client" : "internal");
 const submittingComment = ref(false);
 const activeHistoryTab = ref("activity");
 
@@ -307,6 +323,7 @@ const submitDeliver = () => {
     const data = {
         message: deliverMessage.value,
         file_ids: selectedFileIds.value,
+        order_price: deliverOrderPrice.value !== '' && deliverOrderPrice.value !== null ? parseFloat(deliverOrderPrice.value) : null,
         delivery_options: deliverOptionsForm.value.map(o => ({
             id: o.id || null,
             label: o.label,
@@ -331,6 +348,7 @@ const submitDeliver = () => {
             deliverMessage.value = "";
             selectedFileIds.value = [];
             designerTip.value = "";
+            deliverOrderPrice.value = "";
         },
         onFinish: () => {
             delivering.value = false;
@@ -1083,6 +1101,43 @@ const fileInputAccept = computed(() => {
                             </div>
                         </div>
 
+                        <!-- Delivery Options (read-only) -->
+                        <div
+                            v-if="deliveryOptions && deliveryOptions.length"
+                            class="bg-white shadow-sm rounded-lg border border-slate-200"
+                        >
+                            <div class="px-5 py-4 border-b border-slate-100">
+                                <h3 class="text-sm font-semibold text-slate-900">Delivery Options</h3>
+                            </div>
+                            <div class="px-5 py-4 space-y-3">
+                                <div
+                                    v-for="opt in deliveryOptions"
+                                    :key="opt.id"
+                                    class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3"
+                                >
+                                    <p class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">{{ opt.label }}</p>
+                                    <dl class="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+                                        <div v-if="opt.width">
+                                            <dt class="text-xs text-slate-500">Width</dt>
+                                            <dd class="text-sm font-medium text-slate-900">{{ opt.width }}"</dd>
+                                        </div>
+                                        <div v-if="opt.height">
+                                            <dt class="text-xs text-slate-500">Height</dt>
+                                            <dd class="text-sm font-medium text-slate-900">{{ opt.height }}"</dd>
+                                        </div>
+                                        <div v-if="opt.stitch_count">
+                                            <dt class="text-xs text-slate-500">Stitches</dt>
+                                            <dd class="text-sm font-medium text-slate-900">{{ opt.stitch_count.toLocaleString() }}</dd>
+                                        </div>
+                                        <div v-if="opt.price !== null">
+                                            <dt class="text-xs text-slate-500">Price</dt>
+                                            <dd class="text-sm font-medium text-emerald-700">{{ opt.currency }} {{ parseFloat(opt.price).toFixed(2) }}</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Instructions -->
                         <div
                             class="bg-white shadow-sm rounded-lg border border-slate-200"
@@ -1493,6 +1548,7 @@ const fileInputAccept = computed(() => {
                         <div
                             v-if="
                                 allowedTransitions?.length ||
+                                canConvertToOrder ||
                                 canCreateRevision ||
                                 canDeliver ||
                                 canCancel
@@ -1540,6 +1596,21 @@ const fileInputAccept = computed(() => {
                                     >
                                         Create Revision
                                     </button>
+                                    <button
+                                        v-if="canConvertToOrder"
+                                        type="button"
+                                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium shadow-sm bg-amber-600 hover:bg-amber-700 text-white"
+                                        @click="showConvertModal = true"
+                                    >
+                                        Convert to Order
+                                    </button>
+                                    <Link
+                                        v-if="convertedOrder"
+                                        :href="route('orders.show', convertedOrder.id)"
+                                        class="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium shadow-sm bg-slate-100 text-slate-600 border border-slate-300"
+                                    >
+                                        Converted &rarr; {{ convertedOrder.order_number }}
+                                    </Link>
                                     <button
                                         v-if="canCancel"
                                         type="button"
@@ -1989,6 +2060,7 @@ const fileInputAccept = computed(() => {
                                                 <span class="text-xs text-slate-600">Internal</span>
                                             </label>
                                         </div>
+                                        <span v-else class="text-xs text-slate-400 italic">Internal note — only visible to admin</span>
                                         <button
                                             @click="submitComment"
                                             :disabled="!newComment.trim() || submittingComment"
@@ -2179,6 +2251,23 @@ const fileInputAccept = computed(() => {
                                 <p v-if="outputFiles?.length" class="mt-1 text-xs text-slate-500">
                                     {{ selectedFileIds.length }} of {{ outputFiles.length }} selected
                                 </p>
+                            </div>
+
+                            <!-- Order Price -->
+                            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                <label class="block text-sm font-semibold text-slate-800 mb-1">Order Price</label>
+                                <p class="text-xs text-slate-500 mb-2">Updates the order price, used in the delivery email and when creating an invoice.</p>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-medium text-slate-600">{{ order.currency || 'USD' }}</span>
+                                    <input
+                                        v-model="deliverOrderPrice"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        placeholder="0.00"
+                                        class="block w-36 rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                    />
+                                </div>
                             </div>
 
                             <!-- Message -->
@@ -2526,6 +2615,17 @@ const fileInputAccept = computed(() => {
         confirm-label="Delete"
         @close="showDeleteFileModal = false; fileToDelete = null;"
         @confirm="executeDeleteFile"
+    />
+
+    <!-- Convert Quote to Order Confirmation -->
+    <ConfirmModal
+        :show="showConvertModal"
+        title="Convert Quote to Order"
+        message="This will create a new order with a new order number, copying all details and files from this quote. The quote will remain unchanged."
+        confirm-label="Convert to Order"
+        variant="primary"
+        @close="showConvertModal = false"
+        @confirm="convertToOrder"
     />
     </AppLayout>
 </template>

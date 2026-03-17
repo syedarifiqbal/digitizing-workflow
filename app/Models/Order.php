@@ -61,6 +61,7 @@ class Order extends Model
         'submitted_height',
         'submitted_stitch_count',
         'parent_order_id',
+        'converted_order_id',
     ];
 
     protected function casts(): array
@@ -72,6 +73,7 @@ class Order extends Model
             'designer_id'            => 'integer',
             'sales_user_id'          => 'integer',
             'parent_order_id'        => 'integer',
+            'converted_order_id'     => 'integer',
             'due_at'                 => 'datetime',
             'need_by'                => 'date',
             'submitted_at'           => 'datetime',
@@ -127,6 +129,11 @@ class Order extends Model
     public function revisionOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'parent_order_id')->latest();
+    }
+
+    public function convertedOrder(): BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'converted_order_id');
     }
 
     public function assignments(): HasMany

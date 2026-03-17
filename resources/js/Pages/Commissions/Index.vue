@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Head, Link, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import DataTable from "@/Components/DataTable.vue";
@@ -19,12 +19,27 @@ const props = defineProps({
     commissions: Object,
 });
 
+const toLocalDateString = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+};
+const currentMonthStart = () => {
+    const d = new Date();
+    return toLocalDateString(new Date(d.getFullYear(), d.getMonth(), 1));
+};
+const currentMonthEnd = () => {
+    const d = new Date();
+    return toLocalDateString(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+};
+
 const search = ref(props.filters.search);
 const roleType = ref(props.filters.role_type);
 const userId = ref(props.filters.user_id);
 const isPaid = ref(props.filters.is_paid);
-const startDate = ref(props.filters.start_date);
-const endDate = ref(props.filters.end_date);
+const startDate = ref(props.filters.start_date || currentMonthStart());
+const endDate = ref(props.filters.end_date || currentMonthEnd());
 const selectedCommissions = ref([]);
 const commissionColumns = [
     { key: "select", label: "", headerClass: "w-12" },
@@ -83,8 +98,8 @@ const clearFilters = () => {
     roleType.value = "all";
     userId.value = "all";
     isPaid.value = "";
-    startDate.value = "";
-    endDate.value = "";
+    startDate.value = currentMonthStart();
+    endDate.value = currentMonthEnd();
     applyFilters();
 };
 
@@ -170,6 +185,16 @@ const toggleRowSelection = (id, checked) => {
     }
     selectedCommissions.value = Array.from(next);
 };
+
+onMounted(() => {
+    if (!props.filters.start_date && !props.filters.end_date) {
+        applyFilters();
+    }
+});
+
+const pageTotal = computed(() =>
+    commissionRows.value.reduce((sum, c) => sum + Number(c.total_amount ?? 0), 0)
+);
 </script>
 
 <template>
@@ -516,6 +541,19 @@ const toggleRowSelection = (id, checked) => {
                                 />
                             </template>
                         </DataTable>
+                        <!-- Page total row -->
+                        <div
+                            v-if="commissionRows.length"
+                            class="mt-3 flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-4 py-2.5"
+                        >
+                            <span class="text-sm font-medium text-slate-600">
+                                Page total ({{ commissionRows.length }} row{{ commissionRows.length === 1 ? '' : 's' }})
+                            </span>
+                            <span class="text-sm font-semibold text-slate-900">
+                                {{ currency }} {{ pageTotal.toFixed(2) }}
+                            </span>
+                        </div>
+
                         <PaginationControls
                             v-if="commissionRows.length > 0"
                             :meta="paginationMeta"

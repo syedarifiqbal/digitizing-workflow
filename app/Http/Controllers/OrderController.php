@@ -116,7 +116,8 @@ class OrderController extends Controller
         $quoteCounts = (clone $baseCountQuery)->where('is_quote', true)->pluck('total', 'type');
 
         $showOrderCards = $request->user()->tenant->getSetting('show_order_cards', false);
-
+        $user = auth()->user();
+        
         return Inertia::render('Orders/Index', [
             'filters' => [
                 'search' => $filters['search'] ?? '',
@@ -169,6 +170,7 @@ class OrderController extends Controller
             ],
             'typeStats' => $this->typeStats($tenantId, $filters['type'] ?? 'all', $quoteView),
             'showOrderCards' => $showOrderCards,
+            'canAssign' => $user->isAdmin() || $user->isManager(),
             'invoiceBulkActionEnabled' => $request->user()->tenant->getSetting('enable_invoice_bulk_action', true),
             'orders' => [
                 'data' => $orders->through(fn (Order $order) => [
@@ -181,6 +183,7 @@ class OrderController extends Controller
                     'priority' => $order->priority->value,
                     'client' => $order->client?->name,
                     'designer' => $order->designer?->name,
+                    'designer_id' => $order->designer_id,
                     'sales' => $order->sales?->name,
                     'client_id' => $order->client_id,
                     'price' => (float) ($order->price ?? 0),
@@ -297,21 +300,18 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['client.emails', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'commissions.user', 'comments.user', 'parent', 'revisionOrders', 'deliveryOptions']);
+        $order->load(['client.emails', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'commissions.user', 'comments.user', 'parent', 'revisionOrders', 'deliveryOptions', 'convertedOrder']);
 
         $user = $request->user();
         $canAssign = $user->isAdmin() || $user->isManager();
         $isPrivileged = $user->isAdmin() || $user->isManager();
 
-        // Build client data based on role - designers/sales only see client name
+        // Client data: admin/manager see name+email; designer/sales see nothing (sensitive)
         $clientData = $isPrivileged ? [
-            'id' => $order->client->id,
-            'name' => $order->client->name,
+            'id'    => $order->client->id,
+            'name'  => $order->client->name,
             'email' => $order->client->email,
-        ] : [
-            'id' => $order->client->id,
-            'name' => $order->client->name,
-        ];
+        ] : null;
 
         return Inertia::render('Orders/Show', [
             'order' => [
@@ -416,6 +416,11 @@ class OrderController extends Controller
                 ])
                 ->values(),
             'canEdit' => $isPrivileged,
+            'canConvertToOrder' => $canAssign && $order->is_quote && ! $order->converted_order_id,
+            'convertedOrder' => $order->converted_order_id ? [
+                'id'           => $order->converted_order_id,
+                'order_number' => $order->convertedOrder?->order_number,
+            ] : null,
             'canCreateRevision' => $canAssign && in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED]),
             'canDeliver' => $canAssign && in_array($order->status, [
                 OrderStatus::APPROVED,
@@ -430,14 +435,25 @@ class OrderController extends Controller
                 'status' => $rev->status->value,
                 'created_at' => $rev->created_at?->toDateTimeString(),
             ]),
-            'canSubmitWork' => in_array($order->status, [
-                    OrderStatus::IN_PROGRESS,
-                    OrderStatus::SUBMITTED,
-                    OrderStatus::IN_REVIEW,
-                    OrderStatus::APPROVED,
-                ]) && (
-                    $user->isAdmin() || $user->isManager()
-                    || ($user->isDesigner() && $order->designer_id === $user->id)
+            'canSubmitWork' => (
+                    ($user->isAdmin() || $user->isManager())
+                    && in_array($order->status, [
+                        OrderStatus::RECEIVED,
+                        OrderStatus::ASSIGNED,
+                        OrderStatus::IN_PROGRESS,
+                        OrderStatus::SUBMITTED,
+                        OrderStatus::IN_REVIEW,
+                        OrderStatus::APPROVED,
+                    ])
+                ) || (
+                    $user->isDesigner()
+                    && $order->designer_id === $user->id
+                    && in_array($order->status, [
+                        OrderStatus::IN_PROGRESS,
+                        OrderStatus::SUBMITTED,
+                        OrderStatus::IN_REVIEW,
+                        OrderStatus::APPROVED,
+                    ])
                 ),
             'alreadySubmitted' => $order->status !== OrderStatus::IN_PROGRESS
                 && $order->files->where('type', 'output')->isNotEmpty(),
@@ -488,16 +504,16 @@ class OrderController extends Controller
                 ? OrderFileController::signedZipUrl($order, 'output')
                 : null,
             'invoiceInfo'            => $isPrivileged ? $this->getOrderInvoiceInfo($order, $canAssign) : null,
-            'deliveryOptions'        => $isPrivileged ? $order->deliveryOptions->map(fn ($o) => [
+            'deliveryOptions'        => $order->deliveryOptions->map(fn ($o) => [
                 'id'          => $o->id,
                 'label'       => $o->label,
                 'width'       => $o->width,
                 'height'      => $o->height,
                 'stitch_count' => $o->stitch_count,
-                'price'       => $o->price !== null ? (float) $o->price : null,
+                'price'       => $isPrivileged && $o->price !== null ? (float) $o->price : null,
                 'currency'    => $o->currency,
                 'sort_order'  => $o->sort_order,
-            ]) : [],
+            ]),
             'clientEmails'           => $isPrivileged ? $this->getClientEmails($order->client) : [],
             'permanentInstructions'  => $isPrivileged ? ($order->client?->permanent_instructions ?? []) : [],
         ]);
@@ -820,6 +836,98 @@ class OrderController extends Controller
         return redirect()->route('orders.show', $revisionOrder)->with('success', 'Revision order created.');
     }
 
+    public function convertToOrder(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorize('update', $order);
+
+        $user = $request->user();
+
+        if (! ($user->isAdmin() || $user->isManager())) {
+            abort(403, 'Only admins and managers can convert quotes to orders.');
+        }
+
+        if (! $order->is_quote) {
+            return back()->withErrors(['order' => 'This is already an order, not a quote.']);
+        }
+
+        if ($order->converted_order_id) {
+            return back()->withErrors(['order' => 'This quote has already been converted to an order.']);
+        }
+
+        $tenant = $user->tenant;
+
+        ['sequence' => $sequence, 'order_number' => $orderNumber] = Order::nextOrderNumber(
+            $tenant->id,
+            $tenant->getSetting('order_number_prefix', '')
+        );
+
+        $newOrder = Order::create([
+            'tenant_id'          => $order->tenant_id,
+            'client_id'          => $order->client_id,
+            'created_by'         => $user->id,
+            'designer_id'        => $order->designer_id,
+            'sales_user_id'      => $order->sales_user_id,
+            'order_number'       => $orderNumber,
+            'sequence'           => $sequence,
+            'po_number'          => $order->po_number,
+            'title'              => $order->title,
+            'type'               => $order->type,
+            'priority'           => $order->priority,
+            'instructions'       => $order->instructions,
+            'height'             => $order->height,
+            'width'              => $order->width,
+            'placement'          => $order->placement,
+            'num_colors'         => $order->num_colors,
+            'file_format'        => $order->file_format,
+            'patch_type'         => $order->patch_type,
+            'quantity'           => $order->quantity,
+            'backing'            => $order->backing,
+            'merrow_border'      => $order->merrow_border,
+            'fabric'             => $order->fabric,
+            'shipping_address'   => $order->shipping_address,
+            'need_by'            => $order->need_by,
+            'color_type'         => $order->color_type,
+            'vector_order_type'  => $order->vector_order_type,
+            'required_format'    => $order->required_format,
+            'price'              => $order->price,
+            'currency'           => $order->currency,
+            'source'             => $order->source,
+            'is_quote'           => false,
+            'status'             => OrderStatus::RECEIVED,
+        ]);
+
+        // Copy input files from the quote to the new order (same storage path, no re-upload needed)
+        $order->load('files');
+        foreach ($order->files->where('type', 'input') as $file) {
+            $newOrder->files()->create([
+                'tenant_id'          => $file->tenant_id,
+                'uploaded_by_user_id' => $user->id,
+                'type'               => 'input',
+                'original_name'      => $file->original_name,
+                'path'               => $file->path,
+                'disk'               => $file->disk,
+                'size'               => $file->size,
+                'mime_type'          => $file->mime_type,
+                'is_delivered'       => false,
+            ]);
+        }
+
+        $newOrder->statusHistory()->create([
+            'tenant_id'           => $newOrder->tenant_id,
+            'from_status'         => OrderStatus::RECEIVED->value,
+            'to_status'           => OrderStatus::RECEIVED->value,
+            'changed_by_user_id'  => $user->id,
+            'changed_at'          => now(),
+            'notes'               => "Converted from quote {$order->order_number}.",
+        ]);
+
+        // Mark the quote as converted so the button is hidden
+        $order->update(['converted_order_id' => $newOrder->id]);
+
+        return redirect()->route('orders.show', $newOrder)
+            ->with('success', "Order {$orderNumber} created from quote {$order->order_number}.");
+    }
+
     public function cancelOrder(Request $request, Order $order, TransitionOrderStatusAction $action): RedirectResponse
     {
         $this->authorize('update', $order);
@@ -857,6 +965,7 @@ class OrderController extends Controller
             'message'                         => ['nullable', 'string', 'max:5000'],
             'file_ids'                        => ['nullable', 'array'],
             'file_ids.*'                      => ['integer', 'exists:order_files,id'],
+            'order_price'                     => ['nullable', 'numeric', 'min:0'],
             'designer_tip'                    => ['nullable', 'numeric', 'min:0'],
             'delivery_options'                => ['nullable', 'array'],
             'delivery_options.*.id'           => ['nullable', 'integer'],
@@ -882,6 +991,11 @@ class OrderController extends Controller
         $designerTip = null;
         if (isset($validated['designer_tip']) && $validated['designer_tip'] > 0) {
             $designerTip = (float) $validated['designer_tip'];
+        }
+
+        // Update order price if provided
+        if (isset($validated['order_price']) && $validated['order_price'] !== null) {
+            $order->update(['price' => (float) $validated['order_price']]);
         }
 
         // Mark selected files as delivered
@@ -1325,22 +1439,25 @@ class OrderController extends Controller
             'visibility' => ['required', 'in:internal,client'],
         ]);
 
-        // Only admins/managers can create internal comments
-        if ($validated['visibility'] === 'internal' && !($request->user()->isAdmin() || $request->user()->isManager())) {
-            abort(403, 'Only admins and managers can create internal comments.');
+        $commenter = $request->user();
+
+        // Only admins/managers can post client-visible comments.
+        // Everyone else (designer, sales, etc.) is always internal.
+        if (! ($commenter->isAdmin() || $commenter->isManager())) {
+            $validated['visibility'] = 'internal';
         }
 
         $comment = OrderComment::create([
             'tenant_id' => $order->tenant_id,
             'order_id' => $order->id,
-            'user_id' => $request->user()->id,
+            'user_id' => $commenter->id,
             'visibility' => $validated['visibility'],
             'body' => $validated['body'],
         ]);
 
         // Send comment notifications
-        $commenter = $request->user();
         $notification = new \App\Notifications\OrderCommentNotification($order, $comment, $commenter);
+        $isInternal   = $comment->visibility === 'internal';
 
         if ($commenter->isAdmin() || $commenter->isManager()) {
             // Notify designer (if assigned)
@@ -1349,7 +1466,7 @@ class OrderController extends Controller
             }
 
             // Notify client users only for client-visibility comments
-            if ($validated['visibility'] === 'client') {
+            if (! $isInternal) {
                 $clientUsers = User::where('client_id', $order->client_id)
                     ->where('id', '!=', $commenter->id)
                     ->get();
@@ -1357,9 +1474,10 @@ class OrderController extends Controller
                     $clientUser->notify($notification);
                 }
             }
-        } elseif ($commenter->isDesigner()) {
-            // Notify admin/managers of the tenant
+        } else {
+            // Designer (or any other staff role) — notify only admin/managers, never the client
             $admins = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['Admin', 'Manager']))
+                ->where('tenant_id', $order->tenant_id)
                 ->where('id', '!=', $commenter->id)
                 ->get();
             foreach ($admins as $admin) {

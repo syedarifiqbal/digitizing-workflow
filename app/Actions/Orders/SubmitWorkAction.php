@@ -75,6 +75,20 @@ class SubmitWorkAction
                 );
             }
 
+            // If submitted from RECEIVED or ASSIGNED (no designer yet), advance to IN_PROGRESS first
+            if (in_array($order->status, [OrderStatus::RECEIVED, OrderStatus::ASSIGNED])) {
+                $preStatus = $order->status;
+                $order = $this->workflowService->transitionTo($order, OrderStatus::IN_PROGRESS);
+                $order->statusHistory()->create([
+                    'tenant_id' => $order->tenant_id,
+                    'from_status' => $preStatus->value,
+                    'to_status' => OrderStatus::IN_PROGRESS->value,
+                    'changed_by_user_id' => $submittedBy->id,
+                    'changed_at' => now(),
+                    'notes' => 'Advanced to In Progress for work submission',
+                ]);
+            }
+
             $previousStatus = $order->status;
             $tenant = $order->tenant;
 

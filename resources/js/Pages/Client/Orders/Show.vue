@@ -9,6 +9,7 @@ const { formatDate } = useDateFormat();
 
 const props = defineProps({
     order: Object,
+    deliveryOptions: { type: Array, default: () => [] },
     inputFiles: Array,
     outputFiles: Array,
     showOutputFiles: Boolean,
@@ -161,9 +162,185 @@ const formatFileSize = (bytes) => {
                         <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Created</dt>
                         <dd class="mt-1 text-sm text-slate-900">{{ formatDate(order.created_at) }}</dd>
                     </div>
+
+                    <!-- Submitted Work Details -->
+                    <div
+                        v-if="order.submitted_width || order.submitted_height || order.submitted_stitch_count"
+                        class="mt-4 pt-4 border-t border-slate-100"
+                    >
+                        <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">
+                            Submitted Work Details
+                        </h4>
+                        <dl class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+                            <div v-if="order.submitted_width">
+                                <dt class="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                                    Submitted Width
+                                </dt>
+                                <dd class="mt-1 text-sm text-slate-900">
+                                    {{ order.submitted_width }}
+                                </dd>
+                            </div>
+                            <div v-if="order.submitted_height">
+                                <dt class="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                                    Submitted Height
+                                </dt>
+                                <dd class="mt-1 text-sm text-slate-900">
+                                    {{ order.submitted_height }}
+                                </dd>
+                            </div>
+                            <div v-if="order.submitted_stitch_count">
+                                <dt class="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                                    Stitch Count
+                                </dt>
+                                <dd class="mt-1 text-sm text-slate-900">
+                                    {{ order.submitted_stitch_count?.toLocaleString() }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                                
                     <div v-if="order.description" class="col-span-full">
                         <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Description</dt>
                         <dd class="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{{ order.description }}</dd>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Work Specs (Digitizing) -->
+            <div
+                v-if="order.type === 'digitizing' && (order.height || order.width || order.placement || order.num_colors || order.file_format)"
+                class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70"
+            >
+                <div class="border-b border-slate-200 px-6 py-4">
+                    <h3 class="text-sm font-semibold text-slate-900">Digitizing Specs</h3>
+                </div>
+                <div class="px-6 py-5">
+                    <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <div v-if="order.height || order.width">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Size</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.width }}" × {{ order.height }}"</dd>
+                        </div>
+                        <div v-if="order.placement">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Placement</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.placement }}</dd>
+                        </div>
+                        <div v-if="order.num_colors">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Colors</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.num_colors }}</dd>
+                        </div>
+                        <div v-if="order.file_format">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">File Format</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.file_format }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Work Specs (Patch) -->
+            <div
+                v-if="order.type === 'patch' && (order.patch_type || order.height || order.backing || order.merrow_border)"
+                class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70"
+            >
+                <div class="border-b border-slate-200 px-6 py-4">
+                    <h3 class="text-sm font-semibold text-slate-900">Patch Specs</h3>
+                </div>
+                <div class="px-6 py-5">
+                    <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <div v-if="order.patch_type">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Patch Type</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.patch_type }}</dd>
+                        </div>
+                        <div v-if="order.height || order.width">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Size</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.width }}" × {{ order.height }}"</dd>
+                        </div>
+                        <div v-if="order.backing">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Backing</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.backing }}</dd>
+                        </div>
+                        <div v-if="order.merrow_border">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Merrow Border</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.merrow_border }}</dd>
+                        </div>
+                        <div v-if="order.fabric">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Fabric</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.fabric }}</dd>
+                        </div>
+                        <div v-if="order.placement">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Placement</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.placement }}</dd>
+                        </div>
+                        <div v-if="order.num_colors">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Colors</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.num_colors }}</dd>
+                        </div>
+                        <div v-if="order.need_by">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Need By</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ formatDate(order.need_by) }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Work Specs (Vector) -->
+            <div
+                v-if="order.type === 'vector' && (order.color_type || order.vector_order_type || order.required_format)"
+                class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70"
+            >
+                <div class="border-b border-slate-200 px-6 py-4">
+                    <h3 class="text-sm font-semibold text-slate-900">Vector Specs</h3>
+                </div>
+                <div class="px-6 py-5">
+                    <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <div v-if="order.color_type">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Color Type</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.color_type }}</dd>
+                        </div>
+                        <div v-if="order.vector_order_type">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Order Type</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.vector_order_type }}</dd>
+                        </div>
+                        <div v-if="order.required_format">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Format</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ order.required_format }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Delivery Options -->
+            <div
+                v-if="deliveryOptions && deliveryOptions.length"
+                class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70"
+            >
+                <div class="border-b border-slate-200 px-6 py-4">
+                    <h3 class="text-sm font-semibold text-slate-900">Delivery Options</h3>
+                </div>
+                <div class="px-6 py-5 space-y-3">
+                    <div
+                        v-for="opt in deliveryOptions"
+                        :key="opt.id"
+                        class="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4"
+                    >
+                        <p class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">{{ opt.label }}</p>
+                        <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            <div v-if="opt.width">
+                                <dt class="text-xs text-slate-500">Width</dt>
+                                <dd class="text-sm font-medium text-slate-900">{{ opt.width }}"</dd>
+                            </div>
+                            <div v-if="opt.height">
+                                <dt class="text-xs text-slate-500">Height</dt>
+                                <dd class="text-sm font-medium text-slate-900">{{ opt.height }}"</dd>
+                            </div>
+                            <div v-if="opt.stitch_count">
+                                <dt class="text-xs text-slate-500">Stitches</dt>
+                                <dd class="text-sm font-medium text-slate-900">{{ opt.stitch_count.toLocaleString() }}</dd>
+                            </div>
+                            <div v-if="opt.price !== null">
+                                <dt class="text-xs text-slate-500">Price</dt>
+                                <dd class="text-sm font-semibold text-emerald-700">{{ opt.currency }} {{ parseFloat(opt.price).toFixed(2) }}</dd>
+                            </div>
+                        </dl>
                     </div>
                 </div>
             </div>

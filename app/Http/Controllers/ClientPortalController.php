@@ -46,46 +46,42 @@ class ClientPortalController extends Controller
 
         $client = $this->resolveClient($request);
 
-        // Recent orders (last 5)
-        $recentOrders = Order::query()
-            ->where('client_id', $client->id)
-            ->with(['designer:id,name', 'sales:id,name'])
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get(['id', 'order_number', 'title', 'status', 'priority', 'designer_id', 'sales_user_id', 'created_at', 'delivered_at'])
-            ->map(fn ($order) => [
-                'id' => $order->id,
-                'order_number' => $order->order_number,
-                'title' => $order->title,
-                'status' => $order->status->value,
-                'status_label' => $order->status->label(),
-                'priority' => $order->priority->value,
-                'priority_label' => $order->priority->label(),
-                'designer' => $order->designer ? ['id' => $order->designer->id, 'name' => $order->designer->name] : null,
-                'sales' => $order->sales ? ['id' => $order->sales->id, 'name' => $order->sales->name] : null,
-                'created_at' => $order->created_at,
-                'delivered_at' => $order->delivered_at,
-            ]);
+        $orderMap = fn ($order) => [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'title' => $order->title,
+            'status' => $order->status->value,
+            'status_label' => $order->status->label(),
+            'priority' => $order->priority->value,
+            'priority_label' => $order->priority->label(),
+            'created_at' => $order->created_at,
+            'updated_at' => $order->updated_at,
+            'delivered_at' => $order->delivered_at,
+        ];
 
-        // Orders needing attention (revision requested or delivered)
-        $ordersNeedingAttention = Order::query()
+        // In-progress orders
+        $inProgressOrders = Order::query()
             ->where('client_id', $client->id)
-            ->whereIn('status', [OrderStatus::DELIVERED])
-            ->with(['designer:id,name', 'sales:id,name'])
-            ->orderBy('updated_at', 'desc')
-            ->get(['id', 'order_number', 'title', 'status', 'priority', 'designer_id', 'sales_user_id', 'updated_at'])
-            ->map(fn ($order) => [
-                'id' => $order->id,
-                'order_number' => $order->order_number,
-                'title' => $order->title,
-                'status' => $order->status->value,
-                'status_label' => $order->status->label(),
-                'priority' => $order->priority->value,
-                'priority_label' => $order->priority->label(),
-                'designer' => $order->designer ? ['id' => $order->designer->id, 'name' => $order->designer->name] : null,
-                'sales' => $order->sales ? ['id' => $order->sales->id, 'name' => $order->sales->name] : null,
-                'updated_at' => $order->updated_at,
-            ]);
+            ->whereIn('status', [
+                OrderStatus::RECEIVED,
+                OrderStatus::ASSIGNED,
+                OrderStatus::IN_PROGRESS,
+                OrderStatus::SUBMITTED,
+                OrderStatus::IN_REVIEW,
+                OrderStatus::APPROVED,
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'order_number', 'title', 'status', 'priority', 'created_at', 'updated_at', 'delivered_at'])
+            ->map($orderMap);
+
+        // Completed orders (last 10)
+        $completedOrders = Order::query()
+            ->where('client_id', $client->id)
+            ->whereIn('status', [OrderStatus::DELIVERED, OrderStatus::CLOSED])
+            ->orderBy('delivered_at', 'desc')
+            ->limit(10)
+            ->get(['id', 'order_number', 'title', 'status', 'priority', 'created_at', 'updated_at', 'delivered_at'])
+            ->map($orderMap);
 
         // Order statistics
         $stats = [
@@ -122,8 +118,8 @@ class ClientPortalController extends Controller
         ];
 
         return Inertia::render('Client/Dashboard', [
-            'recentOrders' => $recentOrders,
-            'ordersNeedingAttention' => $ordersNeedingAttention,
+            'inProgressOrders' => $inProgressOrders,
+            'completedOrders' => $completedOrders,
             'stats' => $stats,
             'invoiceStats' => $invoiceStats,
             'currency' => $user->tenant->getSetting('currency', 'USD'),
@@ -132,49 +128,86 @@ class ClientPortalController extends Controller
 
     public function orders(Request $request): Response
     {
-        $user = $request->user();
         $client = $this->resolveClient($request);
 
-        $filters = $request->only(['search', 'status', 'priority']);
+        $section    = in_array($request->get('section'), ['quotes']) ? 'quotes' : 'orders';
+        $activeTab  = $request->get('tab', 'in_progress');
+        $typeFilter = $request->get('type', 'all');
+        $search     = $request->get('search', '');
 
-        $orders = Order::query()
-            ->where('client_id', $client->id)
-            ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('order_number', 'like', "%{$search}%")
-                        ->orWhere('title', 'like', "%{$search}%");
-                });
-            })
-            ->when($filters['status'] ?? null, function ($query, $status) {
-                if ($status !== 'all') {
-                    $query->where('status', $status);
-                }
-            })
-            ->when($filters['priority'] ?? null, function ($query, $priority) {
-                if ($priority !== 'all') {
-                    $query->where('priority', $priority);
-                }
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(15)
-            ->withQueryString()
+        $inProgressStatuses = [
+            OrderStatus::RECEIVED,
+            OrderStatus::ASSIGNED,
+            OrderStatus::IN_PROGRESS,
+            OrderStatus::SUBMITTED,
+            OrderStatus::IN_REVIEW,
+            OrderStatus::APPROVED,
+        ];
+        $completedStatuses = [OrderStatus::DELIVERED, OrderStatus::CLOSED];
+
+        $isQuote   = $section === 'quotes';
+        $baseQuery = Order::query()->where('client_id', $client->id)->where('is_quote', $isQuote);
+
+        // Tab counts for current section
+        $stats = [
+            'in_progress' => (clone $baseQuery)->whereIn('status', $inProgressStatuses)->count(),
+            'completed'   => (clone $baseQuery)->whereIn('status', $completedStatuses)->count(),
+        ];
+
+        // Section switcher counts (for tab badges)
+        $sectionCounts = [
+            'orders' => Order::query()->where('client_id', $client->id)->where('is_quote', false)->count(),
+            'quotes' => Order::query()->where('client_id', $client->id)->where('is_quote', true)->count(),
+        ];
+
+        // Completed type counts
+        $completedBase = (clone $baseQuery)->whereIn('status', $completedStatuses);
+        $completedStats = [
+            'total'      => (clone $completedBase)->count(),
+            'digitizing' => (clone $completedBase)->where('type', 'digitizing')->count(),
+            'vector'     => (clone $completedBase)->where('type', 'vector')->count(),
+            'patch'      => (clone $completedBase)->where('type', 'patch')->count(),
+        ];
+
+        $ordersQuery = (clone $baseQuery)
+            ->when($search, fn ($q) => $q->where(function ($inner) use ($search) {
+                $inner->where('order_number', 'like', "%{$search}%")
+                      ->orWhere('title', 'like', "%{$search}%");
+            }));
+
+        if ($activeTab === 'completed') {
+            $ordersQuery->whereIn('status', $completedStatuses)
+                ->when($typeFilter !== 'all', fn ($q) => $q->where('type', $typeFilter))
+                ->orderBy('delivered_at', 'desc');
+        } else {
+            $ordersQuery->whereIn('status', $inProgressStatuses)
+                ->orderBy('created_at', 'desc');
+        }
+
+        $orders = $ordersQuery->paginate(15)->withQueryString()
             ->through(fn ($order) => [
-                'id' => $order->id,
-                'order_number' => $order->order_number,
-                'title' => $order->title,
-                'status' => $order->status->value,
-                'status_label' => $order->status->label(),
-                'priority' => $order->priority->value,
+                'id'             => $order->id,
+                'order_number'   => $order->order_number,
+                'title'          => $order->title,
+                'type'           => $order->type->value,
+                'status'         => $order->status->value,
+                'status_label'   => $order->status->label(),
+                'priority'       => $order->priority->value,
                 'priority_label' => $order->priority->label(),
-                'parent_order_id' => $order->parent_order_id,
-                'created_at' => $order->created_at,
-                'updated_at' => $order->updated_at,
-                'delivered_at' => $order->delivered_at,
+                'parent_order_id'=> $order->parent_order_id,
+                'created_at'     => $order->created_at,
+                'delivered_at'   => $order->delivered_at,
             ]);
 
         return Inertia::render('Client/Orders/Index', [
-            'orders' => $orders,
-            'filters' => $filters,
+            'orders'         => $orders,
+            'section'        => $section,
+            'activeTab'      => $activeTab,
+            'typeFilter'     => $typeFilter,
+            'search'         => $search,
+            'stats'          => $stats,
+            'sectionCounts'  => $sectionCounts,
+            'completedStats' => $completedStats,
         ]);
     }
 
@@ -194,6 +227,26 @@ class ClientPortalController extends Controller
             ],
             'allowedInputExtensions' => explode(',', $tenant->getSetting('allowed_input_extensions', 'jpg,jpeg,png,pdf')),
             'maxUploadMb' => $tenant->getSetting('max_upload_mb', 25),
+            'fieldOptions' => [
+                'placements' => [
+                    'Cap Front', 'Cap Side', 'Cap Back', 'Low Profile Cap',
+                    'Left Chest', 'Right Chest', 'Front Pocket', 'Full Front',
+                    'Jacket Back', 'Cap/Chest', 'Knit Caps', 'Beanie Caps',
+                    'Visor', 'Sleeve', 'Patches', 'Apron', 'Applique Design',
+                    'Bags', 'Towel', 'Gloves', 'Blankets', 'Sweatshirt',
+                    'Hoodie', 'Wrist Band', 'Seat Cover', 'Quilt',
+                ],
+                'fileFormats' => [
+                    'Tajima Machine File (.DST)',
+                    'Barudan Machine File (.DSB)',
+                    'Janome Machine File (.JEF)',
+                    'Compucon Machine File (.XXX)',
+                    'Happy Machine File (.TAP)',
+                    'Toyota Machine File (.100)',
+                    '.EMB/.DST', '.PES/.DST', '.EXP/.DST',
+                    '.CND/.DST', '.OFM/.DST', '.PXF/.DST',
+                ],
+            ],
         ]);
     }
 
@@ -205,13 +258,18 @@ class ClientPortalController extends Controller
         $tenant = $user->tenant;
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'quantity' => 'required|integer|min:1',
-            'priority' => 'required|in:normal,rush',
-            'type' => 'required|in:digitizing,vector,patch',
-            'is_quote' => 'boolean',
-            'input_files' => 'required|array|min:1',
+            'po_number'   => 'nullable|string|max:100',
+            'quantity'    => 'required|integer|min:1',
+            'priority'    => 'required|in:normal,rush',
+            'type'        => 'required|in:digitizing,vector,patch',
+            'is_quote'    => 'boolean',
+            'width'       => 'nullable|string|max:50',
+            'height'      => 'nullable|string|max:50',
+            'placement'   => 'nullable|string|max:100',
+            'file_format' => 'nullable|string|max:100',
+            'input_files'   => 'required|array|min:1',
             'input_files.*' => 'file|max:' . ($tenant->getSetting('max_upload_mb', 25) * 1024),
         ],
         [],
@@ -239,18 +297,23 @@ class ClientPortalController extends Controller
 
         // Create order
         $order = Order::create([
-            'tenant_id' => $tenant->id,
-            'client_id' => $client->id,
+            'tenant_id'    => $tenant->id,
+            'client_id'    => $client->id,
             'order_number' => $orderNumber,
-            'title' => $validated['title'],
-            'sequence' => $sequence,
+            'sequence'     => $sequence,
+            'title'        => $validated['title'],
+            'po_number'    => $validated['po_number'] ?? null,
             'instructions' => $validated['description'] ?? null,
-            'quantity' => $validated['quantity'],
-            'priority' => $validated['priority'],
-            'type' => $validated['type'],
-            'is_quote' => $validated['is_quote'] ?? false,
-            'status' => OrderStatus::RECEIVED,
-            'created_by' => $user->id,
+            'quantity'     => $validated['quantity'],
+            'priority'     => $validated['priority'],
+            'type'         => $validated['type'],
+            'is_quote'     => $validated['is_quote'] ?? false,
+            'width'        => $validated['width'] ?? null,
+            'height'       => $validated['height'] ?? null,
+            'placement'    => $validated['placement'] ?? null,
+            'file_format'  => $validated['file_format'] ?? null,
+            'status'       => OrderStatus::RECEIVED,
+            'created_by'   => $user->id,
         ]);
 
         // Upload files
@@ -277,10 +340,10 @@ class ClientPortalController extends Controller
             'client',
             'files' => fn ($q) => $q->orderBy('created_at', 'desc'),
             'files.uploader:id,name',
-            'comments' => fn ($q) => $q->where('visibility', 'client')->latest(),
-            'comments.user:id,name',
+            'comments' => fn ($q) => $q->with('user:id,name')->where('visibility', 'client')->latest(),
             'parent',
             'revisionOrders',
+            'deliveryOptions',
         ]);
 
         // Only show delivered output files to client (after delivery)
@@ -337,7 +400,34 @@ class ClientPortalController extends Controller
                 'approved_at' => $order->approved_at,
                 'delivered_at' => $order->delivered_at,
                 'updated_at' => $order->updated_at,
+                // Work specs (original order form)
+                'height'         => $order->height,
+                'width'          => $order->width,
+                'placement'      => $order->placement,
+                'num_colors'     => $order->num_colors,
+                'file_format'    => $order->file_format,
+                'patch_type'     => $order->patch_type,
+                'backing'        => $order->backing,
+                'merrow_border'  => $order->merrow_border,
+                'fabric'         => $order->fabric,
+                'need_by'        => $order->need_by?->format('Y-m-d'),
+                'color_type'     => $order->color_type,
+                'vector_order_type' => $order->vector_order_type,
+                'required_format'   => $order->required_format,
+                // Submitted work specs
+                'submitted_width' => $order->submitted_width,
+                'submitted_height' => $order->submitted_height,
+                'submitted_stitch_count' => $order->submitted_stitch_count,
             ],
+            'deliveryOptions' => $order->deliveryOptions->map(fn ($o) => [
+                'id'           => $o->id,
+                'label'        => $o->label,
+                'width'        => $o->width,
+                'height'       => $o->height,
+                'stitch_count' => $o->stitch_count,
+                'price'        => $o->price !== null ? (float) $o->price : null,
+                'currency'     => $o->currency,
+            ]),
             'inputFiles' => $inputFiles,
             'outputFiles' => $outputFiles,
             'showOutputFiles' => $showOutputFiles,

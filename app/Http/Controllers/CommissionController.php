@@ -397,14 +397,12 @@ class CommissionController extends Controller
 
     private function getUsersByRole(Request $request, string $roleType): array
     {
-        if ($roleType === 'all') {
-            return [['id' => 'all', 'name' => 'All Users']];
-        }
-
-        $roleName = $roleType === RoleType::SALES->value ? 'Sales' : 'Designer';
+        $roleNames = $roleType === 'all'
+            ? ['Sales', 'Designer']
+            : [$roleType === RoleType::SALES->value ? 'Sales' : 'Designer'];
 
         $users = User::query()
-            ->whereHas('roles', fn ($q) => $q->where('name', $roleName))
+            ->whereHas('roles', fn ($q) => $q->whereIn('name', $roleNames))
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn ($user) => [

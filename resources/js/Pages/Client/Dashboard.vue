@@ -8,8 +8,8 @@ import { useDashboard } from '@/Composables/useDashboard';
 const { formatCurrency, getStatusColor, getPriorityClass, formatDate } = useDashboard();
 
 const props = defineProps({
-    recentOrders: Array,
-    ordersNeedingAttention: Array,
+    inProgressOrders: Array,
+    completedOrders: Array,
     stats: Object,
     invoiceStats: Object,
     currency: String,
@@ -19,19 +19,11 @@ const formatAmount = (amount) => {
     return parseFloat(amount || 0).toFixed(2);
 };
 
-const attentionColumns = [
+const columns = [
     { key: 'order', label: 'Order' },
     { key: 'status', label: 'Status' },
     { key: 'priority', label: 'Priority' },
-    { key: 'updated', label: 'Updated' },
-    { key: 'actions', label: '', headerClass: 'text-right' },
-];
-
-const recentColumns = [
-    { key: 'order', label: 'Order' },
-    { key: 'status', label: 'Status' },
-    { key: 'priority', label: 'Priority' },
-    { key: 'created', label: 'Created' },
+    { key: 'date', label: 'Date' },
     { key: 'actions', label: '', headerClass: 'text-right' },
 ];
 </script>
@@ -104,18 +96,27 @@ const recentColumns = [
                 </div>
             </div>
 
-            <!-- Orders Needing Attention -->
-            <div v-if="ordersNeedingAttention.length > 0">
-                <div class="mb-4">
-                    <h3 class="text-sm font-semibold text-slate-900">Orders Needing Your Attention</h3>
+            <!-- In Progress Orders -->
+            <div>
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-sm font-semibold text-slate-900">In Progress</h3>
+                    <Link :href="route('client.orders.index')" class="text-sm text-indigo-600 hover:text-indigo-900">
+                        View All
+                    </Link>
                 </div>
-                <DataTable :columns="attentionColumns" :rows="ordersNeedingAttention">
+                <DataTable :columns="columns" :rows="inProgressOrders">
+                    <template #empty>
+                        <div class="text-center">
+                            <p class="text-slate-400">No orders in progress.</p>
+                            <Link :href="route('client.orders.create')" class="mt-2 inline-block text-sm text-indigo-600 hover:text-indigo-900">
+                                Create a new order
+                            </Link>
+                        </div>
+                    </template>
+
                     <template #cell-order="{ row }">
                         <div>
-                            <Link
-                                :href="route('client.orders.show', row.id)"
-                                class="font-medium text-indigo-600 hover:text-indigo-900"
-                            >
+                            <Link :href="route('client.orders.show', row.id)" class="font-medium text-indigo-600 hover:text-indigo-900">
                                 {{ row.order_number }}
                             </Link>
                             <div class="text-xs text-slate-500 truncate max-w-xs">{{ row.title }}</div>
@@ -136,16 +137,13 @@ const recentColumns = [
                         </span>
                     </template>
 
-                    <template #cell-updated="{ row }">
-                        <div class="text-sm text-slate-900">{{ formatDate(row.updated_at) }}</div>
+                    <template #cell-date="{ row }">
+                        <div class="text-sm text-slate-900">{{ formatDate(row.created_at) }}</div>
                     </template>
 
                     <template #cell-actions="{ row }">
                         <div class="text-right">
-                            <Link
-                                :href="route('client.orders.show', row.id)"
-                                class="text-sm font-medium text-indigo-600 hover:text-indigo-900"
-                            >
+                            <Link :href="route('client.orders.show', row.id)" class="text-sm font-medium text-indigo-600 hover:text-indigo-900">
                                 View
                             </Link>
                         </div>
@@ -153,33 +151,18 @@ const recentColumns = [
                 </DataTable>
             </div>
 
-            <!-- Recent Orders -->
+            <!-- Completed Orders -->
             <div>
                 <div class="mb-4 flex items-center justify-between">
-                    <h3 class="text-sm font-semibold text-slate-900">Recent Orders</h3>
-                    <Link
-                        :href="route('client.orders.index')"
-                        class="text-sm text-indigo-600 hover:text-indigo-900"
-                    >
+                    <h3 class="text-sm font-semibold text-slate-900">Completed Orders</h3>
+                    <Link :href="route('client.orders.index')" class="text-sm text-indigo-600 hover:text-indigo-900">
                         View All
                     </Link>
                 </div>
-                <DataTable :columns="recentColumns" :rows="recentOrders" empty-text="No orders found.">
-                    <template #empty>
-                        <div class="text-center">
-                            <p class="text-slate-400">No orders found.</p>
-                            <Link :href="route('client.orders.create')" class="mt-2 inline-block text-sm text-indigo-600 hover:text-indigo-900">
-                                Create your first order
-                            </Link>
-                        </div>
-                    </template>
-
+                <DataTable :columns="columns" :rows="completedOrders" empty-text="No completed orders yet.">
                     <template #cell-order="{ row }">
                         <div>
-                            <Link
-                                :href="route('client.orders.show', row.id)"
-                                class="font-medium text-indigo-600 hover:text-indigo-900"
-                            >
+                            <Link :href="route('client.orders.show', row.id)" class="font-medium text-indigo-600 hover:text-indigo-900">
                                 {{ row.order_number }}
                             </Link>
                             <div class="text-xs text-slate-500 truncate max-w-xs">{{ row.title }}</div>
@@ -200,16 +183,13 @@ const recentColumns = [
                         </span>
                     </template>
 
-                    <template #cell-created="{ row }">
-                        <div class="text-sm text-slate-900">{{ formatDate(row.created_at) }}</div>
+                    <template #cell-date="{ row }">
+                        <div class="text-sm text-slate-900">{{ formatDate(row.delivered_at || row.updated_at) }}</div>
                     </template>
 
                     <template #cell-actions="{ row }">
                         <div class="text-right">
-                            <Link
-                                :href="route('client.orders.show', row.id)"
-                                class="text-sm font-medium text-indigo-600 hover:text-indigo-900"
-                            >
+                            <Link :href="route('client.orders.show', row.id)" class="text-sm font-medium text-indigo-600 hover:text-indigo-900">
                                 View
                             </Link>
                         </div>

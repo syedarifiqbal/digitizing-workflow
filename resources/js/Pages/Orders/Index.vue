@@ -8,6 +8,7 @@ import RowActions from "@/Components/RowActions.vue";
 import PaginationControls from "@/Components/PaginationControls.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 import Button from "@/Components/Button.vue";
+import { UserIcon } from "@heroicons/vue/24/outline";
 
 const { formatDate } = useDateFormat();
 
@@ -22,6 +23,10 @@ const props = defineProps({
     salesUsers: Array,
     counts: Object,
     typeStats: Object,
+    canAssign: {
+        type: Boolean,
+        default: false,
+    },
     showOrderCards: {
         type: Boolean,
         default: false,
@@ -267,6 +272,74 @@ const goToInvoiceCreation = () => {
         client_id: filters.client_id,
         orders: selectedIds.value,
     });
+};
+
+const assignModal = reactive({
+    show: false,
+    orderId: null,
+    currentDesignerId: null,
+    selectedDesignerId: null,
+    selectedDesignerName: "",
+    search: "",
+    dropdownOpen: false,
+    assigning: false,
+});
+
+const filteredDesigners = computed(() => {
+    const q = assignModal.search.trim().toLowerCase();
+    if (!q) return props.designers ?? [];
+    return (props.designers ?? []).filter((d) =>
+        d.name.toLowerCase().includes(q)
+    );
+});
+
+const openAssignModal = (row) => {
+    const current = (props.designers ?? []).find((d) => d.id === row.designer_id);
+    assignModal.orderId = row.id;
+    assignModal.currentDesignerId = row.designer_id ?? null;
+    assignModal.selectedDesignerId = row.designer_id ?? null;
+    assignModal.selectedDesignerName = current?.name ?? "";
+    assignModal.search = current?.name ?? "";
+    assignModal.dropdownOpen = false;
+    assignModal.show = true;
+};
+
+const closeAssignModal = () => {
+    assignModal.show = false;
+    assignModal.orderId = null;
+    assignModal.currentDesignerId = null;
+    assignModal.selectedDesignerId = null;
+    assignModal.selectedDesignerName = "";
+    assignModal.search = "";
+    assignModal.dropdownOpen = false;
+    assignModal.assigning = false;
+};
+
+const onDesignerSearchInput = () => {
+    assignModal.selectedDesignerId = null;
+    assignModal.selectedDesignerName = "";
+    assignModal.dropdownOpen = true;
+};
+
+const selectDesigner = (designer) => {
+    assignModal.selectedDesignerId = designer.id;
+    assignModal.selectedDesignerName = designer.name;
+    assignModal.search = designer.name;
+    assignModal.dropdownOpen = false;
+};
+
+const submitAssign = () => {
+    if (!assignModal.selectedDesignerId) return;
+    assignModal.assigning = true;
+    router.post(
+        route("orders.assign", assignModal.orderId),
+        { designer_id: assignModal.selectedDesignerId },
+        {
+            preserveScroll: true,
+            onSuccess: () => closeAssignModal(),
+            onFinish: () => { assignModal.assigning = false; },
+        }
+    );
 };
 
 const orderColumns = [
@@ -888,8 +961,16 @@ const orderColumns = [
                                 :actions="[
                                     { type: 'view', href: route('orders.show', row.id) },
                                     { type: 'edit', href: route('orders.edit', row.id) },
+                                    canAssign ? {
+                                        type: 'custom',
+                                        icon: UserIcon,
+                                        label: row.designer_id ? 'Reassign Designer' : 'Assign Designer',
+                                        title: row.designer_id ? 'Reassign Designer' : 'Assign Designer',
+                                        action: () => openAssignModal(row),
+                                        hoverColor: 'hover:text-indigo-600',
+                                    } : null,
                                     { type: 'delete', action: () => openDeleteModal(row.id) },
-                                ]"
+                                ].filter(Boolean)"
                             />
                         </template>
                     </DataTable>
@@ -909,5 +990,79 @@ const orderColumns = [
             @close="closeModal"
             @confirm="confirmDelete"
         />
+
+        <!-- Assign Designer Modal -->
+        <div v-if="assignModal.show" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div
+                    class="fixed inset-0 bg-slate-500/75"
+                    @click="closeAssignModal"
+                ></div>
+                <div class="relative w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+                    <h3 class="text-lg font-semibold text-slate-900">Assign Designer</h3>
+                    <p class="mt-1 text-sm text-slate-500">Select a designer for this order.</p>
+
+                    <div class="mt-4 relative">
+                        <input
+                            v-model="assignModal.search"
+                            type="text"
+                            placeholder="Search designers…"
+                            autocomplete="off"
+                            class="block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            @input="onDesignerSearchInput"
+                            @focus="assignModal.dropdownOpen = true"
+                        />
+
+                        <!-- Selected indicator -->
+                        <p v-if="assignModal.selectedDesignerId" class="mt-1 text-xs text-indigo-600">
+                            ✓ {{ assignModal.selectedDesignerName }}
+                            <span v-if="assignModal.currentDesignerId === assignModal.selectedDesignerId">(currently assigned)</span>
+                        </p>
+
+                        <!-- Dropdown -->
+                        <div
+                            v-if="assignModal.dropdownOpen && filteredDesigners.length"
+                            class="absolute z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg max-h-56 overflow-y-auto"
+                        >
+                            <button
+                                v-for="designer in filteredDesigners"
+                                :key="designer.id"
+                                type="button"
+                                class="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-slate-50"
+                                :class="assignModal.selectedDesignerId === designer.id ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-800'"
+                                @click="selectDesigner(designer)"
+                            >
+                                {{ designer.name }}
+                                <span v-if="assignModal.currentDesignerId === designer.id" class="text-xs text-indigo-400">current</span>
+                            </button>
+                        </div>
+                        <p
+                            v-if="assignModal.dropdownOpen && !filteredDesigners.length"
+                            class="absolute z-10 mt-1 w-full rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-lg"
+                        >
+                            No designers match your search.
+                        </p>
+                    </div>
+
+                    <div class="mt-5 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            @click="closeAssignModal"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            :disabled="assignModal.selectedDesignerId === null || assignModal.assigning"
+                            class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                            @click="submitAssign"
+                        >
+                            {{ assignModal.assigning ? "Assigning…" : "Assign" }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </AppLayout>
 </template>

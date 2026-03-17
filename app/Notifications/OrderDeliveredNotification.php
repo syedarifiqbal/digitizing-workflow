@@ -46,13 +46,19 @@ class OrderDeliveredNotification extends Notification
             ->line("We are pleased to inform you that your order has been completed and is now ready for your review.");
 
         // Order details
+        $orderCurrency = $order->currency ?? $tenant->getSetting('currency', 'USD');
+
         $mail->line('**Order Details:**')
             ->line("- **Order Number:** {$order->order_number}")
             ->line("- **Title:** {$order->title}")
             ->line('- **Type:** ' . ucwords(str_replace('_', ' ', $order->type->value)))
             ->line('- **Priority:** ' . ucwords($order->priority->value));
 
-        // Delivery options table
+        if ($order->price > 0) {
+            $mail->line('- **Price:** ' . $orderCurrency . ' ' . number_format((float) $order->price, 2));
+        }
+
+        // Delivery options
         if (! empty($this->deliveryOptions)) {
             $mail->line('')
                 ->line('**Delivery Options:**');
@@ -68,9 +74,9 @@ class OrderDeliveredNotification extends Notification
                 if (! empty($option['stitch_count'])) {
                     $parts[] = 'Stitches: ' . number_format((int) $option['stitch_count']);
                 }
-                if (isset($option['price']) && $option['price'] !== null) {
-                    $currency = $option['currency'] ?? 'USD';
-                    $parts[] = "Price: {$currency} " . number_format((float) $option['price'], 2);
+                if (isset($option['price']) && (float) $option['price'] > 0) {
+                    $optCurrency = $option['currency'] ?? $orderCurrency;
+                    $parts[] = "Price: {$optCurrency} " . number_format((float) $option['price'], 2);
                 }
                 $detail = $parts ? ' — ' . implode(', ', $parts) : '';
                 $mail->line("- **{$label}**{$detail}");
