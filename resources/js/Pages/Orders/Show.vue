@@ -186,7 +186,7 @@ const updatingTip = ref(false);
 const newComment = ref("");
 const commentVisibility = ref(props.canAssign ? "client" : "internal");
 const submittingComment = ref(false);
-const activeHistoryTab = ref("activity");
+const activeHistoryTab = ref(props.canAssign ? "activity" : "comments");
 
 const page = usePage();
 const highlightedCommentId = ref(null);
@@ -1791,7 +1791,7 @@ const fileInputAccept = computed(() => {
                                                 <div
                                                     class="text-sm font-semibold text-slate-900"
                                                 >
-                                                    {{ commission.currency }}
+                                                    {{ commissionCurrency || currency }}
                                                     {{
                                                         parseFloat(
                                                             commission.total_amount || 0
@@ -1806,7 +1806,7 @@ const fileInputAccept = computed(() => {
                                                     class="text-xs text-slate-500"
                                                 >
                                                     Base:
-                                                    {{ commission.currency }}
+                                                    {{ commissionCurrency || currency }}
                                                     {{
                                                         parseFloat(
                                                             commission.base_amount || 0
@@ -1821,7 +1821,7 @@ const fileInputAccept = computed(() => {
                                                     class="text-xs text-indigo-600 font-medium"
                                                 >
                                                     + Tip:
-                                                    {{ commission.currency }}
+                                                    {{ commissionCurrency || currency }}
                                                     {{
                                                         parseFloat(
                                                             commission.extra_amount || 0
@@ -1953,6 +1953,7 @@ const fileInputAccept = computed(() => {
                             <!-- Tab bar -->
                             <div class="flex border-b border-slate-100">
                                 <button
+                                    v-if="canAssign"
                                     type="button"
                                     class="flex-1 px-4 py-3 text-xs font-semibold border-b-2 transition-colors"
                                     :class="activeHistoryTab === 'activity'
@@ -1983,8 +1984,8 @@ const fileInputAccept = computed(() => {
                                 </button>
                             </div>
 
-                            <!-- Activity tab -->
-                            <div v-show="activeHistoryTab === 'activity'" class="overflow-y-auto max-h-96 px-5 py-4">
+                            <!-- Activity tab (admin/manager only) -->
+                            <div v-if="canAssign" v-show="activeHistoryTab === 'activity'" class="overflow-y-auto max-h-96 px-5 py-4">
                                 <OrderTimeline v-if="timeline?.length" :events="timeline" />
                                 <p v-else class="text-sm text-slate-500">No activity yet.</p>
                             </div>

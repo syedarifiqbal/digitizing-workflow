@@ -17,6 +17,7 @@ const props = defineProps({
         type: Object,
         default: () => ({}),
     },
+    currency: { type: String, default: 'USD' },
 });
 
 const page = usePage();
@@ -59,7 +60,7 @@ const roleGreeting = computed(() => {
         </template>
 
         <div class="mx-auto max-w-7xl">
-            <component :is="dashboardComponent" :stats="stats" />
+            <component :is="dashboardComponent" :stats="stats" :currency="currency" />
         </div>
     </AppLayout>
 </template>

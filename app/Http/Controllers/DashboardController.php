@@ -37,9 +37,13 @@ class DashboardController extends Controller
             default => [],
         };
 
+        $tenant = $user->tenant;
+
         return Inertia::render('Dashboard', [
-            'role' => $role,
-            'stats' => $stats,
+            'role'     => $role,
+            'stats'    => $stats,
+            'currency' => $tenant->getSetting('commission_currency')
+                ?: $tenant->getSetting('currency', 'USD'),
         ]);
     }
 

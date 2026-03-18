@@ -16,6 +16,7 @@ import DashboardSection from '@/Components/Dashboard/DashboardSection.vue';
 
 const props = defineProps({
     stats: Object,
+    currency: { type: String, default: 'USD' },
 });
 
 const { formatCurrency, getStatusColor, getPriorityClass, formatDate } = useDashboard();
@@ -53,15 +54,15 @@ const { formatCurrency, getStatusColor, getPriorityClass, formatDate } = useDash
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-emerald-100">Earnings This Month</p>
-                        <p class="mt-1 text-2xl font-bold">{{ formatCurrency(stats?.earnings?.this_month) }}</p>
+                        <p class="mt-1 text-2xl font-bold">{{ formatCurrency(stats?.earnings?.this_month, currency) }}</p>
                     </div>
                     <CurrencyDollarIcon class="h-10 w-10 text-emerald-200" />
                 </div>
             </div>
 
-            <MiniStatCard label="Unpaid" :value="formatCurrency(stats?.earnings?.unpaid)" :icon="BanknotesIcon" icon-color="text-amber-500" />
-            <MiniStatCard label="Paid This Month" :value="formatCurrency(stats?.earnings?.paid_this_month)" :icon="CheckCircleIcon" icon-color="text-green-500" value-class="text-green-600" />
-            <MiniStatCard label="Avg. Per Order" :value="formatCurrency(stats?.earnings?.average_per_order)" :icon="ChartBarIcon" icon-color="text-indigo-500" />
+            <MiniStatCard label="Unpaid" :value="formatCurrency(stats?.earnings?.unpaid, currency)" :icon="BanknotesIcon" icon-color="text-amber-500" />
+            <MiniStatCard label="Paid This Month" :value="formatCurrency(stats?.earnings?.paid_this_month, currency)" :icon="CheckCircleIcon" icon-color="text-green-500" value-class="text-green-600" />
+            <MiniStatCard label="Avg. Per Order" :value="formatCurrency(stats?.earnings?.average_per_order, currency)" :icon="ChartBarIcon" icon-color="text-indigo-500" />
         </div>
 
         <!-- Main Content Grid: In Progress + Completed -->
@@ -113,7 +114,7 @@ const { formatCurrency, getStatusColor, getPriorityClass, formatDate } = useDash
                                 <p class="text-xs text-slate-500 truncate">{{ order.title }}</p>
                             </div>
                             <div class="ml-4 flex-shrink-0 text-right">
-                                <p class="text-sm font-semibold text-emerald-600">{{ formatCurrency(order.earnings) }}</p>
+                                <p class="text-sm font-semibold text-emerald-600">{{ formatCurrency(order.earnings, currency) }}</p>
                                 <p class="text-xs text-slate-400">{{ formatDate(order.delivered_at) }}</p>
                             </div>
                         </div>
@@ -143,7 +144,7 @@ const { formatCurrency, getStatusColor, getPriorityClass, formatDate } = useDash
                     </div>
                     <div class="flex items-center justify-between">
                         <dt class="text-sm text-slate-500">Total Earnings (All Time)</dt>
-                        <dd class="text-sm font-semibold text-emerald-600">{{ formatCurrency(stats?.performance?.total_earnings) }}</dd>
+                        <dd class="text-sm font-semibold text-emerald-600">{{ formatCurrency(stats?.performance?.total_earnings, currency) }}</dd>
                     </div>
                 </dl>
             </div>

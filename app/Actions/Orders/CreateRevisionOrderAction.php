@@ -4,10 +4,8 @@ namespace App\Actions\Orders;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
-use App\Models\OrderFile;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class CreateRevisionOrderAction
 {
@@ -56,34 +54,6 @@ class CreateRevisionOrderAction
                 'currency' => $parentOrder->currency,
                 'source' => $parentOrder->source,
             ]);
-
-            // Copy input files from parent
-            $inputFiles = $parentOrder->files()->where('type', 'input')->get();
-            foreach ($inputFiles as $file) {
-                $newPath = str_replace(
-                    "orders/{$parentOrder->id}/",
-                    "orders/{$revisionOrder->id}/",
-                    $file->path
-                );
-
-                // Copy the physical file
-                if (Storage::disk($file->disk)->exists($file->path)) {
-                    Storage::disk($file->disk)->copy($file->path, $newPath);
-                }
-
-                // Create the file record
-                OrderFile::create([
-                    'tenant_id' => $revisionOrder->tenant_id,
-                    'order_id' => $revisionOrder->id,
-                    'uploaded_by_user_id' => $createdBy->id,
-                    'type' => 'input',
-                    'disk' => $file->disk,
-                    'path' => $newPath,
-                    'original_name' => $file->original_name,
-                    'mime_type' => $file->mime_type,
-                    'size' => $file->size,
-                ]);
-            }
 
             // Log status history
             $revisionOrder->statusHistory()->create([
