@@ -136,16 +136,6 @@ const submit = () => {
                     <!-- Width & Height -->
                     <div v-if="showSizeFields" class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="mb-1.5 block text-xs font-medium text-slate-700">Width (inches)</label>
-                            <input
-                                v-model="form.width"
-                                type="text"
-                                placeholder='e.g. 4.0 or PROP'
-                                class="block w-full rounded-lg border-slate-300 text-sm shadow-sm transition focus:border-indigo-300 focus:ring focus:ring-indigo-200/50"
-                            />
-                            <p v-if="errors.width" class="mt-1 text-sm text-red-600">{{ errors.width }}</p>
-                        </div>
-                        <div>
                             <label class="mb-1.5 block text-xs font-medium text-slate-700">Height (inches)</label>
                             <input
                                 v-model="form.height"
@@ -154,6 +144,16 @@ const submit = () => {
                                 class="block w-full rounded-lg border-slate-300 text-sm shadow-sm transition focus:border-indigo-300 focus:ring focus:ring-indigo-200/50"
                             />
                             <p v-if="errors.height" class="mt-1 text-sm text-red-600">{{ errors.height }}</p>
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-xs font-medium text-slate-700">Width (inches)</label>
+                            <input
+                                v-model="form.width"
+                                type="text"
+                                placeholder='e.g. 4.0 or PROP'
+                                class="block w-full rounded-lg border-slate-300 text-sm shadow-sm transition focus:border-indigo-300 focus:ring focus:ring-indigo-200/50"
+                            />
+                            <p v-if="errors.width" class="mt-1 text-sm text-red-600">{{ errors.width }}</p>
                         </div>
                         <p class="col-span-2 -mt-2 text-xs text-slate-400">Use PROP in one field for proportional sizing.</p>
                     </div>
@@ -186,17 +186,7 @@ const submit = () => {
 
                     <!-- Quantity & Priority -->
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="mb-1.5 block text-xs font-medium text-slate-700">Quantity *</label>
-                            <input
-                                v-model.number="form.quantity"
-                                type="number"
-                                required
-                                min="1"
-                                class="block w-full rounded-lg border-slate-300 text-sm shadow-sm transition focus:border-indigo-300 focus:ring focus:ring-indigo-200/50"
-                            />
-                            <p v-if="errors.quantity" class="mt-1 text-sm text-red-600">{{ errors.quantity }}</p>
-                        </div>
+                        
                         <div>
                             <label class="mb-1.5 block text-xs font-medium text-slate-700">Priority *</label>
                             <select

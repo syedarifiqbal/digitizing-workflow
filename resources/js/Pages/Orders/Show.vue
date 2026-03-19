@@ -1457,20 +1457,20 @@ const fileInputAccept = computed(() => {
                                             </div>
                                             <div class="grid grid-cols-3 gap-2">
                                                 <div>
-                                                    <label class="block text-xs text-slate-500">Width</label>
-                                                    <input
-                                                        v-model="opt.width"
-                                                        type="text"
-                                                        placeholder='3.5"'
-                                                        class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    />
-                                                </div>
-                                                <div>
                                                     <label class="block text-xs text-slate-500">Height</label>
                                                     <input
                                                         v-model="opt.height"
                                                         type="text"
                                                         placeholder='2.5"'
+                                                        class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-slate-500">Width</label>
+                                                    <input
+                                                        v-model="opt.width"
+                                                        type="text"
+                                                        placeholder='3.5"'
                                                         class="mt-0.5 block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                                     />
                                                 </div>

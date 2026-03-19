@@ -183,6 +183,11 @@ class CommissionCalculator
      */
     public function processOrderCommissions(Order $order, string $status, ?float $designerTip = null): void
     {
+        // Revision orders do not earn commissions
+        if ($order->parent_order_id) {
+            return;
+        }
+
         $tenant = $order->tenant;
 
         // Sales commission
