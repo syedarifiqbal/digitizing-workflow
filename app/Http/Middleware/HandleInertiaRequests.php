@@ -53,6 +53,7 @@ class HandleInertiaRequests extends Middleware
                     'is_designer' => $user->hasRole('Designer'),
                     'is_sales' => $user->hasRole('Sales'),
                     'is_client' => $user->hasRole('Client') || ! is_null($user->client_id),
+                    'tenant_slug' => $user->tenant?->slug,
                 ] : null,
             ],
             'flash' => [

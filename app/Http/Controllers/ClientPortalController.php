@@ -10,6 +10,7 @@ use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Services\InvoicePdfService;
+use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
@@ -706,7 +707,21 @@ class ClientPortalController extends Controller
             ]),
             'companyDetails' => $user->tenant->getSetting('company_details', []),
             'bankDetails' => $user->tenant->getSetting('bank_details'),
+            'stripe' => $this->clientStripeProps($user->tenant, $invoice),
         ]);
+    }
+
+    private function clientStripeProps(\App\Models\Tenant $tenant, Invoice $invoice): array
+    {
+        $stripe = new StripeService($tenant);
+        $payableStatuses = [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE];
+
+        return [
+            'enabled'         => $stripe->isEnabled(),
+            'checkout_mode'   => $stripe->getCheckoutMode(),
+            'publishable_key' => $stripe->getCheckoutMode() === 'embedded' ? $stripe->getPublishableKey() : null,
+            'payable'         => in_array($invoice->status, $payableStatuses),
+        ];
     }
 
     public function downloadInvoicePdf(Request $request, Invoice $invoice, InvoicePdfService $pdfService): HttpResponse

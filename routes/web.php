@@ -22,6 +22,7 @@ use App\Http\Controllers\PublicController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\CommissionRuleController;
 use App\Http\Controllers\CommissionController;
+use App\Http\Controllers\StripeController;
 use App\Http\Controllers\TenantSettingsController;
 use App\Http\Controllers\WebhookLogController;
 use App\Http\Controllers\UserController;
@@ -107,6 +108,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings', [TenantSettingsController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [TenantSettingsController::class, 'update'])->name('settings.update');
         Route::post('/settings/api-key', [ApiKeyController::class, 'store'])->name('settings.api-key.generate');
+        Route::post('/settings/stripe-keys', [TenantSettingsController::class, 'updateStripeKeys'])->name('settings.stripe-keys');
         Route::post('/settings/test-email', [TenantSettingsController::class, 'sendTestEmail'])->name('settings.test-email');
         Route::post('/settings/test-webhook', [TenantSettingsController::class, 'sendTestWebhook'])->name('settings.test-webhook');
         Route::get('/webhook-logs', [WebhookLogController::class, 'index'])->name('webhook-logs.index');
@@ -186,8 +188,27 @@ Route::middleware('auth')->group(function () {
         Route::get('/client/invoices', [ClientPortalController::class, 'invoices'])->name('client.invoices.index');
         Route::get('/client/invoices/{invoice}', [ClientPortalController::class, 'showInvoice'])->name('client.invoices.show');
         Route::get('/client/invoices/{invoice}/pdf', [ClientPortalController::class, 'downloadInvoicePdf'])->name('client.invoices.pdf');
+
+        // Stripe Checkout — Admin
+        Route::get('/stripe/checkout/{invoice}', [StripeController::class, 'checkout'])->name('stripe.checkout');
+        Route::get('/stripe/success/{invoice}', [StripeController::class, 'success'])->name('stripe.success');
+        Route::get('/stripe/cancel/{invoice}', [StripeController::class, 'cancel'])->name('stripe.cancel');
+
+        // Stripe Checkout — Client Portal
+        Route::get('/client/stripe/checkout/{invoice}', [StripeController::class, 'clientCheckout'])->name('stripe.client.checkout');
+        Route::get('/client/stripe/success/{invoice}', [StripeController::class, 'clientSuccess'])->name('stripe.client.success');
+        Route::get('/client/stripe/cancel/{invoice}', [StripeController::class, 'clientCancel'])->name('stripe.client.cancel');
+
+        // Stripe Embedded — returns JSON { client_secret, publishable_key }
+        Route::post('/stripe/embedded/{invoice}', [StripeController::class, 'checkout'])->name('stripe.embedded');
+        Route::post('/client/stripe/embedded/{invoice}', [StripeController::class, 'clientCheckout'])->name('stripe.client.embedded');
     });
 });
+
+// ─── Stripe Webhook (no auth, no CSRF) ───────────────────────────────────────
+Route::post('/stripe/webhook/{tenantSlug}', [StripeController::class, 'webhook'])
+    ->name('stripe.webhook')
+    ->withoutMiddleware(['web']);
 
 // In forced-tenant mode, redirect root to login so route('home') doesn't break
 if (config('app.forced_tenant_id')) {

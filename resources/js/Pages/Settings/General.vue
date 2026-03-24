@@ -10,6 +10,7 @@ import EmailSettings from "@/Pages/Settings/Sections/EmailSettings.vue";
 import NotificationSettings from "@/Pages/Settings/Sections/NotificationSettings.vue";
 import WebhookSettings from "@/Pages/Settings/Sections/WebhookSettings.vue";
 import ApiSettings from "@/Pages/Settings/Sections/ApiSettings.vue";
+import PaymentSettings from "@/Pages/Settings/Sections/PaymentSettings.vue";
 import Button from "@/Components/Button.vue";
 
 const props = defineProps({
@@ -68,6 +69,9 @@ const form = useForm({
     webhook_url: props.settings.webhook_url ?? "",
     webhook_secret: props.settings.webhook_secret ?? "",
     webhook_events: props.settings.webhook_events ?? [],
+    stripe_enabled: props.settings.stripe_enabled ?? false,
+    stripe_checkout_mode: props.settings.stripe_checkout_mode ?? 'hosted',
+    stripe_allow_admin_payment: props.settings.stripe_allow_admin_payment ?? false,
 });
 
 const resetTransform = () => {
@@ -159,6 +163,12 @@ const tabs = [
         component: WebhookSettings,
     },
     {
+        id: "payments",
+        label: "Payments",
+        description: "Stripe online payment integration.",
+        component: PaymentSettings,
+    },
+    {
         id: "api",
         label: "API",
         description: "Programmatic access & key management.",
@@ -185,6 +195,17 @@ const componentProps = computed(() => {
         return {
             form,
             companyLogoUrl: props.settings.company_logo_url ?? null,
+        };
+    }
+
+    if (activeTab.value === "payments") {
+        return {
+            form,
+            stripeKeyStatus: {
+                publishable: props.settings.stripe_publishable_key_set ?? false,
+                secret: props.settings.stripe_secret_key_set ?? false,
+                webhook: props.settings.stripe_webhook_secret_set ?? false,
+            },
         };
     }
 
