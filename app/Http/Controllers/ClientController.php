@@ -69,7 +69,9 @@ class ClientController extends Controller
     {
         $this->authorize('create', Client::class);
 
-        return Inertia::render('Clients/Create');
+        return Inertia::render('Clients/Create', [
+            'salesUsers' => $this->salesUsers(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -90,7 +92,7 @@ class ClientController extends Controller
     {
         $this->authorize('view', $client);
 
-        $client->load('emails');
+        $client->load(['emails', 'salesUser']);
 
         return Inertia::render('Clients/Show', [
             'client' => $this->transformClient($client),
@@ -102,10 +104,11 @@ class ClientController extends Controller
     {
         $this->authorize('update', $client);
 
-        $client->load('emails');
+        $client->load(['emails', 'salesUser']);
 
         return Inertia::render('Clients/Edit', [
             'client' => $this->transformClient($client),
+            'salesUsers' => $this->salesUsers(),
         ]);
     }
 
@@ -179,15 +182,27 @@ class ClientController extends Controller
         return back()->with('success', 'Selected clients deleted.');
     }
 
+    private function salesUsers(): array
+    {
+        return User::query()
+            ->whereHas('roles', fn ($q) => $q->where('name', 'Sales'))
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])
+            ->values()
+            ->all();
+    }
+
     private function validateData(Request $request): array
     {
         return $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['nullable', 'email', 'max:255'],
-            'phone'    => ['nullable', 'string', 'max:50'],
-            'company'  => ['nullable', 'string', 'max:255'],
-            'notes'    => ['nullable', 'string'],
-            'is_active' => ['required', 'boolean'],
+            'name'          => ['required', 'string', 'max:255'],
+            'email'         => ['nullable', 'email', 'max:255'],
+            'phone'         => ['nullable', 'string', 'max:50'],
+            'company'       => ['nullable', 'string', 'max:255'],
+            'notes'         => ['nullable', 'string'],
+            'is_active'     => ['required', 'boolean'],
+            'sales_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'permanent_instructions'                    => ['nullable', 'array'],
             'permanent_instructions.special_offer_note' => ['nullable', 'string'],
             'permanent_instructions.price_instructions' => ['nullable', 'string'],
@@ -227,6 +242,8 @@ class ClientController extends Controller
             'company'                => $client->company,
             'notes'                  => $client->notes,
             'is_active'              => $client->is_active,
+            'sales_user_id'          => $client->sales_user_id,
+            'sales_user_name'        => $client->salesUser?->name,
             'permanent_instructions' => $client->permanent_instructions ?? [],
             'emails'                 => $client->relationLoaded('emails')
                 ? $client->emails->map(fn ($e) => [

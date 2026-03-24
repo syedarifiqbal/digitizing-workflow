@@ -3,6 +3,10 @@ import { useForm, Link, Head } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Button from "@/Components/Button.vue";
 
+const props = defineProps({
+    salesUsers: { type: Array, default: () => [] },
+});
+
 const form = useForm({
     name: "",
     email: "",
@@ -10,6 +14,7 @@ const form = useForm({
     company: "",
     notes: "",
     is_active: true,
+    sales_user_id: "",
     permanent_instructions: {
         special_offer_note: "",
         price_instructions: "",
@@ -188,6 +193,19 @@ const baseInputClasses =
                             >
                                 {{ form.errors.is_active }}
                             </p>
+                        </div>
+
+                        <div v-if="props.salesUsers.length">
+                            <label class="block text-sm font-medium text-slate-700" for="sales_user_id">Assigned Sales Rep</label>
+                            <select
+                                v-model="form.sales_user_id"
+                                id="sales_user_id"
+                                :class="baseInputClasses"
+                            >
+                                <option value="">None</option>
+                                <option v-for="u in props.salesUsers" :key="u.id" :value="u.id">{{ u.name }}</option>
+                            </select>
+                            <p v-if="form.errors.sales_user_id" class="mt-1 text-sm text-red-600">{{ form.errors.sales_user_id }}</p>
                         </div>
 
                         <!-- Additional Email Addresses -->

@@ -92,6 +92,10 @@ const confirmDelete = () => {
                                 <dt class="text-sm font-medium text-slate-500">Created</dt>
                                 <dd class="mt-1 text-sm text-slate-900">{{ formatDate(client.created_at) }}</dd>
                             </div>
+                            <div>
+                                <dt class="text-sm font-medium text-slate-500">Sales Rep</dt>
+                                <dd class="mt-1 text-sm text-slate-900">{{ client.sales_user_name ?? '—' }}</dd>
+                            </div>
                         </dl>
                     </div>
                 </div>

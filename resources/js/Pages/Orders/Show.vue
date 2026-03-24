@@ -16,7 +16,7 @@ const props = defineProps({
     outputFiles: Array,
     canAssign: Boolean,
     designers: Array,
-    salesUsers: Array,
+    salesUsers: { type: Array, default: () => [] },
     allowedTransitions: Array,
     canEdit: Boolean,
     canConvertToOrder: Boolean,
@@ -45,9 +45,7 @@ const props = defineProps({
 });
 
 const selectedDesigner = ref(props.order?.designer?.id ?? "");
-const selectedSales = ref(props.order?.sales?.id ?? "");
 const assigning = ref(false);
-const assigningSales = ref(false);
 const transitioning = ref(false);
 const submitting = ref(false);
 const submitFiles = ref([]);
@@ -246,34 +244,6 @@ const unassignDesigner = () => {
     });
 };
 
-const assignSales = () => {
-    if (!selectedSales.value) return;
-
-    assigningSales.value = true;
-    router.post(
-        route("orders.assign-sales", props.order.id),
-        {
-            sales_user_id: selectedSales.value,
-        },
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                assigningSales.value = false;
-            },
-        }
-    );
-};
-
-const unassignSales = () => {
-    assigningSales.value = true;
-    router.delete(route("orders.unassign-sales", props.order.id), {
-        preserveScroll: true,
-        onFinish: () => {
-            assigningSales.value = false;
-            selectedSales.value = "";
-        },
-    });
-};
 
 const submitCreateRevision = ({ notes, files }) => {
     creatingRevision.value = true;
@@ -1661,60 +1631,17 @@ const fileInputAccept = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Sales Assignment -->
+                        <!-- Sales Rep (read-only, inherited from client) -->
                         <div
-                            v-if="canAssign && salesUsers?.length"
+                            v-if="canAssign"
                             class="bg-white shadow-sm rounded-lg border border-slate-200"
                         >
                             <div class="px-5 py-4 border-b border-slate-100">
-                                <h3 class="text-sm font-semibold text-slate-900">
-                                    Assign Sales
-                                </h3>
+                                <h3 class="text-sm font-semibold text-slate-900">Sales Rep</h3>
                             </div>
                             <div class="px-5 py-4">
-                                <div class="space-y-3">
-                                    <select
-                                        v-model="selectedSales"
-                                        class="block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                        :disabled="assigningSales"
-                                    >
-                                        <option value="">Unassigned</option>
-                                        <option
-                                            v-for="user in salesUsers"
-                                            :key="user.id"
-                                            :value="user.id"
-                                        >
-                                            {{ user.name }}
-                                        </option>
-                                    </select>
-                                    <div class="flex gap-2">
-                                        <button
-                                            v-if="
-                                                selectedSales &&
-                                                selectedSales !==
-                                                    order.sales?.id
-                                            "
-                                            type="button"
-                                            class="flex-1 inline-flex justify-center items-center rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                                            :disabled="assigningSales"
-                                            @click="assignSales"
-                                        >
-                                            Assign
-                                        </button>
-                                        <button
-                                            v-if="
-                                                order.sales &&
-                                                selectedSales === ''
-                                            "
-                                            type="button"
-                                            class="flex-1 inline-flex justify-center items-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                                            :disabled="assigningSales"
-                                            @click="unassignSales"
-                                        >
-                                            Unassign
-                                        </button>
-                                    </div>
-                                </div>
+                                <p class="text-sm text-slate-700">{{ order.sales?.name ?? 'None' }}</p>
+                                <p class="mt-1 text-xs text-slate-400">Assigned via client profile.</p>
                             </div>
                         </div>
 

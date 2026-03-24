@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -22,6 +23,7 @@ class Client extends Model
         'company',
         'notes',
         'is_active',
+        'sales_user_id',
         'permanent_instructions',
     ];
 
@@ -29,6 +31,7 @@ class Client extends Model
     {
         return [
             'tenant_id'              => 'integer',
+            'sales_user_id'          => 'integer',
             'is_active'              => 'boolean',
             'permanent_instructions' => 'array',
         ];
@@ -37,6 +40,11 @@ class Client extends Model
     public function isActive(): bool
     {
         return $this->is_active === true;
+    }
+
+    public function salesUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sales_user_id');
     }
 
     public function users(): HasMany

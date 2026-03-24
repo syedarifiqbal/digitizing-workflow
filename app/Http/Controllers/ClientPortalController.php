@@ -344,6 +344,7 @@ class ClientPortalController extends Controller
         $order = Order::create([
             'tenant_id'          => $tenant->id,
             'client_id'          => $client->id,
+            'sales_user_id'      => $client->sales_user_id,
             'order_number'       => $orderNumber,
             'sequence'           => $sequence,
             'title'              => $validated['title'],

@@ -252,10 +252,13 @@ class OrderController extends Controller
             /** @var Order $order */
             $currency = strtoupper($data['currency'] ?? $tenant->getSetting('currency', 'USD'));
 
+            $client = \App\Models\Client::find($data['client_id']);
+
             $order = Order::create([
                 'tenant_id' => $tenant->id,
                 'client_id' => $data['client_id'],
                 'created_by' => $request->user()->id,
+                'sales_user_id' => $client?->sales_user_id,
                 'order_number' => $orderNumber,
                 'po_number' => $data['po_number'] ?? null,
                 'sequence' => $sequence,
