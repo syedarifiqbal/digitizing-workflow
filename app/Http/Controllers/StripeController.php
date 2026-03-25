@@ -65,8 +65,25 @@ class StripeController extends Controller
     {
         $this->authorize('view', $invoice);
 
+        $sessionId = $request->query('session_id');
+
+        if ($sessionId) {
+            $stripe = $this->resolveStripeService($request);
+            try {
+                $session = $stripe->client()->checkout->sessions->retrieve($sessionId);
+                if (
+                    ($session->payment_status ?? '') === 'paid' &&
+                    (string) ($session->metadata['invoice_id'] ?? '') === (string) $invoice->id
+                ) {
+                    $this->handleCheckoutCompleted($request->user()->tenant, $session);
+                }
+            } catch (\Exception) {
+                // webhook will handle it if this fails
+            }
+        }
+
         return redirect()->route('invoices.show', $invoice)
-            ->with('success', 'Payment completed successfully. The invoice will be marked paid shortly.');
+            ->with('success', 'Payment completed successfully.');
     }
 
     public function cancel(Request $request, Invoice $invoice): RedirectResponse
@@ -79,14 +96,96 @@ class StripeController extends Controller
 
     public function clientSuccess(Request $request, Invoice $invoice): RedirectResponse
     {
+        $user   = $request->user();
+        $client = $user->client()->withTrashed()->first();
+
+        if ($client && $invoice->client_id === $client->id && $invoice->tenant_id === $user->tenant_id) {
+            $sessionId = $request->query('session_id');
+            if ($sessionId) {
+                $stripe = $this->resolveStripeService($request);
+                try {
+                    $session = $stripe->client()->checkout->sessions->retrieve($sessionId);
+                    if (
+                        ($session->payment_status ?? '') === 'paid' &&
+                        (string) ($session->metadata['invoice_id'] ?? '') === (string) $invoice->id
+                    ) {
+                        $this->handleCheckoutCompleted($user->tenant, $session);
+                    }
+                } catch (\Exception) {
+                    // webhook will handle it if this fails
+                }
+            }
+        }
+
         return redirect()->route('client.invoices.show', $invoice)
-            ->with('success', 'Payment completed successfully. Your invoice will be marked paid shortly.');
+            ->with('success', 'Payment completed successfully.');
     }
 
     public function clientCancel(Request $request, Invoice $invoice): RedirectResponse
     {
         return redirect()->route('client.invoices.show', $invoice)
             ->with('error', 'Payment was cancelled.');
+    }
+
+    // ─── Embedded checkout return URLs (secure session validation) ────────────
+
+    public function complete(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('view', $invoice);
+
+        $sessionId = $request->query('session_id');
+
+        if ($sessionId) {
+            $stripe = $this->resolveStripeService($request);
+            try {
+                $session = $stripe->client()->checkout->sessions->retrieve($sessionId);
+                if (
+                    ($session->payment_status ?? '') === 'paid' &&
+                    (string) ($session->metadata['invoice_id'] ?? '') === (string) $invoice->id
+                ) {
+                    $this->handleCheckoutCompleted($request->user()->tenant, $session);
+                    return redirect()->route('invoices.show', $invoice)
+                        ->with('success', 'Payment completed successfully.');
+                }
+            } catch (\Exception) {
+                // fall through to error
+            }
+        }
+
+        return redirect()->route('invoices.show', $invoice)
+            ->with('error', 'Payment could not be verified. Please contact support if your payment was charged.');
+    }
+
+    public function clientComplete(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $user   = $request->user();
+        $client = $user->client()->withTrashed()->first();
+
+        abort_if(! $client, 403);
+        abort_if($invoice->client_id !== $client->id, 403);
+        abort_if($invoice->tenant_id !== $user->tenant_id, 403);
+
+        $sessionId = $request->query('session_id');
+
+        if ($sessionId) {
+            $stripe = $this->resolveStripeService($request);
+            try {
+                $session = $stripe->client()->checkout->sessions->retrieve($sessionId);
+                if (
+                    ($session->payment_status ?? '') === 'paid' &&
+                    (string) ($session->metadata['invoice_id'] ?? '') === (string) $invoice->id
+                ) {
+                    $this->handleCheckoutCompleted($user->tenant, $session);
+                    return redirect()->route('client.invoices.show', $invoice)
+                        ->with('success', 'Payment completed successfully.');
+                }
+            } catch (\Exception) {
+                // fall through to error
+            }
+        }
+
+        return redirect()->route('client.invoices.show', $invoice)
+            ->with('error', 'Payment could not be verified. Please contact support if your payment was charged.');
     }
 
     // ─── Webhook (no auth, no CSRF) ───────────────────────────────────────────
@@ -129,17 +228,22 @@ class StripeController extends Controller
         $mode = $stripe->getCheckoutMode();
 
         if ($isClient) {
-            $successUrl = route('stripe.client.success', $invoice);
-            $cancelUrl  = route('stripe.client.cancel', $invoice);
+            $successUrl    = route('stripe.client.success', $invoice);
+            $cancelUrl     = route('stripe.client.cancel', $invoice);
+            $completeUrl   = route('stripe.client.complete', $invoice);
         } else {
-            $successUrl = route('stripe.success', $invoice);
-            $cancelUrl  = route('stripe.cancel', $invoice);
+            $successUrl    = route('stripe.success', $invoice);
+            $cancelUrl     = route('stripe.cancel', $invoice);
+            $completeUrl   = route('stripe.complete', $invoice);
         }
 
-        // For embedded mode, success_url is the return_url (Stripe appends ?session_id={CHECKOUT_SESSION_ID})
+        // Both modes append ?session_id={CHECKOUT_SESSION_ID} so the return handler
+        // can validate payment via the Stripe API (webhook is a secondary fallback).
         $session = $stripe->createCheckoutSession(
             $invoice,
-            $mode === 'embedded' ? $successUrl . '?session_id={CHECKOUT_SESSION_ID}' : $successUrl,
+            $mode === 'embedded'
+                ? $completeUrl . '?session_id={CHECKOUT_SESSION_ID}'
+                : $successUrl . '?session_id={CHECKOUT_SESSION_ID}',
             $cancelUrl,
             $mode
         );

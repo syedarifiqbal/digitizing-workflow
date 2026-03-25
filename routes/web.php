@@ -193,13 +193,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/stripe/checkout/{invoice}', [StripeController::class, 'checkout'])->name('stripe.checkout');
         Route::get('/stripe/success/{invoice}', [StripeController::class, 'success'])->name('stripe.success');
         Route::get('/stripe/cancel/{invoice}', [StripeController::class, 'cancel'])->name('stripe.cancel');
+        Route::get('/stripe/complete/{invoice}', [StripeController::class, 'complete'])->name('stripe.complete');
 
         // Stripe Checkout — Client Portal
         Route::get('/client/stripe/checkout/{invoice}', [StripeController::class, 'clientCheckout'])->name('stripe.client.checkout');
         Route::get('/client/stripe/success/{invoice}', [StripeController::class, 'clientSuccess'])->name('stripe.client.success');
         Route::get('/client/stripe/cancel/{invoice}', [StripeController::class, 'clientCancel'])->name('stripe.client.cancel');
+        Route::get('/client/stripe/complete/{invoice}', [StripeController::class, 'clientComplete'])->name('stripe.client.complete');
 
-        // Stripe Embedded — returns JSON { client_secret, publishable_key }
+        // Stripe Embedded — POST returns JSON { client_secret, publishable_key }
         Route::post('/stripe/embedded/{invoice}', [StripeController::class, 'checkout'])->name('stripe.embedded');
         Route::post('/client/stripe/embedded/{invoice}', [StripeController::class, 'clientCheckout'])->name('stripe.client.embedded');
     });
