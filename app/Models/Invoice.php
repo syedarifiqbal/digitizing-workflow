@@ -35,6 +35,7 @@ class Invoice extends Model
         'payment_terms',
         'sent_at',
         'paid_at',
+        'stripe_session_id',
     ];
 
     protected function casts(): array

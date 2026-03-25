@@ -5,6 +5,7 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import Button from "@/Components/Button.vue";
 import Modal from "@/Components/Modal.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
+import StripeEmbeddedCheckout from "@/Components/StripeEmbeddedCheckout.vue";
 import { Head } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -23,6 +24,10 @@ const props = defineProps({
     clientEmails: {
         type: Array,
         default: () => [],
+    },
+    stripe: {
+        type: Object,
+        default: () => ({}),
     },
 });
 
@@ -107,6 +112,8 @@ const actionMessages = {
 
 const showPaymentModal = ref(false);
 const showSendModal = ref(false);
+const showStripeModal = ref(false);
+const isEmbeddedCheckout = computed(() => props.stripe?.checkout_mode === 'embedded');
 const openPaymentModal = () => {
     paymentForm.reset();
     paymentForm.payment_date = new Date().toISOString().slice(0, 10);
@@ -228,6 +235,30 @@ const submitSend = () => {
                     variant="primary"
                 >
                     Send Invoice
+                </Button>
+                <!-- Pay with Stripe (admin) — hosted mode -->
+                <Button
+                    v-if="stripe?.enabled && stripe?.allow_admin && stripe?.payable && !isEmbeddedCheckout"
+                    as="a"
+                    :href="route('stripe.checkout', invoice.id)"
+                    class="!bg-indigo-600 !text-white hover:!bg-indigo-700"
+                >
+                    <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    Pay with Stripe
+                </Button>
+                <!-- Pay with Stripe (admin) — embedded mode -->
+                <Button
+                    v-if="stripe?.enabled && stripe?.allow_admin && stripe?.payable && isEmbeddedCheckout"
+                    as="button"
+                    class="!bg-indigo-600 !text-white hover:!bg-indigo-700"
+                    @click="showStripeModal = true"
+                >
+                    <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    Pay with Stripe
                 </Button>
                 <Button
                     v-if="canRecordPayment"
@@ -630,5 +661,12 @@ const submitSend = () => {
                 </div>
             </div>
         </Modal>
+
+        <!-- Stripe Embedded Checkout Modal -->
+        <StripeEmbeddedCheckout
+            v-if="showStripeModal"
+            :endpoint="route('stripe.embedded', invoice.id)"
+            @close="showStripeModal = false"
+        />
     </AppLayout>
 </template>

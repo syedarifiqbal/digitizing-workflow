@@ -1,8 +1,9 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { Link } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Button from "@/Components/Button.vue";
+import StripeEmbeddedCheckout from "@/Components/StripeEmbeddedCheckout.vue";
 import { useDateFormat } from "@/Composables/useDateFormat";
 
 const { formatDate } = useDateFormat();
@@ -13,6 +14,7 @@ const props = defineProps({
     payments: Array,
     companyDetails: Object,
     bankDetails: String,
+    stripe: { type: Object, default: () => ({}) },
 });
 
 const statusBadgeClass = (status) => {
@@ -41,6 +43,9 @@ const balanceDue = computed(() => {
 
 const isPaid = computed(() => props.invoice?.status === "paid");
 const isOverdue = computed(() => props.invoice?.status === "overdue");
+
+const showStripeModal = ref(false);
+const isEmbeddedCheckout = computed(() => props.stripe?.checkout_mode === 'embedded');
 </script>
 
 <template>
@@ -71,6 +76,31 @@ const isOverdue = computed(() => props.invoice?.status === "overdue");
                         Issued {{ formatDate(invoice.issue_date) }}
                     </p>
                 </div>
+                <!-- Pay with Stripe — hosted mode -->
+                <Button
+                    v-if="stripe?.enabled && stripe?.payable && !isEmbeddedCheckout"
+                    as="a"
+                    :href="route('stripe.client.checkout', invoice.id)"
+                    class="!bg-indigo-600 !text-white hover:!bg-indigo-700"
+                >
+                    <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    Pay with Stripe
+                </Button>
+                <!-- Pay with Stripe — embedded mode -->
+                <Button
+                    v-if="stripe?.enabled && stripe?.payable && isEmbeddedCheckout"
+                    as="button"
+                    class="!bg-indigo-600 !text-white hover:!bg-indigo-700"
+                    @click="showStripeModal = true"
+                >
+                    <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    Pay with Stripe
+                </Button>
+
                 <Button
                     as="a"
                     :href="route('client.invoices.pdf', invoice.id)"
@@ -239,5 +269,12 @@ const isOverdue = computed(() => props.invoice?.status === "overdue");
                 </div>
             </div>
         </div>
+
+        <!-- Stripe Embedded Checkout Modal -->
+        <StripeEmbeddedCheckout
+            v-if="showStripeModal"
+            :endpoint="route('stripe.client.embedded', invoice.id)"
+            @close="showStripeModal = false"
+        />
     </AppLayout>
 </template>

@@ -15,6 +15,7 @@ use App\Notifications\InvoicePaymentRecordedNotification;
 use App\Notifications\InvoiceSentNotification;
 use App\Services\InvoicePdfService;
 use App\Services\InvoiceWorkflowService;
+use App\Services\StripeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -384,7 +385,22 @@ class InvoiceController extends Controller
             'companyDetails' => $companyDetails,
             'canEdit' => $request->user()->can('update', $invoice) && $invoice->status === InvoiceStatus::DRAFT,
             'clientEmails'  => $this->getClientEmails($invoice->client),
+            'stripe' => $this->stripeProps($request, $invoice),
         ]);
+    }
+
+    private function stripeProps(Request $request, Invoice $invoice): array
+    {
+        $stripe = new StripeService($request->user()->tenant);
+        $payableStatuses = [InvoiceStatus::SENT, InvoiceStatus::PARTIALLY_PAID, InvoiceStatus::OVERDUE];
+
+        return [
+            'enabled'           => $stripe->isEnabled(),
+            'allow_admin'       => $stripe->allowAdminPayment(),
+            'checkout_mode'     => $stripe->getCheckoutMode(),
+            'publishable_key'   => $stripe->getCheckoutMode() === 'embedded' ? $stripe->getPublishableKey() : null,
+            'payable'           => in_array($invoice->status, $payableStatuses),
+        ];
     }
 
     private function getClientEmails(?Client $client): array

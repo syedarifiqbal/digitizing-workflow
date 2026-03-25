@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\StripeService;
 use App\Services\WebhookDispatcher;
 use App\Support\TenantMailer;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,12 @@ class TenantSettingsController extends Controller
         $settings = array_merge($this->defaultSettings(), $tenant->settings ?? []);
         $logoPath = $settings['company_logo_path'] ?? null;
         $settings['company_logo_url'] = $logoPath ? Storage::disk('public')->url($logoPath) : null;
+
+        // Stripe: never expose encrypted key values — only surface "configured" flags
+        $stripeService = new StripeService($tenant);
+        $settings['stripe_publishable_key_set'] = $stripeService->hasPublishableKey();
+        $settings['stripe_secret_key_set']      = $stripeService->hasSecretKey();
+        $settings['stripe_webhook_secret_set']  = $stripeService->hasWebhookSecret();
 
         return Inertia::render('Settings/General', [
             'tenant' => [
@@ -80,7 +87,10 @@ class TenantSettingsController extends Controller
             'webhook_url' => ['nullable', 'url', 'max:500'],
             'webhook_secret' => ['nullable', 'string', 'max:255'],
             'webhook_events' => ['nullable', 'array'],
-            'webhook_events.*' => ['string', 'in:order.delivered,order.closed,order.cancelled'],
+            'webhook_events.*'          => ['string', 'in:order.delivered,order.closed,order.cancelled'],
+            'stripe_enabled'            => ['required', 'boolean'],
+            'stripe_checkout_mode'      => ['required', 'string', 'in:hosted,embedded'],
+            'stripe_allow_admin_payment'=> ['required', 'boolean'],
         ]);
 
         $tenant = $request->user()->tenant;
@@ -139,6 +149,9 @@ class TenantSettingsController extends Controller
             'webhook_url' => $validated['webhook_url'] ?? '',
             'webhook_secret' => $validated['webhook_secret'] ?? '',
             'webhook_events' => $validated['webhook_events'] ?? [],
+            'stripe_enabled' => $validated['stripe_enabled'],
+            'stripe_checkout_mode' => $validated['stripe_checkout_mode'],
+            'stripe_allow_admin_payment' => $validated['stripe_allow_admin_payment'],
         ]);
 
         $tenant->update([
@@ -147,6 +160,38 @@ class TenantSettingsController extends Controller
         ]);
 
         return back()->with('success', 'Settings saved.');
+    }
+
+    /**
+     * Save encrypted Stripe API keys separately.
+     * Only updates keys that are provided (non-empty). Existing keys are preserved if omitted.
+     */
+    public function updateStripeKeys(Request $request): RedirectResponse
+    {
+        abort_if(! $request->user()?->isAdmin(), 403);
+
+        $validated = $request->validate([
+            'stripe_publishable_key' => ['nullable', 'string', 'max:255'],
+            'stripe_secret_key'      => ['nullable', 'string', 'max:255'],
+            'stripe_webhook_secret'  => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $tenant = $request->user()->tenant;
+        $current = $tenant->settings ?? [];
+
+        if (! empty($validated['stripe_publishable_key'])) {
+            $current['stripe_publishable_key_enc'] = StripeService::encryptKey($validated['stripe_publishable_key']);
+        }
+        if (! empty($validated['stripe_secret_key'])) {
+            $current['stripe_secret_key_enc'] = StripeService::encryptKey($validated['stripe_secret_key']);
+        }
+        if (! empty($validated['stripe_webhook_secret'])) {
+            $current['stripe_webhook_secret_enc'] = StripeService::encryptKey($validated['stripe_webhook_secret']);
+        }
+
+        $tenant->update(['settings' => $current]);
+
+        return back()->with('success', 'Stripe API keys updated.');
     }
 
     public function sendTestEmail(Request $request): RedirectResponse
@@ -251,6 +296,9 @@ class TenantSettingsController extends Controller
             'webhook_url' => '',
             'webhook_secret' => '',
             'webhook_events' => [],
+            'stripe_enabled' => false,
+            'stripe_checkout_mode' => 'hosted',
+            'stripe_allow_admin_payment' => false,
         ];
     }
 }
