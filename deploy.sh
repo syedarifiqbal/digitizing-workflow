@@ -31,9 +31,13 @@ die()  { echo -e "\n${RED}[ERROR]${NC} $*" >&2; exit 1; }
 # CONFIGURATION — Loaded from .env.deploy (never committed)
 # ================================================================
 ENV_DEPLOY="$SCRIPT_DIR/.env.deploy"
-[[ -f "$ENV_DEPLOY" ]] || die ".env.deploy not found.\n\n  cp .env.deploy.example .env.deploy\n  # then fill in your credentials\n"
-# shellcheck source=.env.deploy
-source "$ENV_DEPLOY"
+if [[ -f "$ENV_DEPLOY" ]]; then
+  # shellcheck source=.env.deploy
+  source "$ENV_DEPLOY"
+elif [[ "${CI:-}" != "true" ]]; then
+  die ".env.deploy not found.\n\n  cp .env.deploy.example .env.deploy\n  # then fill in your credentials\n"
+fi
+# In CI there is no .env.deploy — the same variables come from the environment (GitHub secrets).
 # ================================================================
 
 # ================================================================
@@ -52,6 +56,7 @@ done
 # ================================================================
 [[ -z "${SSH_USER:-}"    ]] && die "SSH_USER is not set in .env.deploy"
 [[ -z "${SSH_HOST:-}"    ]] && die "SSH_HOST is not set in .env.deploy"
+[[ -z "${SSH_PORT:-}"    ]] && die "SSH_PORT is not set in .env.deploy"
 [[ -z "${DB_PASSWORD:-}" ]] && die "DB_PASSWORD is not set in .env.deploy"
 command -v npm   >/dev/null 2>&1 || die "npm not found. Is Node.js installed?"
 command -v rsync >/dev/null 2>&1 || die "rsync not found. Run: brew install rsync"
@@ -76,11 +81,13 @@ echo ""
 # ================================================================
 step "1 / 4  Building frontend assets"
 cd "$SCRIPT_DIR"
-export NVM_DIR="$HOME/.nvm"
-# shellcheck source=/dev/null
-[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-command -v nvm >/dev/null 2>&1 || die "nvm not found. Is nvm installed?"
-nvm use 22
+if [[ "${CI:-}" != "true" ]]; then
+  export NVM_DIR="$HOME/.nvm"
+  # shellcheck source=/dev/null
+  [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+  command -v nvm >/dev/null 2>&1 || die "nvm not found. Is nvm installed?"
+  nvm use 22
+fi
 npm run build
 ok "Assets compiled → public/build/"
 
