@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Actions\Clients\SetClientPortalLoginAction;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
@@ -27,9 +28,17 @@ class UpdateClientPortalLoginRequest extends FormRequest
                 'string',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')
-                    ->where('tenant_id', $client->tenant_id)
-                    ->ignore($existingUserId),
+                function (string $attribute, mixed $value, \Closure $fail) use ($client, $existingUserId) {
+                    $taken = User::withTrashed()
+                        ->where('tenant_id', $client->tenant_id)
+                        ->where('email', $value)
+                        ->when($existingUserId, fn ($q) => $q->where('id', '!=', $existingUserId))
+                        ->exists();
+
+                    if ($taken && ! SetClientPortalLoginAction::findReusableUser($client, $value)) {
+                        $fail('This email already belongs to a team member or another client. Use a different email for this client\'s login.');
+                    }
+                },
             ],
             'password' => [
                 Rule::requiredIf(! $existingUserId || $this->boolean('send_email')),

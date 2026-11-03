@@ -18,12 +18,18 @@ class SetClientPortalLoginAction
         $user = User::query()
             ->where('client_id', $client->id)
             ->orderBy('id')
-            ->first() ?? new User([
+            ->first()
+            ?? self::findReusableUser($client, $email)
+            ?? new User([
                 'tenant_id' => $client->tenant_id,
-                'client_id' => $client->id,
                 'name' => $client->name,
             ]);
 
+        if ($user->trashed()) {
+            $user->restore();
+        }
+
+        $user->client_id = $client->id;
         $user->email = $email;
         $user->is_active = true;
         $user->email_verified_at ??= now();
@@ -39,5 +45,24 @@ class SetClientPortalLoginAction
         }
 
         return $user;
+    }
+
+    /**
+     * An existing (possibly soft-deleted) client login with this email that is not
+     * linked to another client can be taken over, e.g. an old signup for the same person.
+     * Staff accounts and logins of other clients are never reused.
+     */
+    public static function findReusableUser(Client $client, string $email): ?User
+    {
+        $user = User::withTrashed()
+            ->where('tenant_id', $client->tenant_id)
+            ->where('email', $email)
+            ->first();
+
+        if (! $user || ! $user->hasRole('Client')) {
+            return null;
+        }
+
+        return in_array($user->client_id, [null, $client->id], true) ? $user : null;
     }
 }

@@ -131,19 +131,79 @@ class ClientPortalLoginTest extends TestCase
             ->assertSessionHasErrors('password');
     }
 
-    public function test_email_must_not_belong_to_another_user_in_the_tenant(): void
+    public function test_email_of_a_team_member_cannot_be_used(): void
     {
-        $other = User::factory()->for($this->tenant)->create(['email' => 'taken@example.com']);
+        $designerRole = Role::create(['tenant_id' => $this->tenant->id, 'name' => 'Designer']);
+        $designer = User::factory()->for($this->tenant)->create(['email' => 'team@example.com']);
+        $designer->roles()->attach($designerRole);
 
         $this->actingAs($this->admin)
             ->put(route('clients.portal-login.update', $this->client), [
-                'email' => $other->email,
+                'email' => 'team@example.com',
                 'password' => 'Sup3rSecret!',
                 'send_email' => false,
             ])
             ->assertSessionHasErrors('email');
 
         $this->assertDatabaseMissing('users', ['client_id' => $this->client->id]);
+    }
+
+    public function test_email_of_another_clients_login_cannot_be_used(): void
+    {
+        $otherClient = Client::factory()->for($this->tenant)->create();
+        $clientRole = Role::where('tenant_id', $this->tenant->id)->where('name', 'Client')->first();
+        $other = User::factory()->for($this->tenant)->create(['client_id' => $otherClient->id, 'email' => 'other@example.com']);
+        $other->roles()->attach($clientRole);
+
+        $this->actingAs($this->admin)
+            ->put(route('clients.portal-login.update', $this->client), [
+                'email' => 'other@example.com',
+                'password' => 'Sup3rSecret!',
+                'send_email' => false,
+            ])
+            ->assertSessionHasErrors('email');
+    }
+
+    public function test_unlinked_old_client_login_with_the_same_email_is_reused(): void
+    {
+        Notification::fake();
+        $clientRole = Role::where('tenant_id', $this->tenant->id)->where('name', 'Client')->first();
+        $old = User::factory()->for($this->tenant)->create(['client_id' => null, 'email' => 'client@example.com']);
+        $old->roles()->attach($clientRole);
+
+        $this->actingAs($this->admin)
+            ->put(route('clients.portal-login.update', $this->client), [
+                'email' => 'client@example.com',
+                'password' => 'Sup3rSecret!',
+                'send_email' => true,
+            ])
+            ->assertSessionDoesntHaveErrors();
+
+        $old->refresh();
+        $this->assertSame($this->client->id, $old->client_id);
+        $this->assertTrue(Hash::check('Sup3rSecret!', $old->password));
+        $this->assertSame(1, User::where('email', 'client@example.com')->count());
+        Notification::assertSentTo($old, ClientPortalCredentialsNotification::class);
+    }
+
+    public function test_soft_deleted_client_login_with_the_same_email_is_restored(): void
+    {
+        Notification::fake();
+        $clientRole = Role::where('tenant_id', $this->tenant->id)->where('name', 'Client')->first();
+        $old = User::factory()->for($this->tenant)->create(['client_id' => $this->client->id, 'email' => 'client@example.com']);
+        $old->roles()->attach($clientRole);
+        $old->delete();
+
+        $this->actingAs($this->admin)
+            ->put(route('clients.portal-login.update', $this->client), [
+                'email' => 'client@example.com',
+                'password' => 'Sup3rSecret!',
+                'send_email' => false,
+            ])
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertNull($old->fresh()->deleted_at);
+        $this->assertSame(1, User::withTrashed()->where('email', 'client@example.com')->count());
     }
 
     public function test_non_admin_cannot_manage_client_logins(): void
