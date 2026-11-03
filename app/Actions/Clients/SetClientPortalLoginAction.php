@@ -63,6 +63,36 @@ class SetClientPortalLoginAction
             return null;
         }
 
-        return in_array($user->client_id, [null, $client->id], true) ? $user : null;
+        if (in_array($user->client_id, [null, $client->id], true)) {
+            return $user;
+        }
+
+        // Login of a client that has since been deleted: free to take over.
+        return Client::find($user->client_id) ? null : $user;
+    }
+
+    /**
+     * Human readable reason why an email cannot be used for this client's login.
+     */
+    public static function describeConflict(string $email, Client $client): string
+    {
+        $user = User::withTrashed()
+            ->where('tenant_id', $client->tenant_id)
+            ->where('email', $email)
+            ->first();
+
+        if (! $user) {
+            return 'This email is already in use.';
+        }
+
+        if ($user->hasRole('Client')) {
+            $other = Client::find($user->client_id);
+
+            return 'This email is already the login of another client' . ($other ? " ({$other->name})" : '') . '.';
+        }
+
+        $roles = $user->roles->pluck('name')->implode(', ');
+
+        return 'This email already belongs to a team member' . ($roles ? " ({$roles})" : '') . '. Use a different email for this client.';
     }
 }

@@ -164,6 +164,41 @@ class ClientPortalLoginTest extends TestCase
             ->assertSessionHasErrors('email');
     }
 
+    public function test_login_of_a_deleted_client_with_the_same_email_is_reused(): void
+    {
+        Notification::fake();
+        $clientRole = Role::where('tenant_id', $this->tenant->id)->where('name', 'Client')->first();
+        $deletedClient = Client::factory()->for($this->tenant)->create();
+        $old = User::factory()->for($this->tenant)->create(['client_id' => $deletedClient->id, 'email' => 'client@example.com']);
+        $old->roles()->attach($clientRole);
+        $deletedClient->delete();
+
+        $this->actingAs($this->admin)
+            ->put(route('clients.portal-login.update', $this->client), [
+                'email' => 'client@example.com',
+                'password' => 'Sup3rSecret!',
+                'send_email' => false,
+            ])
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertSame($this->client->id, $old->fresh()->client_id);
+    }
+
+    public function test_conflict_message_says_who_owns_the_email(): void
+    {
+        $designerRole = Role::create(['tenant_id' => $this->tenant->id, 'name' => 'Designer']);
+        $designer = User::factory()->for($this->tenant)->create(['email' => 'team@example.com']);
+        $designer->roles()->attach($designerRole);
+
+        $this->actingAs($this->admin)
+            ->put(route('clients.portal-login.update', $this->client), [
+                'email' => 'team@example.com',
+                'password' => 'Sup3rSecret!',
+                'send_email' => false,
+            ])
+            ->assertSessionHasErrors(['email' => 'This email already belongs to a team member (Designer). Use a different email for this client.']);
+    }
+
     public function test_unlinked_old_client_login_with_the_same_email_is_reused(): void
     {
         Notification::fake();

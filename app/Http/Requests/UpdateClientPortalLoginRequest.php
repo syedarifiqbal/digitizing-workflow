@@ -36,7 +36,7 @@ class UpdateClientPortalLoginRequest extends FormRequest
                         ->exists();
 
                     if ($taken && ! SetClientPortalLoginAction::findReusableUser($client, $value)) {
-                        $fail('This email already belongs to a team member or another client. Use a different email for this client\'s login.');
+                        $fail(SetClientPortalLoginAction::describeConflict($value, $client));
                     }
                 },
             ],
