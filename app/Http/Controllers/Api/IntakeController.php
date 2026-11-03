@@ -33,6 +33,7 @@ class IntakeController extends Controller
      * @bodyParam order.currency string Currency code (defaults to tenant currency). Example: USD
      * @bodyParam order.is_quote boolean Whether this request should be treated as a quote.
      * @bodyParam order.source string Source identifier for reporting. Example: wordpress-form
+     * @bodyParam files file[] Reference files (send as multipart/form-data, max 10). Allowed types and max size come from the tenant's upload settings.
      *
      * @response 201 scenario="Successful" {"message":"Order created successfully.","order_id":123,"order_number":"ORD-00123","client_id":45,"client_user_created":true}
      * @response 401 {"message":"Missing API key."}

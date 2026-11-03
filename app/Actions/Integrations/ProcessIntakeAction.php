@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\FileStorageService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
 
 class ProcessIntakeAction
 {
+    public function __construct(private readonly FileStorageService $fileStorage) {}
+
     public function execute(Tenant $tenant, array $payload): array
     {
         return DB::transaction(function () use ($tenant, $payload) {
@@ -65,6 +68,10 @@ class ProcessIntakeAction
             }
 
         $order = $this->createOrder($tenant, $client, $clientUser, $orderPayload);
+
+        foreach (Arr::get($payload, 'files', []) as $file) {
+            $this->fileStorage->storeOrderFile($order, $file, 'input', $order->creator);
+        }
 
         return [
             'message' => 'Order created successfully.',
