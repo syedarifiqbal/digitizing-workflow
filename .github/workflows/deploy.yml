@@ -1,0 +1,89 @@
+name: Deploy to production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      with_vendor:
+        description: "Also sync vendor/ (use when composer dependencies changed)"
+        type: boolean
+        default: false
+
+# Never run two deploys at once, and never cancel one halfway through.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CI: "true"
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      APP_URL: ${{ secrets.APP_URL }}
+      PUBLIC_DIR: ${{ secrets.PUBLIC_DIR }}
+      DB_DATABASE: ${{ secrets.DB_DATABASE }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      MAIL_FROM_ADDRESS: ${{ secrets.MAIL_FROM_ADDRESS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, xml, gd, bcmath, intl, zip
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The frontend build imports Ziggy from vendor/, so composer must run first.
+      - name: Install PHP dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      # vendor/ is only synced when composer.lock changed (or when asked for manually).
+      - name: Decide whether vendor/ must be synced
+        id: vendor
+        env:
+          BEFORE: ${{ github.event.before }}
+          MANUAL: ${{ inputs.with_vendor }}
+        run: |
+          flag=""
+          if [[ "$MANUAL" == "true" ]]; then
+            flag="--with-vendor"
+          elif [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            flag="--with-vendor"   # unknown previous commit: be safe
+          elif ! git diff --quiet "$BEFORE" HEAD -- composer.lock composer.json; then
+            flag="--with-vendor"
+          fi
+          echo "flag=$flag" >> "$GITHUB_OUTPUT"
+          echo "Deploy flag: '${flag:-none}'"
+
+      - name: Set up SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        run: ./deploy.sh ${{ steps.vendor.outputs.flag }}
