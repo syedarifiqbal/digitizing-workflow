@@ -36,6 +36,8 @@ const props = defineProps({
     commissionCurrency: String,
     commissions: Array,
     comments: Array,
+    commentsEnabled: { type: Boolean, default: true },
+    clientCommentsEnabled: { type: Boolean, default: true },
     invoiceInfo: Object,
     downloadInputZipUrl: String,
     downloadOutputZipUrl: String,
@@ -182,9 +184,9 @@ const commissionTipNotes = ref("");
 const updatingTip = ref(false);
 
 const newComment = ref("");
-const commentVisibility = ref(props.canAssign ? "client" : "internal");
+const commentVisibility = ref(props.canAssign && props.clientCommentsEnabled ? "client" : "internal");
 const submittingComment = ref(false);
-const activeHistoryTab = ref(props.canAssign ? "activity" : "comments");
+const activeHistoryTab = ref(props.canAssign || !props.commentsEnabled ? "activity" : "comments");
 
 const page = usePage();
 const highlightedCommentId = ref(null);
@@ -192,7 +194,7 @@ const highlightedCommentId = ref(null);
 onMounted(() => {
     const params = new URLSearchParams(window.location.search);
     const commentId = params.get("comment");
-    if (commentId) {
+    if (commentId && props.commentsEnabled) {
         highlightedCommentId.value = parseInt(commentId);
         activeHistoryTab.value = "comments";
         nextTick(() => {
@@ -380,7 +382,7 @@ const submitComment = () => {
         route("orders.comments.store", props.order.id),
         {
             body: newComment.value,
-            visibility: commentVisibility.value,
+            visibility: props.clientCommentsEnabled ? commentVisibility.value : "internal",
         },
         {
             preserveScroll: true,
@@ -758,7 +760,7 @@ const fileInputAccept = computed(() => {
                                 </dl>
 
                                 <!-- Submitted Work Details -->
-                                <div
+                                <!-- <div
                                     v-if="order.submitted_width || order.submitted_height || order.submitted_stitch_count"
                                     class="mt-4 pt-4 border-t border-slate-100"
                                 >
@@ -791,7 +793,7 @@ const fileInputAccept = computed(() => {
                                             </dd>
                                         </div>
                                     </dl>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
 
@@ -1876,7 +1878,7 @@ const fileInputAccept = computed(() => {
                         </div>
 
                         <!-- Activity & Comments (tabbed) -->
-                        <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+                        <div v-if="canAssign || commentsEnabled" class="bg-white shadow-sm rounded-lg border border-slate-200">
                             <!-- Tab bar -->
                             <div class="flex border-b border-slate-100">
                                 <button
@@ -1894,6 +1896,7 @@ const fileInputAccept = computed(() => {
                                     </span>
                                 </button>
                                 <button
+                                    v-if="commentsEnabled"
                                     type="button"
                                     class="flex-1 px-4 py-3 text-xs font-semibold border-b-2 transition-colors"
                                     :class="activeHistoryTab === 'comments'
@@ -1918,7 +1921,7 @@ const fileInputAccept = computed(() => {
                             </div>
 
                             <!-- Comments tab -->
-                            <div v-show="activeHistoryTab === 'comments'">
+                            <div v-if="commentsEnabled" v-show="activeHistoryTab === 'comments'">
                                 <!-- Comment list -->
                                 <div class="overflow-y-auto max-h-72 px-5 py-4 space-y-3">
                                     <template v-if="comments?.length > 0">
@@ -1963,7 +1966,7 @@ const fileInputAccept = computed(() => {
                                         placeholder="Write a comment…"
                                     ></textarea>
                                     <div class="flex items-center justify-between gap-2">
-                                        <div v-if="canAssign" class="flex items-center gap-3">
+                                        <div v-if="canAssign && clientCommentsEnabled" class="flex items-center gap-3">
                                             <label class="flex items-center gap-1.5 cursor-pointer">
                                                 <input v-model="commentVisibility" type="radio" value="client" class="h-3.5 w-3.5 border-slate-300 text-indigo-600 focus:ring-indigo-500" />
                                                 <span class="text-xs text-slate-600">Client</span>

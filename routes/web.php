@@ -115,6 +115,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('clients/bulk', [ClientController::class, 'bulkDestroy'])->name('clients.bulk-destroy');
         Route::resource('clients', ClientController::class);
         Route::patch('clients/{client}/status', [ClientController::class, 'toggleStatus'])->name('clients.status');
+        Route::put('clients/{client}/portal-login', [ClientController::class, 'updatePortalLogin'])->name('clients.portal-login.update');
         Route::post('clients/{client}/resend-invitation', [ClientController::class, 'resendInvitation'])->name('clients.resend-invitation');
         Route::delete('orders/bulk', [OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
         Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);

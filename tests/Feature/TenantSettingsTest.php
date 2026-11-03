@@ -30,6 +30,26 @@ class TenantSettingsTest extends TestCase
         $this->assertNull($tenant->settings['company_logo_path'] ?? null);
     }
 
+    public function test_admin_can_toggle_comment_features(): void
+    {
+        [$tenant, $admin] = $this->createTenantAdmin();
+
+        $this->actingAs($admin)->put(route('settings.update'), $this->validSettingsPayload([
+            'client_comments_enabled' => false,
+            'staff_comments_enabled' => false,
+        ]))->assertRedirect();
+
+        $tenant->refresh();
+        $this->assertFalse($tenant->getSetting('client_comments_enabled'));
+        $this->assertFalse($tenant->getSetting('staff_comments_enabled'));
+
+        $this->actingAs($admin)->put(route('settings.update'), $this->validSettingsPayload())->assertRedirect();
+
+        $tenant->refresh();
+        $this->assertTrue($tenant->getSetting('client_comments_enabled'));
+        $this->assertTrue($tenant->getSetting('staff_comments_enabled'));
+    }
+
     public function test_admin_can_upload_and_remove_logo(): void
     {
         Storage::fake('public');
@@ -74,13 +94,20 @@ class TenantSettingsTest extends TestCase
             'allowed_output_extensions' => 'dst,emb,pes,exp,pdf,ai,psd,png,jpg',
             'max_upload_mb' => 50,
             'currency' => 'USD',
+            'commission_currency' => 'USD',
             'order_number_prefix' => 'ORD-',
             'date_format' => 'MM/DD/YYYY',
+            'time_format' => 'h:mm A',
             'show_order_cards' => false,
             'notify_on_assignment' => true,
             'notify_on_comment' => true,
+            'client_comments_enabled' => true,
+            'staff_comments_enabled' => true,
             'enable_invoice_bulk_action' => true,
             'api_enabled' => false,
+            'stripe_enabled' => false,
+            'stripe_checkout_mode' => 'hosted',
+            'stripe_allow_admin_payment' => false,
             'invoice_number_prefix' => 'INV-',
             'default_payment_terms' => 'Net 30',
             'default_tax_rate' => 7.5,

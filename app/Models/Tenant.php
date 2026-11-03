@@ -45,6 +45,20 @@ class Tenant extends Model
         return data_get($this->settings, $key, $default);
     }
 
+    public function staffCommentsEnabled(): bool
+    {
+        return (bool) $this->getSetting('staff_comments_enabled', true);
+    }
+
+    /**
+     * Clients can only comment while the team can read the comments too,
+     * otherwise their messages would go nowhere.
+     */
+    public function clientCommentsEnabled(): bool
+    {
+        return (bool) $this->getSetting('client_comments_enabled', true) && $this->staffCommentsEnabled();
+    }
+
     public function setSetting(string $key, mixed $value): void
     {
         $settings = $this->settings ?? [];

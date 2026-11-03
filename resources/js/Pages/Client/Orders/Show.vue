@@ -19,6 +19,7 @@ const props = defineProps({
     parentOrder: Object,
     revisionOrders: Array,
     comments: Array,
+    commentsEnabled: { type: Boolean, default: true },
     permanentInstructions: { type: Object, default: () => ({}) },
     canCreateRevision: Boolean,
 });
@@ -200,7 +201,7 @@ const formatFileSize = (bytes) => {
                     </div>
 
                     <!-- Submitted Work Details -->
-                    <div
+                    <!-- <div
                         v-if="order.submitted_width || order.submitted_height || order.submitted_stitch_count"
                         class="mt-4 pt-4 border-t border-slate-100"
                     >
@@ -233,7 +234,7 @@ const formatFileSize = (bytes) => {
                                 </dd>
                             </div>
                         </dl>
-                    </div>
+                    </div> -->
                                 
                     <div v-if="order.description" class="col-span-full">
                         <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Description</dt>
@@ -537,7 +538,7 @@ const formatFileSize = (bytes) => {
             </div>
 
             <!-- Comments -->
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+            <div v-if="commentsEnabled" class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
                 <div class="border-b border-slate-200 px-6 py-4">
                     <h3 class="text-sm font-semibold text-slate-900">Comments</h3>
                 </div>

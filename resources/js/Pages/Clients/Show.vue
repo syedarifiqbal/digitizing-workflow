@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Button from '@/Components/Button.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
@@ -14,7 +14,33 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    portalLogin: {
+        type: Object,
+        default: () => ({ exists: false, email: null }),
+    },
 });
+
+const loginForm = useForm({
+    email: props.portalLogin.email ?? props.client.email ?? '',
+    password: '',
+    send_email: true,
+});
+const showPassword = ref(false);
+
+const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    const bytes = new Uint32Array(12);
+    crypto.getRandomValues(bytes);
+    loginForm.password = Array.from(bytes, (b) => chars[b % chars.length]).join('');
+    showPassword.value = true;
+};
+
+const saveLogin = () => {
+    loginForm.put(route('clients.portal-login.update', props.client.id), {
+        preserveScroll: true,
+        onSuccess: () => loginForm.reset('password'),
+    });
+};
 
 const showModal = ref(false);
 
@@ -97,6 +123,88 @@ const confirmDelete = () => {
                                 <dd class="mt-1 text-sm text-slate-900">{{ client.sales_user_name ?? '—' }}</dd>
                             </div>
                         </dl>
+                    </div>
+                </div>
+
+                <!-- Portal Login -->
+                <div class="bg-white shadow sm:rounded-lg">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-lg font-medium text-slate-900">Portal Login</h3>
+                                <p class="mt-1 text-sm text-slate-500">
+                                    Set the email and password this client uses to sign in, and email the details to them.
+                                    No signup or verification step is needed.
+                                </p>
+                            </div>
+                            <span
+                                :class="[
+                                    'inline-flex shrink-0 rounded-full px-2 text-xs font-semibold leading-5',
+                                    portalLogin.exists ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600',
+                                ]"
+                            >
+                                {{ portalLogin.exists ? 'Login active' : 'No login yet' }}
+                            </span>
+                        </div>
+
+                        <form class="mt-4 grid gap-4 sm:grid-cols-2" @submit.prevent="saveLogin">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700" for="portal_email">Login email</label>
+                                <input
+                                    id="portal_email"
+                                    v-model="loginForm.email"
+                                    type="email"
+                                    autocomplete="off"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                />
+                                <p v-if="loginForm.errors.email" class="mt-1 text-sm text-red-600">{{ loginForm.errors.email }}</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700" for="portal_password">
+                                    {{ portalLogin.exists ? 'New password' : 'Password' }}
+                                </label>
+                                <div class="mt-1 flex gap-2">
+                                    <input
+                                        id="portal_password"
+                                        v-model="loginForm.password"
+                                        :type="showPassword ? 'text' : 'password'"
+                                        autocomplete="new-password"
+                                        :placeholder="portalLogin.exists ? 'Leave empty to keep current' : ''"
+                                        class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="shrink-0 rounded-md border border-slate-300 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                        @click="showPassword = !showPassword"
+                                    >
+                                        {{ showPassword ? 'Hide' : 'Show' }}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="shrink-0 rounded-md border border-slate-300 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                        @click="generatePassword"
+                                    >
+                                        Generate
+                                    </button>
+                                </div>
+                                <p v-if="loginForm.errors.password" class="mt-1 text-sm text-red-600">{{ loginForm.errors.password }}</p>
+                            </div>
+
+                            <div class="sm:col-span-2 flex flex-wrap items-center justify-between gap-3">
+                                <label class="flex items-center gap-2 text-sm text-slate-700">
+                                    <input
+                                        v-model="loginForm.send_email"
+                                        type="checkbox"
+                                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    Email the login details to the client
+                                </label>
+                                <Button as="button" html-type="submit" variant="primary" :disabled="loginForm.processing">
+                                    {{ loginForm.send_email ? 'Save & email login' : 'Save login' }}
+                                </Button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 

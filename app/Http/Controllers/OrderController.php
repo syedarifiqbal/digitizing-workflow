@@ -303,9 +303,12 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['client.emails', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'commissions.user', 'comments.user', 'parent', 'revisionOrders', 'deliveryOptions', 'convertedOrder']);
-
         $user = $request->user();
+        $staffCommentsEnabled = $user->tenant->staffCommentsEnabled();
+        $clientCommentsEnabled = $user->tenant->clientCommentsEnabled();
+
+        $order->load(['client.emails', 'designer', 'sales', 'creator', 'files', 'statusHistory.changedBy', 'assignments.designer', 'assignments.assignedBy', 'commissions.user', 'parent', 'revisionOrders', 'deliveryOptions', 'convertedOrder', ...($staffCommentsEnabled ? ['comments.user'] : [])]);
+
         $canAssign = $user->isAdmin() || $user->isManager();
         $isPrivileged = $user->isAdmin() || $user->isManager();
 
@@ -489,19 +492,23 @@ class OrderController extends Controller
                     'notes' => $commission->notes,
                 ])
                 : [],
-            'comments' => $order->comments
-                ->when($user->isDesigner(), fn ($comments) => $comments->where('visibility', 'internal'))
-                ->map(fn ($comment) => [
-                    'id' => $comment->id,
-                    'body' => $comment->body,
-                    'visibility' => $comment->visibility,
-                    'user' => [
-                        'id' => $comment->user->id,
-                        'name' => $comment->user->name,
-                    ],
-                    'created_at' => $comment->created_at?->toDateTimeString(),
-                ])
-                ->values(),
+            'commentsEnabled' => $staffCommentsEnabled,
+            'clientCommentsEnabled' => $clientCommentsEnabled,
+            'comments' => $staffCommentsEnabled
+                ? $order->comments
+                    ->when($user->isDesigner(), fn ($comments) => $comments->where('visibility', 'internal'))
+                    ->map(fn ($comment) => [
+                        'id' => $comment->id,
+                        'body' => $comment->body,
+                        'visibility' => $comment->visibility,
+                        'user' => [
+                            'id' => $comment->user->id,
+                            'name' => $comment->user->name,
+                        ],
+                        'created_at' => $comment->created_at?->toDateTimeString(),
+                    ])
+                    ->values()
+                : [],
             'downloadInputZipUrl' => $order->files->where('type', 'input')->isNotEmpty()
                 ? OrderFileController::signedZipUrl($order, 'input')
                 : null,
@@ -1446,16 +1453,21 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
+        $commenter = $request->user();
+
+        abort_unless($commenter->tenant->staffCommentsEnabled(), 403, 'Comments are disabled.');
+
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:2000'],
             'visibility' => ['required', 'in:internal,client'],
         ]);
 
-        $commenter = $request->user();
-
-        // Only admins/managers can post client-visible comments.
+        // Only admins/managers can post client-visible comments, and only while the client portal has comments on.
         // Everyone else (designer, sales, etc.) is always internal.
-        if (! ($commenter->isAdmin() || $commenter->isManager())) {
+        if (
+            ! ($commenter->isAdmin() || $commenter->isManager())
+            || ! $commenter->tenant->clientCommentsEnabled()
+        ) {
             $validated['visibility'] = 'internal';
         }
 

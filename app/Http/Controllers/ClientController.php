@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Clients\SetClientPortalLoginAction;
+use App\Http\Requests\UpdateClientPortalLoginRequest;
 use App\Models\Client;
 use App\Models\ClientEmail;
 use App\Models\User;
+use App\Notifications\ClientPortalCredentialsNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -94,8 +97,14 @@ class ClientController extends Controller
 
         $client->load(['emails', 'salesUser']);
 
+        $portalUser = User::where('client_id', $client->id)->orderBy('id')->first();
+
         return Inertia::render('Clients/Show', [
             'client' => $this->transformClient($client),
+            'portalLogin' => [
+                'exists' => (bool) $portalUser,
+                'email' => $portalUser?->email,
+            ],
             'orders' => [],
         ]);
     }
@@ -163,6 +172,31 @@ class ClientController extends Controller
         Password::sendResetLink(['email' => $user->email]);
 
         return back()->with('success', 'Invitation resent to ' . $user->email . '.');
+    }
+
+    public function updatePortalLogin(
+        UpdateClientPortalLoginRequest $request,
+        Client $client,
+        SetClientPortalLoginAction $action
+    ): RedirectResponse {
+        $validated = $request->validated();
+        $password = $validated['password'] ?? null;
+
+        $user = $action->execute($client, $validated['email'], $password);
+
+        if (! $validated['send_email']) {
+            return back()->with('success', 'Portal login saved.');
+        }
+
+        try {
+            $user->notify(new ClientPortalCredentialsNotification($request->user()->tenant, $password));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'Portal login saved, but the email could not be sent: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Portal login saved and emailed to ' . $user->email . '.');
     }
 
     public function bulkDestroy(Request $request): RedirectResponse

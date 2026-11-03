@@ -8,7 +8,9 @@ use App\Models\OrderComment;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Notifications\OrderCommentNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class OrderCommentTest extends TestCase
@@ -218,5 +220,122 @@ class OrderCommentTest extends TestCase
             ->where('comments.0.body', 'Second comment')
             ->where('comments.1.body', 'First comment')
         );
+    }
+
+    public function test_client_cannot_comment_or_see_comments_when_client_comments_are_disabled(): void
+    {
+        $this->setTenantSettings(['client_comments_enabled' => false]);
+        $order = Order::factory()->for($this->tenant)->for($this->client, 'client')->create();
+        OrderComment::create([
+            'tenant_id' => $this->tenant->id,
+            'order_id' => $order->id,
+            'user_id' => $this->adminUser->id,
+            'visibility' => 'client',
+            'body' => 'Hidden from client',
+        ]);
+
+        $this->actingAs($this->clientUser)
+            ->post(route('client.orders.comments.store', $order), ['body' => 'Blocked'])
+            ->assertForbidden();
+        $this->assertDatabaseMissing('order_comments', ['body' => 'Blocked']);
+
+        $this->actingAs($this->clientUser)
+            ->get(route('client.orders.show', $order))
+            ->assertInertia(fn ($page) => $page
+                ->where('commentsEnabled', false)
+                ->where('comments', [])
+            );
+    }
+
+    public function test_admin_comments_become_internal_when_client_comments_are_disabled(): void
+    {
+        $this->setTenantSettings(['client_comments_enabled' => false]);
+        $order = Order::factory()->for($this->tenant)->for($this->client, 'client')->create();
+
+        $this->actingAs($this->adminUser)
+            ->post(route('orders.comments.store', $order), ['body' => 'Note', 'visibility' => 'client'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('order_comments', ['body' => 'Note', 'visibility' => 'internal']);
+    }
+
+    public function test_staff_cannot_comment_or_see_comments_when_staff_comments_are_disabled(): void
+    {
+        $this->setTenantSettings(['staff_comments_enabled' => false]);
+        $order = Order::factory()->for($this->tenant)->for($this->client, 'client')->create();
+        OrderComment::create([
+            'tenant_id' => $this->tenant->id,
+            'order_id' => $order->id,
+            'user_id' => $this->adminUser->id,
+            'visibility' => 'internal',
+            'body' => 'Old note',
+        ]);
+
+        $this->actingAs($this->adminUser)
+            ->post(route('orders.comments.store', $order), ['body' => 'Blocked', 'visibility' => 'internal'])
+            ->assertForbidden();
+        $this->assertDatabaseMissing('order_comments', ['body' => 'Blocked']);
+
+        $this->actingAs($this->adminUser)
+            ->get(route('orders.show', $order))
+            ->assertInertia(fn ($page) => $page
+                ->where('commentsEnabled', false)
+                ->where('comments', [])
+            );
+    }
+
+    public function test_comments_stay_enabled_by_default(): void
+    {
+        $order = Order::factory()->for($this->tenant)->for($this->client, 'client')->create();
+
+        $this->actingAs($this->adminUser)
+            ->get(route('orders.show', $order))
+            ->assertInertia(fn ($page) => $page
+                ->where('commentsEnabled', true)
+                ->where('clientCommentsEnabled', true)
+            );
+    }
+
+    public function test_client_comments_are_off_when_staff_comments_are_off(): void
+    {
+        $this->setTenantSettings(['client_comments_enabled' => true, 'staff_comments_enabled' => false]);
+        $order = Order::factory()->for($this->tenant)->for($this->client, 'client')->create();
+
+        $this->actingAs($this->clientUser)
+            ->post(route('client.orders.comments.store', $order), ['body' => 'Nobody would read this'])
+            ->assertForbidden();
+
+        $this->actingAs($this->clientUser)
+            ->get(route('client.orders.show', $order))
+            ->assertInertia(fn ($page) => $page->where('commentsEnabled', false));
+    }
+
+    public function test_client_comment_notifies_only_admins_of_the_same_tenant(): void
+    {
+        Notification::fake();
+        $order = Order::factory()->for($this->tenant)->for($this->client, 'client')->create();
+
+        $otherTenant = Tenant::factory()->create();
+        $otherRoleId = \DB::table('roles')->insertGetId([
+            'tenant_id' => $otherTenant->id,
+            'name' => 'Admin',
+            'guard_name' => 'web',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $otherAdmin = User::factory()->for($otherTenant)->create();
+        $otherAdmin->roles()->attach($otherRoleId);
+
+        $this->actingAs($this->clientUser)
+            ->post(route('client.orders.comments.store', $order), ['body' => 'Hello'])
+            ->assertRedirect();
+
+        Notification::assertSentTo($this->adminUser, OrderCommentNotification::class);
+        Notification::assertNotSentTo($otherAdmin, OrderCommentNotification::class);
+    }
+
+    private function setTenantSettings(array $settings): void
+    {
+        $this->tenant->update(['settings' => array_merge($this->tenant->settings ?? [], $settings)]);
     }
 }

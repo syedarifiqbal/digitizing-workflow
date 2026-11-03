@@ -24,4 +24,17 @@ enum InvoiceStatus: string
             self::VOID => 'Void',
         };
     }
+
+    /**
+     * Whether an invoice in this status can still have its details edited.
+     * Cancelled/Void are terminal states and stay locked; everything else
+     * (including Sent/Overdue/Partially Paid/Paid) remains editable.
+     */
+    public function isEditable(): bool
+    {
+        return match ($this) {
+            self::CANCELLED, self::VOID => false,
+            default => true,
+        };
+    }
 }

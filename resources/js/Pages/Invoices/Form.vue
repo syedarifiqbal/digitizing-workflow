@@ -54,6 +54,9 @@ const props = defineProps({
 });
 
 const isEditMode = computed(() => props.mode === "edit");
+const isAlreadySent = computed(
+    () => isEditMode.value && props.invoice?.status && props.invoice.status !== "draft"
+);
 const initialClient =
     props.invoice?.client_id ||
     props.initialClientId ||
@@ -264,7 +267,7 @@ const submit = () => {
                     </h2>
                     <p class="text-sm text-slate-500">
                         <template v-if="isEditMode">
-                            Update draft invoices before sending them to your client.
+                            Update this invoice's details, line items, and totals.
                         </template>
                         <template v-else>
                             Select a client, pick delivered orders, and we’ll calculate totals automatically.
@@ -279,6 +282,19 @@ const submit = () => {
 
         <div class="py-8">
             <div class="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">
+                <div
+                    v-if="isAlreadySent"
+                    class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800"
+                >
+                    <p class="font-semibold">
+                        This invoice was already sent to the client ({{ invoice.status_label }}).
+                    </p>
+                    <p class="mt-1">
+                        Changes you save here will update the invoice the client has already seen. Any adjustment
+                        to totals is recorded in the invoice activity log — consider re-sending or notifying the
+                        client if amounts change.
+                    </p>
+                </div>
                 <form @submit.prevent="submit" class="space-y-6">
                     <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
                         <div class="px-5 py-4 border-b border-slate-100">

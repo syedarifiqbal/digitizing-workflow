@@ -393,14 +393,16 @@ class ClientPortalController extends Controller
             abort(403, 'Unauthorized to view this order.');
         }
 
+        $commentsEnabled = $user->tenant->clientCommentsEnabled();
+
         $order->load([
             'client',
             'files' => fn ($q) => $q->orderBy('created_at', 'desc'),
             'files.uploader:id,name',
-            'comments' => fn ($q) => $q->with('user:id,name')->where('visibility', 'client')->latest(),
             'parent',
             'revisionOrders',
             'deliveryOptions',
+            ...($commentsEnabled ? ['comments' => fn ($q) => $q->with('user:id,name')->where('visibility', 'client')->latest()] : []),
         ]);
 
         // Only show delivered output files to client (after delivery)
@@ -505,12 +507,15 @@ class ClientPortalController extends Controller
                 'status_label' => $rev->status->label(),
                 'created_at' => $rev->created_at,
             ]),
-            'comments' => $order->comments->map(fn ($comment) => [
-                'id' => $comment->id,
-                'body' => $comment->body,
-                'user' => ['id' => $comment->user->id, 'name' => $comment->user->name],
-                'created_at' => $comment->created_at,
-            ]),
+            'commentsEnabled' => $commentsEnabled,
+            'comments' => $commentsEnabled
+                ? $order->comments->map(fn ($comment) => [
+                    'id' => $comment->id,
+                    'body' => $comment->body,
+                    'user' => ['id' => $comment->user->id, 'name' => $comment->user->name],
+                    'created_at' => $comment->created_at,
+                ])
+                : [],
             'permanentInstructions' => [],
             'canCreateRevision' => in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CLOSED]),
         ]);
@@ -558,6 +563,8 @@ class ClientPortalController extends Controller
             abort(403, 'Unauthorized to comment on this order.');
         }
 
+        abort_unless($user->tenant->clientCommentsEnabled(), 403, 'Comments are disabled.');
+
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:2000'],
         ]);
@@ -575,6 +582,7 @@ class ClientPortalController extends Controller
 
         // Notify admin/managers of the tenant
         $admins = \App\Models\User::whereHas('roles', fn ($q) => $q->whereIn('name', ['Admin', 'Manager']))
+            ->where('tenant_id', $order->tenant_id)
             ->where('id', '!=', $user->id)
             ->get();
         foreach ($admins as $admin) {

@@ -111,7 +111,7 @@ class InvoiceController extends Controller
                     'total_amount' => $invoice->total_amount,
                     'currency' => $invoice->currency,
                     'is_overdue' => $invoice->status === InvoiceStatus::OVERDUE,
-                    'can_edit' => $request->user()->can('update', $invoice) && $invoice->status === InvoiceStatus::DRAFT,
+                    'can_edit' => $request->user()->can('update', $invoice) && $invoice->status->isEditable(),
                 ]),
                 'links' => $invoices->linkCollection(),
                 'meta' => [
@@ -383,7 +383,7 @@ class InvoiceController extends Controller
                     ->all(),
             ],
             'companyDetails' => $companyDetails,
-            'canEdit' => $request->user()->can('update', $invoice) && $invoice->status === InvoiceStatus::DRAFT,
+            'canEdit' => $request->user()->can('update', $invoice) && $invoice->status->isEditable(),
             'clientEmails'  => $this->getClientEmails($invoice->client),
             'stripe' => $this->stripeProps($request, $invoice),
         ]);
@@ -433,7 +433,7 @@ class InvoiceController extends Controller
     public function edit(Request $request, Invoice $invoice): Response
     {
         $this->authorize('update', $invoice);
-        abort_if($invoice->status !== InvoiceStatus::DRAFT, 403);
+        abort_if(! $invoice->status->isEditable(), 403);
 
         $invoice->load(['items' => fn ($query) => $query->orderBy('id')]);
         $user = $request->user();
@@ -473,6 +473,8 @@ class InvoiceController extends Controller
                 'id' => $invoice->id,
                 'client_id' => (string) $invoice->client_id,
                 'client_name' => $invoice->client?->name,
+                'status' => $invoice->status?->value,
+                'status_label' => $invoice->status?->label(),
                 'issue_date' => $invoice->issue_date?->toDateString(),
                 'due_date' => $invoice->due_date?->toDateString(),
                 'payment_terms' => $invoice->payment_terms,
@@ -500,7 +502,10 @@ class InvoiceController extends Controller
     public function update(UpdateInvoiceRequest $request, Invoice $invoice): RedirectResponse
     {
         $this->authorize('update', $invoice);
-        abort_if($invoice->status !== InvoiceStatus::DRAFT, 403);
+        abort_if(! $invoice->status->isEditable(), 403);
+
+        $wasAlreadySent = $invoice->status !== InvoiceStatus::DRAFT;
+        $previousTotal = (float) $invoice->total_amount;
 
         $data = $request->validated();
         $clientId = $invoice->client_id;
@@ -619,6 +624,20 @@ class InvoiceController extends Controller
                 ]);
             }
         });
+
+        if ($wasAlreadySent) {
+            $invoice->refresh();
+            $invoice->logActivity(
+                'edited',
+                "Invoice edited after being sent (status: {$invoice->status->label()}).",
+                $request->user()->id,
+                [
+                    'status' => $invoice->status->value,
+                    'previous_total' => $previousTotal,
+                    'new_total' => (float) $invoice->total_amount,
+                ]
+            );
+        }
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice updated.');
     }

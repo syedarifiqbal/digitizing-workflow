@@ -104,5 +104,55 @@ const props = defineProps({
                 </p>
             </div>
         </div>
+
+        <div class="bg-white shadow-sm rounded-lg border border-slate-200">
+            <div class="px-5 py-4 border-b border-slate-100">
+                <h3 class="text-sm font-semibold text-slate-900">Order Comments</h3>
+                <p class="mt-0.5 text-xs text-slate-500">
+                    Turn the comments feature on or off. Existing comments are kept and reappear if you turn it back on.
+                </p>
+            </div>
+            <div class="px-5 py-4 space-y-4">
+                <div>
+                    <div class="flex items-start">
+                        <input
+                            v-model="form.client_comments_enabled"
+                            id="client_comments_enabled"
+                            type="checkbox"
+                            class="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label class="ml-2 block text-sm text-slate-700" for="client_comments_enabled">
+                            Allow comments in the client portal
+                        </label>
+                    </div>
+                    <p class="mt-1 ml-6 text-xs text-slate-400">
+                        When off, clients cannot see or post comments on their orders. Also requires team comments to be on, so client messages are never left unread.
+                    </p>
+                    <p v-if="form.errors.client_comments_enabled" class="mt-1 ml-6 text-xs text-red-600">
+                        {{ form.errors.client_comments_enabled }}
+                    </p>
+                </div>
+
+                <div>
+                    <div class="flex items-start">
+                        <input
+                            v-model="form.staff_comments_enabled"
+                            id="staff_comments_enabled"
+                            type="checkbox"
+                            class="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label class="ml-2 block text-sm text-slate-700" for="staff_comments_enabled">
+                            Allow comments for your team (admins, managers, designers)
+                        </label>
+                    </div>
+                    <p class="mt-1 ml-6 text-xs text-slate-400">
+                        When off, the Comments tab and form are hidden on orders for your team.
+                    </p>
+                    <p v-if="form.errors.staff_comments_enabled" class="mt-1 ml-6 text-xs text-red-600">
+                        {{ form.errors.staff_comments_enabled }}
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
