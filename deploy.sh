@@ -100,6 +100,7 @@ step "2 / 4  Syncing changed files to server"
 RSYNC_EXCLUDES=(
   --exclude='.git/'
   --exclude='.env'
+  --exclude='.env.deploy'               # deploy credentials — never upload
   --exclude='deploy.sh'
   --exclude='node_modules/'
   --exclude='resources/js/'
