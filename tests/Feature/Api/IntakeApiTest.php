@@ -172,6 +172,16 @@ class IntakeApiTest extends TestCase
         $this->assertDatabaseCount('orders', 0);
     }
 
+    public function test_it_returns_validation_error_when_a_file_entry_is_not_a_file(): void
+    {
+        $response = $this->post('/api/v1/intake', $this->quotePayload([
+            'files' => ['not-a-file'],
+        ]), $this->apiHeaders());
+
+        $response->assertStatus(422)->assertJsonValidationErrors('files.0');
+        $this->assertDatabaseCount('orders', 0);
+    }
+
     protected function setUploadSettings(string $extensions, int $maxMb): void
     {
         $settings = $this->tenant->fresh()->settings ?? [];

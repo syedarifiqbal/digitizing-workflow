@@ -41,6 +41,7 @@ class IntakeRequest extends FormRequest
 
             'files' => ['nullable', 'array', 'max:10'],
             'files.*' => [
+                'bail',
                 'file',
                 'max:'.$maxKilobytes,
                 function (string $attribute, mixed $value, \Closure $fail) use ($allowedExtensions) {
