@@ -9,7 +9,9 @@ use App\Models\User;
 use App\Models\Role;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class IntakeApiTest extends TestCase
@@ -114,6 +116,81 @@ class IntakeApiTest extends TestCase
         ]);
 
         $response->assertStatus(422);
+    }
+
+    public function test_it_stores_uploaded_files_with_the_order(): void
+    {
+        Notification::fake();
+        Storage::fake('local');
+        $this->setUploadSettings('jpg,png,pdf', 5);
+
+        $response = $this->post('/api/v1/intake', $this->quotePayload([
+            'files' => [
+                UploadedFile::fake()->image('logo.png'),
+                UploadedFile::fake()->create('spec.pdf', 100, 'application/pdf'),
+            ],
+        ]), $this->apiHeaders());
+
+        $response->assertCreated();
+
+        $this->assertDatabaseCount('order_files', 2);
+        $this->assertDatabaseHas('order_files', [
+            'order_id' => $response->json('order_id'),
+            'tenant_id' => $this->tenant->id,
+            'type' => 'input',
+            'original_name' => 'logo.png',
+            'uploaded_by_user_id' => $this->admin->id,
+        ]);
+    }
+
+    public function test_it_rejects_extensions_not_allowed_in_settings(): void
+    {
+        Notification::fake();
+        Storage::fake('local');
+        $this->setUploadSettings('jpg,png', 5);
+
+        $response = $this->post('/api/v1/intake', $this->quotePayload([
+            'files' => [UploadedFile::fake()->create('virus.exe', 10)],
+        ]), $this->apiHeaders());
+
+        $response->assertStatus(422)->assertJsonValidationErrors('files.0');
+        $this->assertDatabaseCount('order_files', 0);
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_it_rejects_files_larger_than_the_configured_limit(): void
+    {
+        Notification::fake();
+        Storage::fake('local');
+        $this->setUploadSettings('jpg,png', 1);
+
+        $response = $this->post('/api/v1/intake', $this->quotePayload([
+            'files' => [UploadedFile::fake()->create('big.jpg', 2048)],
+        ]), $this->apiHeaders());
+
+        $response->assertStatus(422)->assertJsonValidationErrors('files.0');
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    protected function setUploadSettings(string $extensions, int $maxMb): void
+    {
+        $settings = $this->tenant->fresh()->settings ?? [];
+        $settings['allowed_input_extensions'] = $extensions;
+        $settings['max_upload_mb'] = $maxMb;
+        $this->tenant->update(['settings' => $settings]);
+    }
+
+    protected function apiHeaders(): array
+    {
+        return ['Authorization' => 'Bearer '.$this->apiKey, 'Accept' => 'application/json'];
+    }
+
+    protected function quotePayload(array $extra = []): array
+    {
+        return array_merge([
+            'client' => ['name' => 'Jane Client', 'email' => 'jane@example.com'],
+            'order' => ['title' => 'Quote with files', 'is_quote' => 1],
+        ], $extra);
     }
 
     protected function createRole(string $name): void
